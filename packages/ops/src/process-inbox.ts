@@ -1,5 +1,6 @@
 import { createTools } from '@meridian/agent-kit';
 import { createLogger, workerEnv } from '@meridian/core';
+import { loadOpsEnv } from './env.js';
 import { intakeMessage, type IntakeResult } from './intake/index.js';
 import { reconcileQueuedExecutions } from './intake/reconcile-queued-executions.js';
 import { optionalArg, parseArgs, positional } from './lib/args.js';
@@ -94,6 +95,10 @@ export async function processInbox(options: ProcessInboxOptions): Promise<Proces
 }
 
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<void> {
+  // Every other ops entry point reads `.env` for itself, because a script invoked as `pnpm
+  // process-inbox` inherits nothing from the web app or the worker. Without this the command that
+  // `pnpm gates` prints as the live-inbox proof cannot reach the database at all.
+  loadOpsEnv();
   const args = parseArgs(argv);
   try {
     const report = await processInbox({
