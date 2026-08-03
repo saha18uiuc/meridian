@@ -20,7 +20,13 @@ export const RECONCILE_MIN_AGE_MS = 60_000;
 
 export interface ReconcileOutcome {
   executionId: string;
-  action: 'started' | 'already_started' | 'failed_missing_workflow' | 'skipped';
+  action:
+    | 'started'
+    | 'already_started'
+    | 'failed_missing_workflow'
+    | 'closed_from_workflow'
+    | 'failed_lost_workflow'
+    | 'skipped';
   workflowId: string;
   detail?: string;
 }
@@ -38,19 +44,30 @@ export async function reconcileQueuedExecutions(deps: ReconcileDeps): Promise<Re
 
   const { data, error } = await deps.supabase
     .from('executions')
-    .select('execution_id, temporal_workflow_id, created_at')
-    .eq('status', 'queued')
+    .select('execution_id, temporal_workflow_id, temporal_run_id, status, created_at')
+    .in('status', ['queued', 'running'])
     .not('temporal_workflow_id', 'is', null)
     .lt('created_at', cutoff)
     .order('created_at', { ascending: true });
 
-  if (error !== null) throw new Error(`Could not list queued executions: ${error.message}`);
+  if (error !== null) throw new Error(`Could not list pending executions: ${error.message}`);
 
   const outcomes: ReconcileOutcome[] = [];
 
   for (const row of data ?? []) {
     const workflowId = row.temporal_workflow_id;
     if (workflowId === null) continue;
+
+    if (row.status === 'running') {
+      const outcome = await closeIfWorkflowEnded(
+        deps,
+        row.execution_id,
+        workflowId,
+        row.temporal_run_id,
+      );
+      if (outcome !== null) outcomes.push(outcome);
+      continue;
+    }
 
     const handle = deps.temporal.workflow.getHandle(workflowId);
     let runId: string;
@@ -97,4 +114,75 @@ export async function reconcileQueuedExecutions(deps: ReconcileDeps): Promise<Re
 
   deps.logger?.info({ reconciled: outcomes.length }, 'queued-execution sweep finished');
   return outcomes;
+}
+
+/**
+ * Close a `running` row whose workflow has already ended.
+ *
+ * A run that ends normally writes its own terminal status, so a row still in `running` after its
+ * run has closed means one of two things. Either the completion write itself was lost, in which
+ * case the workflow's own result is the answer and is copied across. Or the run that the row names
+ * belongs to a *different* execution — the shape a duplicate intake used to leave behind — and no
+ * result of that run may be attributed to this row, which is therefore failed rather than
+ * completed. Guessing between the two is what the executionId in the result exists to prevent.
+ *
+ * Returns null when the run is still open, which is the ordinary case and not worth reporting.
+ */
+async function closeIfWorkflowEnded(
+  deps: ReconcileDeps,
+  executionId: string,
+  workflowId: string,
+  runId: string | null,
+): Promise<ReconcileOutcome | null> {
+  const handle =
+    runId === null
+      ? deps.temporal.workflow.getHandle(workflowId)
+      : deps.temporal.workflow.getHandle(workflowId, runId);
+
+  let status: string;
+  try {
+    status = (await handle.describe()).status.name;
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    await fail(deps, executionId, { code: 'WORKFLOW_MISSING', detail });
+    return { executionId, action: 'failed_lost_workflow', workflowId, detail };
+  }
+  if (status === 'RUNNING') return null;
+
+  let result: unknown;
+  try {
+    result = await handle.result();
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    await fail(deps, executionId, { code: 'WORKFLOW_ENDED_WITHOUT_RESULT', status, detail });
+    return { executionId, action: 'failed_lost_workflow', workflowId, detail };
+  }
+
+  const owner = (result as { executionId?: unknown }).executionId;
+  if (owner !== executionId) {
+    const detail = `the run reported execution ${String(owner)}`;
+    await fail(deps, executionId, { code: 'RUN_BELONGS_TO_ANOTHER_EXECUTION', detail });
+    return { executionId, action: 'failed_lost_workflow', workflowId, detail };
+  }
+
+  const { error } = await deps.supabase.rpc('complete_execution', {
+    p_execution_id: executionId,
+    p_status: 'passed',
+    p_output_summary: (result ?? {}) as never,
+    p_diff_summary: null as never,
+  });
+  if (error !== null) throw new Error(`Could not close a settled execution: ${error.message}`);
+  return { executionId, action: 'closed_from_workflow', workflowId };
+}
+
+async function fail(
+  deps: ReconcileDeps,
+  executionId: string,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const { error } = await deps.supabase.rpc('fail_execution', {
+    p_execution_id: executionId,
+    p_error: payload as never,
+  });
+  if (error !== null) throw new Error(`Could not fail a lost execution: ${error.message}`);
 }
