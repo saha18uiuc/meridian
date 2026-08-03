@@ -49,6 +49,7 @@ function fakeTemporal(): {
   close(workflowId: string): void;
 } {
   const runs = new Map<string, string>();
+  const startedAt = new Map<string, Date>();
   const closed = new Set<string>();
   const starts: string[] = [];
   const signals: string[] = [];
@@ -63,6 +64,7 @@ function fakeTemporal(): {
       }
       const runId = randomUUID();
       runs.set(workflowId, runId);
+      startedAt.set(workflowId, new Date());
       closed.delete(workflowId);
       starts.push(workflowId);
       return { workflowId, signaledRunId: runId, firstExecutionRunId: runId };
@@ -80,10 +82,27 @@ function fakeTemporal(): {
         signal: vi.fn(async () => {
           signals.push(workflowId);
         }),
-        describe: vi.fn(async () => ({
-          runId: runs.get(workflowId) ?? null,
-          status: { name: closed.has(workflowId) ? 'COMPLETED' : 'RUNNING' },
-        })),
+        terminate: vi.fn(async () => {
+          closed.add(workflowId);
+        }),
+        // Shaped like the real thing in the two ways intake depends on. An unknown workflow id
+        // raises `WorkflowNotFoundError` rather than answering `RUNNING` with a null run — the
+        // ordinary first-message case reaches this call, and a double that reports a phantom run
+        // would let intake wait for something that was never there. And a live run carries a
+        // `startTime`, because the adoption grace period is measured from it.
+        describe: vi.fn(async () => {
+          const runId = runs.get(workflowId);
+          if (runId === undefined) {
+            const error = new Error(`workflow ${workflowId} not found`);
+            error.name = 'WorkflowNotFoundError';
+            throw error;
+          }
+          return {
+            runId,
+            status: { name: closed.has(workflowId) ? 'COMPLETED' : 'RUNNING' },
+            startTime: startedAt.get(workflowId) ?? new Date(),
+          };
+        }),
       })),
     },
   } as unknown as Client;

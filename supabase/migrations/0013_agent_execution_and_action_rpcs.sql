@@ -213,14 +213,31 @@ begin
     raise exception 'INVALID_RUN_TYPE: %', p_run_type using errcode = 'P0001';
   end if;
 
-  insert into public.executions
-    (agent_id, agent_version_id, run_type, case_key, business_key,
-     temporal_workflow_id, idempotency_key, status, input_ref_json)
-  values
-    (p_agent_id, p_agent_version_id, p_run_type, p_case_key, p_business_key,
-     p_temporal_workflow_id, p_idempotency_key, 'queued', coalesce(p_input_ref,'{}'::jsonb))
-  on conflict (idempotency_key) do nothing
-  returning execution_id, status, temporal_workflow_id into v_id, v_status, v_wf;
+  -- `on conflict` names one arbiter index, but the row is checked against every unique index on
+  -- the table. Two callers inserting the same idempotency key concurrently also collide on
+  -- `uq_executions_active_workflow`, and a collision on a non-arbiter index raises rather than
+  -- resolving -- so the handler below re-reads instead of letting the race surface as an error.
+  begin
+    insert into public.executions
+      (agent_id, agent_version_id, run_type, case_key, business_key,
+       temporal_workflow_id, idempotency_key, status, input_ref_json)
+    values
+      (p_agent_id, p_agent_version_id, p_run_type, p_case_key, p_business_key,
+       p_temporal_workflow_id, p_idempotency_key, 'queued', coalesce(p_input_ref,'{}'::jsonb))
+    on conflict (idempotency_key) do nothing
+    returning execution_id, status, temporal_workflow_id into v_id, v_status, v_wf;
+  exception when unique_violation then
+    select execution_id, status, temporal_workflow_id into v_id, v_status, v_wf
+      from public.executions where idempotency_key = p_idempotency_key;
+    -- Nothing under this key: the refusal was the active-workflow index telling a *different*
+    -- case that this workflow already has a live run. That is the constraint doing its job, and
+    -- it is re-raised rather than swallowed.
+    if v_id is null then
+      raise;
+    end if;
+    return jsonb_build_object('executionId', v_id, 'wasExisting', true,
+                              'status', v_status, 'temporalWorkflowId', v_wf);
+  end;
 
   if v_id is null then
     select execution_id, status, temporal_workflow_id into v_id, v_status, v_wf

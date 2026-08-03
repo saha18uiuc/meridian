@@ -261,21 +261,16 @@ export async function intakeMessage(
   // until something sweeps it. Asking the server closes that window at its source.
   const openRunId = await openRunFor(deps.temporal, workflowId);
 
-  // Whether this message joins the open case or opens a new one turns on whether the run recorded
-  // for the previous execution is the run Temporal still has open. A live run is joined as it
-  // stands — recomputing a case key would invent a second row for a workflow that
-  // `uq_executions_active_workflow` allows only one of. A closed run is followed by a new case that
-  // names the one it came after, because the workflow it belonged to has already reported its
-  // outcome and cannot take another message.
-  let host = openRunId !== null && previous?.temporalRunId === openRunId ? previous : null;
+  let host = claimsTheMessage(previous, openRunId) ? previous : null;
 
   if (host === null && openRunId !== null) {
-    // A run is open that no known row names — a concurrent intake is mid-flight, or a run is in the
-    // act of closing. Either way, creating a row from here would produce exactly the orphan
-    // described above, so intake waits for the server to settle and looks once more.
+    // The row says this case is over and the server still has a run open. Creating a row now is
+    // what strands it: `signalWithStart` would find that run under USE_EXISTING and hand it a
+    // message while it carries a different execution ID. So intake waits for the server to settle
+    // and looks once more before deciding.
     await awaitRunSettled(deps, workflowId, openRunId);
     const current = await findLatestExecution(deps.supabase, workflowId);
-    if (current !== null && current.temporalRunId === openRunId && current.isLive) host = current;
+    if (claimsTheMessage(current, openRunId)) host = current;
     else await terminateIfUnclaimed(deps, workflowId, openRunId);
   }
 
@@ -457,6 +452,28 @@ async function openRunFor(temporal: Client, workflowId: string): Promise<string 
     if ((error as { name?: string }).name === 'WorkflowNotFoundError') return null;
     throw error;
   }
+}
+
+/**
+ * Whether an existing row is the case this message belongs to.
+ *
+ * Two unlike situations both answer yes, and missing either one writes a row that should not exist.
+ *
+ * A live row is the case by construction: `uq_executions_active_workflow` permits exactly one
+ * `queued` or `running` row per workflow ID, so while such a row exists there is no second row to
+ * be had. This is also the shape of two messages arriving at once — the winner has written its row
+ * and has not yet reached `signalWithStart`, so the loser sees a live row and no open run, and
+ * joining is the only insert that can succeed.
+ *
+ * A finished row whose run Temporal still has open is equally the case. The workflow has written
+ * its outcome but the run has not closed, and a message arriving in that window belongs to the run
+ * that is still there to receive it — `signalWithStart` will hand it over under USE_EXISTING no
+ * matter what this function decides, so the only question is whether a row gets stranded saying
+ * otherwise.
+ */
+function claimsTheMessage(row: PriorExecution | null, openRunId: string | null): boolean {
+  if (row === null) return false;
+  return row.isLive || (openRunId !== null && row.temporalRunId === openRunId);
 }
 
 /**

@@ -147,7 +147,7 @@ async function fingerprint() {
     owner.from('comments').select('comment_id').eq('whiteboard_id', victim.whiteboardId),
     owner.from('frozen_specs').select('spec_id').eq('whiteboard_id', victim.whiteboardId),
     owner.from('agent_versions').select('agent_version_id').eq('agent_id', victim.agentId),
-    owner.from('execution_events').select('event_id').eq('execution_id', victim.executionId),
+    owner.from('execution_events').select('event_key').eq('execution_id', victim.executionId),
   ]);
   return {
     revisionNo: board.data?.revision_no,
@@ -157,7 +157,9 @@ async function fingerprint() {
     comments: comments.data?.length ?? 0,
     specs: specs.data?.length ?? 0,
     versions: versions.data?.length ?? 0,
-    events: events.data?.length ?? 0,
+    // The keys, not the count. A count says something moved; the key says what wrote it, which is
+    // the only part of this fingerprint anyone can act on when it fails.
+    events: (events.data ?? []).map((row) => row.event_key).sort(),
   };
 }
 
