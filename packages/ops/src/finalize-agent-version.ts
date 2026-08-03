@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
-import { sha256Hex } from '@meridian/core';
-import { BuildManifestSchema, type BuildManifest } from '@meridian/core/schemas';
+import { deriveSpecHash } from '@meridian/core';
+import { BuildManifestSchema, type BuildManifest, type SpecJson } from '@meridian/core/schemas';
 import { loadOpsEnv } from './env.js';
 import { generateRegistry } from './generate-registry.js';
 import { parseArgs, requireArg } from './lib/args.js';
@@ -220,8 +220,12 @@ export async function finalizeAgentVersion(agentVersionId: string): Promise<Fina
     `the manifest committed at ${sha}`,
   );
   const committedSnapshotText = showFile(sha, `${version.code_path}/spec.snapshot.json`);
-  const committedSnapshot = JSON.parse(committedSnapshotText) as unknown;
-  const snapshotHash = sha256Hex(committedSnapshot);
+  const committedSnapshot = JSON.parse(committedSnapshotText) as SpecJson;
+  // `deriveSpecHash`, not a hash of the whole document: `spec_hash` is taken over the semantic view,
+  // which holds out the spec ID, the version counter, the freeze timestamp, the review sessions, and
+  // the acknowledgement flags. Hashing the file wholesale here would compare the snapshot against a
+  // number nothing in the system produces, and no honest snapshot could ever pass.
+  const snapshotHash = deriveSpecHash(committedSnapshot);
 
   if (snapshotHash !== version.spec_hash) {
     throw new FinalizeError(
