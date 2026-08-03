@@ -498,6 +498,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'Temporal client singleton, the counterpart of lib/supabase.ts',
   'packages/ops/src/fixtures':
     'generators that reproduce the committed example boards, documents, and eval cases',
+  'packages/ops/src/release-demo-agent.ts':
+    'the operator gates for the demo agent — freeze, create, finalize, evaluate, approve, activate — run in order by pnpm seed so a fresh clone has an active version to demonstrate; it calls the same RPCs and the same finalize path a human operator would, rather than writing the rows directly',
   'packages/evals/src/index.ts': 'barrel for the evals package',
   'packages/evals/src/fixture-mailbox.ts':
     'per-case mailbox restriction, so one case cannot see another case fixtures',

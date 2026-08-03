@@ -83,9 +83,7 @@ async function readGraph(
 
   const edges = await service
     .from('whiteboard_edges')
-    .select(
-      'edge_id, source_node_id, target_node_id, label, condition_json, priority, row_version',
-    )
+    .select('edge_id, source_node_id, target_node_id, label, condition_json, priority, row_version')
     .eq('whiteboard_id', whiteboardId);
   if (edges.error !== null) throw new Error(`could not read edges: ${edges.error.message}`);
 

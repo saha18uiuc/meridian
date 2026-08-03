@@ -5,4 +5,7 @@ coverage
 supabase/.temp
 generated-agents/**/spec.snapshot.json
 .meridian
+# Next.js rewrites this file on every build, in its own style. Formatting it makes `format:check`
+# fail the first time anyone runs `pnpm build:web`, which is a gate that fails for no defect.
+apps/web/next-env.d.ts
 examples/inbound-import-receiving/fixtures/attachments
