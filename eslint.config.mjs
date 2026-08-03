@@ -32,6 +32,9 @@ export default tseslint.config(
       '**/.meridian/**',
       '**/playwright-report/**',
       '**/test-results/**',
+      // The downloaded browser, which ships its own JavaScript. Linting a Chromium bundle reports
+      // hundreds of errors about a codebase nobody here wrote.
+      '**/.playwright-browsers/**',
       '**/next-env.d.ts',
       'supabase/.temp/**',
     ],

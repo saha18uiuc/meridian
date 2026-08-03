@@ -9,3 +9,8 @@ generated-agents/**/spec.snapshot.json
 # fail the first time anyone runs `pnpm build:web`, which is a gate that fails for no defect.
 apps/web/next-env.d.ts
 examples/inbound-import-receiving/fixtures/attachments
+# Playwright's downloaded browser and its run artefacts. Neither is source, and the browser bundle
+# alone is tens of thousands of files.
+.playwright-browsers
+test-results
+playwright-report
