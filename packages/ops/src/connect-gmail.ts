@@ -14,13 +14,36 @@ interface ConnectionRequest {
   waitForConnection(timeoutMs?: number): Promise<{ id: string; status?: string }>;
 }
 
+interface ConnectedAccountSummary {
+  id: string;
+  status?: string;
+}
+
 interface ComposioLike {
   connectedAccounts: {
+    list(query: {
+      userIds: string[];
+      authConfigIds: string[];
+      statuses: string[];
+    }): Promise<{ items: ConnectedAccountSummary[] }>;
     link(userId: string, authConfigId: string): Promise<ConnectionRequest>;
   };
 }
 
 export const CONSENT_TIMEOUT_MS = 300_000;
+
+/** The status Composio gives a connection that has completed consent and can execute tools. */
+const ACTIVE = 'ACTIVE';
+
+function reportConnected(write: (line: string) => void, id: string): void {
+  write('');
+  write('Connected. Add this line to your .env:');
+  write(`  COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID=${id}`);
+  write('');
+  write(
+    'Then set GMAIL_LIVE_MODE=true and list the recipients you allow in GMAIL_ALLOWED_RECIPIENTS.',
+  );
+}
 
 export async function connectGmail(
   composio: ComposioLike,
@@ -28,6 +51,23 @@ export async function connectGmail(
   authConfigId: string,
   write: (line: string) => void,
 ): Promise<string> {
+  // Asking first is what makes the command safe to re-run. `link` refuses outright when an active
+  // account already exists rather than handing back the one it found, so an operator who lost the
+  // ID — or who simply ran the script twice — would otherwise be told that having consented is an
+  // error, with no way to recover the value except through the dashboard.
+  const existing = await composio.connectedAccounts.list({
+    userIds: [userId],
+    authConfigIds: [authConfigId],
+    statuses: [ACTIVE],
+  });
+  const connected = existing.items[0];
+  if (connected !== undefined) {
+    write('');
+    write(`This user already has an active Gmail connection; consent is not needed again.`);
+    reportConnected(write, connected.id);
+    return connected.id;
+  }
+
   const request = await composio.connectedAccounts.link(userId, authConfigId);
   const url = request.redirectUrl ?? null;
   if (url === null) {
@@ -41,13 +81,7 @@ export async function connectGmail(
   write('Waiting for the consent to complete (5 minute timeout)...');
 
   const connection = await request.waitForConnection(CONSENT_TIMEOUT_MS);
-  write('');
-  write('Connected. Add this line to your .env:');
-  write(`  COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID=${connection.id}`);
-  write('');
-  write(
-    'Then set GMAIL_LIVE_MODE=true and list the recipients you allow in GMAIL_ALLOWED_RECIPIENTS.',
-  );
+  reportConnected(write, connection.id);
   return connection.id;
 }
 
