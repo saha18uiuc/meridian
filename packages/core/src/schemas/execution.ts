@@ -78,7 +78,9 @@ export const StartLiveRunResponseSchema = z
     temporalWorkflowId: z.string().nullable(),
     temporalRunId: z.string().nullable(),
     wasExisting: z.boolean(),
-    action: z.enum(['started', 'signalled', 'manual_review']),
+    // `already_processed` is the redelivery answer: this exact message has an execution that has
+    // already finished, so no run is started and the caller is pointed at the run that happened.
+    action: z.enum(['started', 'signalled', 'manual_review', 'already_processed']),
   })
   .strict();
 export type StartLiveRunResponse = z.infer<typeof StartLiveRunResponseSchema>;

@@ -40,6 +40,8 @@ export interface ExecutionSummary {
   businessKey: string | null;
   status: string;
   outcome: string | null;
+  /** False for intake triage decisions, which reach manual review without starting an agent. */
+  ranWorkflow: boolean;
   steps: number;
   actions: { status: string; idempotencyKey: string; type: string }[];
   events: number;
@@ -69,11 +71,13 @@ function outcomeOf(summary: unknown): string | null {
 export async function waitForSettled(
   executionIds: readonly string[],
   timeoutMs = SETTLE_TIMEOUT_MS,
+  onPoll?: () => Promise<void>,
 ): Promise<boolean> {
   if (executionIds.length === 0) return true;
   const client = opsClient();
   return waitFor(
     async () => {
+      if (onPoll !== undefined) await onPoll();
       const { data, error } = await client
         .from('executions')
         .select('execution_id, status')
@@ -92,7 +96,7 @@ export async function summarize(executionIds: readonly string[]): Promise<Execut
     // One string literal, not a concatenation: PostgREST's typings parse the select at the type
     // level, and a concatenated string widens to `string` and loses every column type.
     .select(
-      'execution_id, case_key, business_key, status, output_summary_json, execution_steps(step_execution_id), execution_actions(status, idempotency_key, action_type), execution_events(event_id)',
+      'execution_id, case_key, business_key, status, temporal_workflow_id, output_summary_json, execution_steps(step_execution_id), execution_actions(status, idempotency_key, action_type), execution_events(event_id)',
     )
     .in('execution_id', [...executionIds])
     .order('created_at', { ascending: true });
@@ -104,6 +108,7 @@ export async function summarize(executionIds: readonly string[]): Promise<Execut
     businessKey: row.business_key,
     status: row.status,
     outcome: outcomeOf(row.output_summary_json),
+    ranWorkflow: row.temporal_workflow_id !== null,
     steps: row.execution_steps.length,
     actions: row.execution_actions.map((action) => ({
       status: action.status,
@@ -126,11 +131,14 @@ export function assertDemo(summaries: readonly ExecutionSummary[]): DemoAssertio
     summaries.map((summary) => `${summary.caseKey}=${summary.status}`).join(', '),
   );
 
-  const completed = summaries.filter((summary) => summary.outcome === 'completed');
+  // `ready`, which is this agent's success outcome: the shipment is complete, consistent, and can
+  // be filed. `completed` is in the vocabulary for agents whose last act is to do something rather
+  // than to conclude something, and asserting on it here would demand a word this spec never says.
+  const cleared = summaries.filter((summary) => summary.outcome === 'ready');
   add(
-    'at least one shipment completed',
-    completed.length > 0,
-    `${String(completed.length)} completed`,
+    'at least one shipment cleared for filing',
+    cleared.length > 0,
+    `${String(cleared.length)} ready`,
   );
 
   const asked = summaries.filter((summary) => summary.outcome === 'needs_information');
@@ -147,10 +155,15 @@ export function assertDemo(summaries: readonly ExecutionSummary[]): DemoAssertio
     `${String(escalated.length)} manual_review`,
   );
 
+  // Only the runs that reached an agent. Intake routes a message with no business key — or with
+  // several that disagree — to manual review without starting a workflow, so those executions have
+  // no steps by design, and a check that counted them would be asking the triage decision to
+  // produce work it deliberately refused to start.
+  const ranAgent = summaries.filter((summary) => summary.ranWorkflow);
   add(
-    'every execution recorded at least one step',
-    summaries.every((summary) => summary.steps > 0),
-    summaries.map((summary) => `${summary.caseKey}=${String(summary.steps)}`).join(', '),
+    'every execution that reached the agent recorded at least one step',
+    ranAgent.every((summary) => summary.steps > 0),
+    ranAgent.map((summary) => `${summary.caseKey}=${String(summary.steps)}`).join(', '),
   );
 
   const actions = summaries.flatMap((summary) => summary.actions);
@@ -239,9 +252,15 @@ export async function demoRun(options: { deploymentKey: string }): Promise<DemoR
   // watching a terminal during a scripted demo, so the operator's part is played here — the same
   // signal the review UI sends, through the same path. Without it that run waits its full 24-hour
   // timeout and the demo reports a hang where the design intends a handoff.
-  const answered = await answerPendingHandoffs(executionIds);
-
-  const settled = await waitForSettled(executionIds);
+  //
+  // Answering happens on every settle poll rather than once up front, because the question is asked
+  // several steps into the run: a single early look would sometimes find nothing and hand back a
+  // hang that depended only on how fast the worker got there.
+  const answers = new Set<string>();
+  const settled = await waitForSettled(executionIds, undefined, async () => {
+    await answerPendingHandoffs(executionIds, answers);
+  });
+  const answered = answers.size;
   const summaries = await summarize(executionIds);
   const assertions = settled
     ? assertDemo(summaries)
@@ -271,61 +290,52 @@ export async function demoRun(options: { deploymentKey: string }): Promise<DemoR
  * the UI. Answering signals the workflow and records the answer, in that order — a signal that
  * lands with no record would leave the run resumed and the history silent about why.
  */
-async function answerPendingHandoffs(executionIds: readonly string[]): Promise<number> {
-  if (executionIds.length === 0) return 0;
+async function answerPendingHandoffs(
+  executionIds: readonly string[],
+  already: Set<string>,
+): Promise<void> {
   const client = opsClient();
-
-  // The wait is bounded and short: the request event is written by an activity that runs after the
-  // workflow has already been through several steps, so it is not there the instant intake returns.
-  const requests = new Map<string, { executionId: string; workflowId: string }>();
-  await waitFor(
-    async () => {
-      const { data, error } = await client
-        .from('execution_events')
-        .select('execution_id, event_key, payload_json')
-        .in('execution_id', [...executionIds])
-        .like('event_key', 'handoff:requested:%');
-      if (error !== null) return false;
-
-      for (const row of data ?? []) {
-        const payload = row.payload_json as { requestId?: unknown };
-        if (typeof payload.requestId !== 'string') continue;
-        const { data: execution } = await client
-          .from('executions')
-          .select('temporal_workflow_id, status')
-          .eq('execution_id', row.execution_id)
-          .single();
-        if (execution?.temporal_workflow_id == null) continue;
-        if (TERMINAL_STATUSES.has(execution.status)) continue;
-        requests.set(payload.requestId, {
-          executionId: row.execution_id,
-          workflowId: execution.temporal_workflow_id,
-        });
-      }
-      return requests.size > 0;
-    },
-    { timeoutMs: 30_000, intervalMs: 1000 },
-  );
+  const { data, error } = await client
+    .from('execution_events')
+    .select('execution_id, event_key, payload_json')
+    .in('execution_id', [...executionIds])
+    .like('event_key', 'handoff:requested:%');
+  if (error !== null) return;
 
   const temporal = await opsTemporalClient();
-  for (const [requestId, target] of requests) {
-    await temporal.workflow.getHandle(target.workflowId).signal(HUMAN_DECISION_SIGNAL, {
-      requestId,
-      decision: 'escalated',
-      notes: 'answered by the receiving specialist during the demo',
-    });
+  for (const row of data ?? []) {
+    const payload = row.payload_json as { requestId?: unknown };
+    if (typeof payload.requestId !== 'string') continue;
+    const requestId = payload.requestId;
+    if (already.has(requestId)) continue;
+
+    const { data: execution } = await client
+      .from('executions')
+      .select('temporal_workflow_id, status')
+      .eq('execution_id', row.execution_id)
+      .single();
+    if (execution?.temporal_workflow_id == null) continue;
+    if (TERMINAL_STATUSES.has(execution.status)) continue;
+
+    already.add(requestId);
+    await temporal.workflow
+      .getHandle(execution.temporal_workflow_id)
+      .signal(HUMAN_DECISION_SIGNAL, {
+        requestId,
+        decision: 'escalated',
+        notes: 'answered by the receiving specialist during the demo',
+      });
     await appendEvent(client, {
-      executionId: target.executionId,
+      executionId: row.execution_id,
       stepExecutionId: null,
       // `evidence`, not `state_transition`: the run's status does not change because a human
       // answered. What changed is that it now holds a fact it did not have before.
       eventType: 'evidence',
       eventKey: `human-decision:${requestId}`,
       payload: { requestId, decision: 'escalated', source: 'demo' },
-      idempotencyKey: sha256Hex(['human-decision', target.executionId, requestId].join('|')),
+      idempotencyKey: sha256Hex(['human-decision', row.execution_id, requestId].join('|')),
     });
   }
-  return requests.size;
 }
 
 function render(report: DemoReport): string {

@@ -77,6 +77,6 @@ export async function startLiveRun(
     temporalWorkflowId: result.temporalWorkflowId,
     temporalRunId: result.temporalRunId,
     wasExisting: result.wasExisting,
-    action: result.action === 'signalled' ? 'signalled' : 'started',
+    action: result.action,
   };
 }

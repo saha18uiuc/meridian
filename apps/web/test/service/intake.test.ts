@@ -337,6 +337,61 @@ describe('a late message after the case has closed', () => {
     expect(input.previousExecutionId).toBe(first.executionId);
     expect(input.lateFollowUp).toBe(true);
   });
+
+  it('treats a redelivery of the same message as already processed', async () => {
+    const temporal = fakeTemporal();
+    const key = nextKey();
+    const ref = messageRef(key);
+    const first = await intake(temporal.client, key, ref);
+    if (first.action === 'manual_review') throw new Error('unreachable');
+
+    await service.rpc('complete_execution', {
+      p_execution_id: first.executionId,
+      p_status: 'passed',
+      p_output_summary: { outcome: 'ready_to_receive' } as never,
+      p_diff_summary: null as never,
+    });
+    temporal.close(first.temporalWorkflowId);
+
+    // The same provider message ID again — a redelivery, not a new document. The case key is
+    // derived from that ID, so the row already exists and has already reported an outcome. Working
+    // it a second time would re-send whatever the first run sent.
+    const again = await intake(temporal.client, key, ref);
+    if (again.action === 'manual_review') throw new Error('unreachable');
+
+    expect(again.action).toBe('already_processed');
+    expect(again.executionId).toBe(first.executionId);
+    expect(temporal.starts).toHaveLength(1);
+    expect(await executionsFor(first.temporalWorkflowId)).toHaveLength(1);
+  });
+});
+
+describe('a run Temporal still has open after the row says it finished', () => {
+  it('joins that run rather than writing a row no workflow will ever name', async () => {
+    const temporal = fakeTemporal();
+    const key = nextKey();
+    const first = await intake(temporal.client, key);
+    if (first.action === 'manual_review') throw new Error('unreachable');
+
+    // The gap this closes: the workflow has written its terminal status but its run has not yet
+    // closed. Reading only the row, intake would call this a late follow-up, write a second row,
+    // and hand the message to `signalWithStart` — which, finding the run open, would deliver it to
+    // a workflow carrying the first execution ID and strand the row it just wrote in `running`.
+    await service.rpc('complete_execution', {
+      p_execution_id: first.executionId,
+      p_status: 'passed',
+      p_output_summary: { outcome: 'ready_to_receive' } as never,
+      p_diff_summary: null as never,
+    });
+
+    const second = await intake(temporal.client, key, messageRef(key));
+    if (second.action === 'manual_review') throw new Error('unreachable');
+
+    expect(second.action).toBe('signalled');
+    expect(second.executionId).toBe(first.executionId);
+    expect(temporal.starts).toHaveLength(1);
+    expect(await executionsFor(first.temporalWorkflowId)).toHaveLength(1);
+  });
 });
 
 describe('the intake path itself', () => {
