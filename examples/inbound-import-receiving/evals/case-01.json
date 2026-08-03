@@ -1,0 +1,29 @@
+{
+  "caseKey": "case-01",
+  "description": "A complete arrival notice with invoice, packing list, and both certificates.",
+  "specTrace": "Rule \"Does each batch have exactly one certificate of analysis?\" branch \"exactly one certificate per batch\" leads to Outcome \"Ready to receive\".",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/happy-path.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/packing-list-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77A.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77B.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-01.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "MSKU1234565",
+    "missingFields": [],
+    "externalActions": [],
+    "stepInstanceKeys": [
+      "correlate:MSKU1234565",
+      "extract:MSKU1234565",
+      "validate-good:INV-1024:LINE-1",
+      "validate-good:INV-1024:LINE-2",
+      "decide:MSKU1234565"
+    ],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

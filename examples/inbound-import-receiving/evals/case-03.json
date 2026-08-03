@@ -1,0 +1,23 @@
+{
+  "caseKey": "case-03",
+  "description": "The same invoice number arrives twice with different line items.",
+  "specTrace": "Rule \"Has this invoice already been received?\" branch \"invoice belongs to a different shipment\" leads to Outcome \"Rejected as inconsistent\".",
+  "inputRefs": {
+    "emailPaths": [
+      "examples/inbound-import-receiving/fixtures/emails/happy-path.eml",
+      "examples/inbound-import-receiving/fixtures/emails/conflicting-invoice.eml"
+    ],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024-revised.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-03.expected.json"
+  },
+  "expected": {
+    "outcome": "rejected",
+    "businessKey": "MSKU1234565",
+    "externalActions": [],
+    "stepInstanceKeys": ["decide:MSKU1234565"],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

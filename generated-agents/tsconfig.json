@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "types": []
+  },
+  "include": ["index.ts", "*/v*/**/*.ts"],
+  "references": [{ "path": "../packages/core" }, { "path": "../packages/agent-kit" }]
+}

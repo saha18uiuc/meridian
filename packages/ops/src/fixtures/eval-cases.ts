@@ -1,0 +1,598 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
+import type { AgentDecision, EvalCase } from '@meridian/core/schemas';
+import { CONTAINERS, MAWB_AIR, SCALE_GOODS } from './documents.js';
+import { repoPath } from '../lib/state.js';
+
+/**
+ * Author the fifteen eval cases and their expected decision documents.
+ *
+ * Every expectation below traces to a statement on the frozen board, and the trace is recorded in
+ * the case file itself rather than in a document someone has to remember to update. An expectation
+ * with no trace would be this project doing the exact thing it exists to prevent: encoding business
+ * policy nobody agreed to, in a place nobody reviews.
+ *
+ * The cases are generated rather than hand-written because the expected documents repeat a lot of
+ * structure, and a copy-paste slip in a fixture is a test that passes for the wrong reason.
+ */
+
+const CASE_DIR = 'examples/inbound-import-receiving/evals';
+const EXPECTED_DIR = 'examples/inbound-import-receiving/fixtures/expected';
+const EMAILS = 'examples/inbound-import-receiving/fixtures/emails';
+const ATTACHMENTS = 'examples/inbound-import-receiving/fixtures/attachments';
+
+type Failure = AgentDecision['validationFailures'][number];
+
+interface Draft {
+  caseKey: string;
+  description: string;
+  specTrace: string;
+  emails: string[];
+  attachments: string[];
+  expected: EvalCase['expected'];
+  decision: AgentDecision | null;
+}
+
+function summary(input: {
+  container?: string | null;
+  mawb?: string | null;
+  invoices?: string[];
+  batches?: string[];
+  goods?: number;
+  validGoods?: number;
+}): AgentDecision['shipmentSummary'] {
+  return {
+    containerNumber: input.container ?? null,
+    mawb: input.mawb ?? null,
+    invoiceNumbers: input.invoices ?? [],
+    batchNumbers: input.batches ?? [],
+    goodsCount: input.goods ?? 0,
+    validGoodsCount: input.validGoods ?? 0,
+  };
+}
+
+function missingFieldFailure(lineKey: string, field: string, label: string): Failure {
+  return {
+    scope: 'good',
+    key: lineKey,
+    field,
+    message: `Good ${lineKey} is missing its ${label}.`,
+  };
+}
+
+function batchFailure(key: string, message: string): Failure {
+  return { scope: 'batch', key, field: 'certificateOfAnalysis', message };
+}
+
+function missingList(failures: readonly Failure[]): string[] {
+  return [...new Set(failures.map((f) => `${f.scope}:${f.key}:${f.field}`))].sort();
+}
+
+const EMPTY_SUMMARY = summary({});
+
+function scaleBatches(): string[] {
+  return Array.from({ length: SCALE_GOODS }, (_, i) => `SCL${String(i + 1).padStart(2, '0')}`);
+}
+
+function scaleStepKeys(): string[] {
+  return Array.from(
+    { length: SCALE_GOODS },
+    (_, i) => `validate-good:INV-1040:LINE-${String(i + 1).padStart(2, '0')}`,
+  );
+}
+
+export function drafts(): Draft[] {
+  const case02Failures: Failure[] = [
+    missingFieldFailure('LINE-1', 'andaNumber', 'ANDA number'),
+    missingFieldFailure('LINE-1', 'ndcNumber', 'NDC number'),
+  ];
+
+  const case05Failures: Failure[] = [
+    batchFailure('C31D', 'Batch C31D has no certificate of analysis.'),
+  ];
+
+  const case06Failures: Failure[] = [
+    batchFailure('B77B', 'Batch B77B has no certificate of analysis.'),
+    batchFailure(
+      'B77C',
+      'A certificate of analysis names batch B77C, which appears on no invoice in this shipment.',
+    ),
+  ];
+
+  return [
+    {
+      caseKey: 'case-01',
+      description: 'A complete arrival notice with invoice, packing list, and both certificates.',
+      specTrace:
+        'Rule "Does each batch have exactly one certificate of analysis?" branch "exactly one certificate per batch" leads to Outcome "Ready to receive".',
+      emails: ['happy-path.eml'],
+      attachments: ['invoice-1024.pdf', 'packing-list-1024.pdf', 'coa-B77A.pdf', 'coa-B77B.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.happyPath,
+        missingFields: [],
+        externalActions: [],
+        stepInstanceKeys: [
+          `correlate:${CONTAINERS.happyPath}`,
+          `extract:${CONTAINERS.happyPath}`,
+          'validate-good:INV-1024:LINE-1',
+          'validate-good:INV-1024:LINE-2',
+          `decide:${CONTAINERS.happyPath}`,
+        ],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024'],
+          batches: ['B77A', 'B77B'],
+          goods: 2,
+          validGoods: 2,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-02',
+      description: 'A good missing two of the five required regulatory identifiers.',
+      specTrace:
+        'Rule "Does every good carry the five required fields?" branch "required product fields missing" leads to Action "Ask the forwarder for the missing information".',
+      emails: ['missing-fields.eml'],
+      attachments: ['invoice-1025.pdf', 'coa-B90X.pdf'],
+      expected: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingFields,
+        missingFields: missingList(case02Failures),
+        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        stepInstanceKeys: [
+          `extract:${CONTAINERS.missingFields}`,
+          'validate-good:INV-1025:LINE-1',
+          `respond:${CONTAINERS.missingFields}`,
+        ],
+        evidenceKeys: [`assessment:${CONTAINERS.missingFields}`],
+      },
+      decision: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingFields,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.missingFields,
+          invoices: ['INV-1025'],
+          batches: ['B90X'],
+          goods: 1,
+          validGoods: 0,
+        }),
+        missingInformation: missingList(case02Failures),
+        validationFailures: case02Failures,
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-03',
+      description: 'The same invoice number arrives twice with different line items.',
+      specTrace:
+        'Rule "Has this invoice already been received?" branch "invoice belongs to a different shipment" leads to Outcome "Rejected as inconsistent".',
+      emails: ['happy-path.eml', 'conflicting-invoice.eml'],
+      attachments: ['invoice-1024.pdf', 'invoice-1024-revised.pdf'],
+      expected: {
+        outcome: 'rejected',
+        businessKey: CONTAINERS.happyPath,
+        externalActions: [],
+        stepInstanceKeys: [`decide:${CONTAINERS.happyPath}`],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'rejected',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024'],
+          batches: ['B77A', 'B77B'],
+          goods: 2,
+          validGoods: 2,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-04',
+      description: 'One batch appears on two different invoices in the same shipment.',
+      specTrace:
+        'Rule "Has this invoice already been received?" branch "invoice belongs to a different shipment" leads to Outcome "Rejected as inconsistent"; a batch is one physical lot.',
+      emails: ['happy-path.eml', 'duplicate-batch.eml'],
+      attachments: ['invoice-1024.pdf', 'invoice-1028.pdf'],
+      expected: {
+        outcome: 'rejected',
+        businessKey: CONTAINERS.happyPath,
+        externalActions: [],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'rejected',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024', 'INV-1028'],
+          batches: ['B77A', 'B77B'],
+          goods: 3,
+          validGoods: 3,
+        }),
+        missingInformation: [
+          'batch:B77A:batchNumber',
+          'batch:B77A:certificateOfAnalysis',
+          'batch:B77B:certificateOfAnalysis',
+        ],
+        validationFailures: [
+          {
+            scope: 'batch',
+            key: 'B77A',
+            field: 'batchNumber',
+            message: 'Batch B77A appears on more than one good in this shipment.',
+          },
+          batchFailure('B77A', 'Batch B77A has no certificate of analysis.'),
+          batchFailure('B77B', 'Batch B77B has no certificate of analysis.'),
+        ],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-05',
+      description: 'An invoiced batch with no certificate of analysis.',
+      specTrace:
+        'Rule "Does each batch have exactly one certificate of analysis?" branch "certificate missing or ambiguous" leads to Action "Ask the forwarder for the missing information".',
+      emails: ['missing-coa.eml'],
+      attachments: ['invoice-1026.pdf'],
+      expected: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingCoa,
+        missingFields: missingList(case05Failures),
+        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        stepInstanceKeys: [`respond:${CONTAINERS.missingCoa}`],
+        evidenceKeys: [`assessment:${CONTAINERS.missingCoa}`],
+      },
+      decision: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingCoa,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.missingCoa,
+          invoices: ['INV-1026'],
+          batches: ['C31D'],
+          goods: 1,
+          validGoods: 1,
+        }),
+        missingInformation: missingList(case05Failures),
+        validationFailures: case05Failures,
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-06',
+      description:
+        'A certificate names a batch that appears on no invoice, and one batch has none.',
+      specTrace:
+        'Rule "Does each batch have exactly one certificate of analysis?" requires the match in both directions.',
+      emails: ['coa-mismatch.eml'],
+      attachments: ['invoice-1024.pdf', 'coa-B77A.pdf', 'coa-B77C.pdf'],
+      expected: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.happyPath,
+        missingFields: missingList(case06Failures),
+        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024'],
+          batches: ['B77A', 'B77B'],
+          goods: 2,
+          validGoods: 2,
+        }),
+        missingInformation: missingList(case06Failures),
+        validationFailures: case06Failures,
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-07',
+      description: 'An air shipment correlated by master air waybill rather than container.',
+      specTrace:
+        'Input "Arrival notice email" declares correlationKeys containerNumber and mawb; either is sufficient.',
+      emails: ['mawb-only.eml'],
+      attachments: ['invoice-1027.pdf', 'coa-D14E.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: MAWB_AIR,
+        externalActions: [],
+        stepInstanceKeys: [`correlate:${MAWB_AIR}`, 'validate-good:INV-1027:LINE-1'],
+        evidenceKeys: [`assessment:${MAWB_AIR}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: MAWB_AIR,
+        reason: '',
+        shipmentSummary: summary({
+          mawb: MAWB_AIR,
+          invoices: ['INV-1027'],
+          batches: ['D14E'],
+          goods: 1,
+          validGoods: 1,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-08',
+      description: 'A message with no valid container number or air waybill.',
+      specTrace:
+        'Rule "Is a shipment business key present?" branch "no usable business key" leads to Outcome "Manual review required".',
+      emails: ['no-business-key.eml'],
+      attachments: ['scanned-invoice.pdf'],
+      expected: {
+        outcome: 'manual_review',
+        businessKey: null,
+        externalActions: [],
+      },
+      decision: {
+        outcome: 'manual_review',
+        businessKey: null,
+        reason: '',
+        shipmentSummary: EMPTY_SUMMARY,
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-09',
+      description: 'Two different valid container numbers in one message.',
+      specTrace:
+        'Rule "Is a shipment business key present?" branch "no usable business key" covers the conflict case explicitly.',
+      emails: ['conflicting-keys.eml'],
+      attachments: [],
+      expected: {
+        outcome: 'manual_review',
+        businessKey: null,
+        externalActions: [],
+      },
+      decision: {
+        outcome: 'manual_review',
+        businessKey: null,
+        reason: '',
+        shipmentSummary: EMPTY_SUMMARY,
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-10',
+      description: 'A follow-up message that redelivers an invoice already held for the shipment.',
+      specTrace:
+        'Rule "Has this invoice already been received?" branch "invoice already received on this shipment" leads to Outcome "Already received".',
+      emails: ['happy-path.eml', 'duplicate-invoice.eml'],
+      attachments: ['invoice-1024.pdf'],
+      expected: {
+        outcome: 'completed',
+        businessKey: CONTAINERS.happyPath,
+        externalActions: [],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'completed',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024'],
+          batches: ['B77A', 'B77B'],
+          goods: 2,
+          validGoods: 2,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-11',
+      description: 'A transient extraction failure that succeeds on the next attempt.',
+      specTrace:
+        'Rule "Retry a transient extraction failure" bounds retries at three attempts before the exception path.',
+      emails: ['happy-path.eml'],
+      attachments: ['invoice-1024.pdf', 'packing-list-1024.pdf', 'coa-B77A.pdf', 'coa-B77B.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.happyPath,
+        externalActions: [],
+        evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.happyPath,
+          invoices: ['INV-1024'],
+          batches: ['B77A', 'B77B'],
+          goods: 2,
+          validGoods: 2,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-12',
+      description: 'A scanned document with no text layer while OCR is disabled.',
+      specTrace:
+        'Rule "Escalate an unexpected failure" routes a document the process cannot read to Outcome "Manual review required".',
+      emails: ['scanned-document.eml'],
+      attachments: ['scanned-invoice.pdf'],
+      expected: {
+        outcome: 'manual_review',
+        businessKey: CONTAINERS.scanned,
+        externalActions: [],
+        stepInstanceKeys: [`escalate:${CONTAINERS.scanned}`],
+        evidenceKeys: [`escalation:${CONTAINERS.scanned}`],
+        humanDecisionRequired: true,
+      },
+      decision: {
+        outcome: 'manual_review',
+        businessKey: CONTAINERS.scanned,
+        reason: '',
+        shipmentSummary: summary({ container: CONTAINERS.scanned }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-13',
+      description: 'A certificate arrives with no commercial invoice, so a specialist is asked.',
+      specTrace:
+        'Input "Commercial invoice" is required:true, and Action "Escalate to a receiving specialist" is the declared human handoff.',
+      emails: ['late-followup.eml'],
+      attachments: ['coa-B77C.pdf'],
+      expected: {
+        outcome: 'manual_review',
+        businessKey: CONTAINERS.happyPath,
+        externalActions: [],
+        stepInstanceKeys: [`escalate:${CONTAINERS.happyPath}`],
+        evidenceKeys: [`escalation:${CONTAINERS.happyPath}`],
+        humanDecisionRequired: true,
+      },
+      decision: {
+        outcome: 'manual_review',
+        businessKey: CONTAINERS.happyPath,
+        reason: '',
+        shipmentSummary: summary({ container: CONTAINERS.happyPath }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-14',
+      description: `A shipment with ${String(SCALE_GOODS)} goods validated in bounded parallel batches.`,
+      specTrace:
+        'Rule "Does every good carry the five required fields?" applies per good; step identity is step_instance_key, never sequence_no.',
+      emails: ['scale-shipment.eml'],
+      attachments: ['invoice-scale.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.scale,
+        externalActions: [],
+        stepInstanceKeys: scaleStepKeys(),
+        evidenceKeys: [`assessment:${CONTAINERS.scale}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.scale,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.scale,
+          invoices: ['INV-1040'],
+          batches: scaleBatches(),
+          goods: SCALE_GOODS,
+          validGoods: SCALE_GOODS,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
+
+    {
+      caseKey: 'case-15',
+      description: 'The agent is replayed after dispatching an email; the send is not repeated.',
+      specTrace:
+        'Action "Ask the forwarder for the missing information" states exactly one request per shipment per round.',
+      emails: ['missing-coa.eml'],
+      attachments: ['invoice-1026.pdf'],
+      expected: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingCoa,
+        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        evidenceKeys: [`assessment:${CONTAINERS.missingCoa}`],
+      },
+      decision: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.missingCoa,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.missingCoa,
+          invoices: ['INV-1026'],
+          batches: ['C31D'],
+          goods: 1,
+          validGoods: 1,
+        }),
+        missingInformation: missingList(case05Failures),
+        validationFailures: case05Failures,
+        emailResponse: null,
+      },
+    },
+  ];
+}
+
+export async function main(_argv: readonly string[] = []): Promise<void> {
+  mkdirSync(repoPath(CASE_DIR), { recursive: true });
+  mkdirSync(repoPath(EXPECTED_DIR), { recursive: true });
+
+  const all = drafts();
+  if (all.length !== 15) throw new Error(`expected 15 eval cases, built ${String(all.length)}`);
+
+  for (const draft of all) {
+    const evalCase: EvalCase = {
+      caseKey: draft.caseKey,
+      description: draft.description,
+      specTrace: draft.specTrace,
+      inputRefs: {
+        emailPaths: draft.emails.map((name) => `${EMAILS}/${name}`),
+        attachmentPaths: draft.attachments.map((name) => `${ATTACHMENTS}/${name}`),
+        expectedPath: `${EXPECTED_DIR}/${draft.caseKey}.expected.json`,
+      },
+      expected: draft.expected,
+    };
+    writeFileSync(
+      repoPath(`${CASE_DIR}/${draft.caseKey}.json`),
+      `${JSON.stringify(evalCase, null, 2)}\n`,
+      'utf8',
+    );
+    writeFileSync(
+      repoPath(`${EXPECTED_DIR}/${draft.caseKey}.expected.json`),
+      `${JSON.stringify({ caseKey: draft.caseKey, decision: draft.decision }, null, 2)}\n`,
+      'utf8',
+    );
+  }
+
+  process.stdout.write(`${JSON.stringify({ cases: all.length }, null, 2)}\n`);
+}

@@ -1,0 +1,15 @@
+Message-ID: <no-business-key@forwarder.example>
+X-Meridian-Thread: thread-no-business-key
+Date: 2026-02-06T10:15:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Documents for next week's arrival
+X-Meridian-Attachments: scanned-invoice.pdf
+
+Hi,
+
+Attaching paperwork for the shipment we discussed on the call. Reference number
+to follow once the carrier confirms.
+
+Regards,
+Global Forwarding Operations

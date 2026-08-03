@@ -1,0 +1,32 @@
+{
+  "caseKey": "case-06",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "MSKU1234565",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "MSKU1234565",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1024"],
+      "batchNumbers": ["B77A", "B77B"],
+      "goodsCount": 2,
+      "validGoodsCount": 2
+    },
+    "missingInformation": ["batch:B77B:certificateOfAnalysis", "batch:B77C:certificateOfAnalysis"],
+    "validationFailures": [
+      {
+        "scope": "batch",
+        "key": "B77B",
+        "field": "certificateOfAnalysis",
+        "message": "Batch B77B has no certificate of analysis."
+      },
+      {
+        "scope": "batch",
+        "key": "B77C",
+        "field": "certificateOfAnalysis",
+        "message": "A certificate of analysis names batch B77C, which appears on no invoice in this shipment."
+      }
+    ],
+    "emailResponse": null
+  }
+}

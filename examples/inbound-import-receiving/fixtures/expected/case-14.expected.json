@@ -1,0 +1,44 @@
+{
+  "caseKey": "case-14",
+  "decision": {
+    "outcome": "ready",
+    "businessKey": "OOLU1234567",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "OOLU1234567",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1040"],
+      "batchNumbers": [
+        "SCL01",
+        "SCL02",
+        "SCL03",
+        "SCL04",
+        "SCL05",
+        "SCL06",
+        "SCL07",
+        "SCL08",
+        "SCL09",
+        "SCL10",
+        "SCL11",
+        "SCL12",
+        "SCL13",
+        "SCL14",
+        "SCL15",
+        "SCL16",
+        "SCL17",
+        "SCL18",
+        "SCL19",
+        "SCL20",
+        "SCL21",
+        "SCL22",
+        "SCL23",
+        "SCL24"
+      ],
+      "goodsCount": 24,
+      "validGoodsCount": 24
+    },
+    "missingInformation": [],
+    "validationFailures": [],
+    "emailResponse": null
+  }
+}

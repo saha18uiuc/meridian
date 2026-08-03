@@ -1,0 +1,19 @@
+{
+  "caseKey": "case-13",
+  "decision": {
+    "outcome": "manual_review",
+    "businessKey": "MSKU1234565",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "MSKU1234565",
+      "mawb": null,
+      "invoiceNumbers": [],
+      "batchNumbers": [],
+      "goodsCount": 0,
+      "validGoodsCount": 0
+    },
+    "missingInformation": [],
+    "validationFailures": [],
+    "emailResponse": null
+  }
+}

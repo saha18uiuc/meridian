@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/agent-kit" },
+    { "path": "./generated-agents" },
+    { "path": "./packages/evals" },
+    { "path": "./packages/ops" },
+    { "path": "./apps/backend" },
+    { "path": "./tsconfig.scripts.json" },
+    { "path": "./tsconfig.tests.json" }
+  ]
+}

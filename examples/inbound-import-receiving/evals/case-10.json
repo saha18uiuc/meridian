@@ -1,0 +1,19 @@
+{
+  "caseKey": "case-10",
+  "description": "A follow-up message that redelivers an invoice already held for the shipment.",
+  "specTrace": "Rule \"Has this invoice already been received?\" branch \"invoice already received on this shipment\" leads to Outcome \"Already received\".",
+  "inputRefs": {
+    "emailPaths": [
+      "examples/inbound-import-receiving/fixtures/emails/happy-path.eml",
+      "examples/inbound-import-receiving/fixtures/emails/duplicate-invoice.eml"
+    ],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf"],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-10.expected.json"
+  },
+  "expected": {
+    "outcome": "completed",
+    "businessKey": "MSKU1234565",
+    "externalActions": [],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

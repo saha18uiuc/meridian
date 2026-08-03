@@ -1,0 +1,19 @@
+{
+  "caseKey": "case-11",
+  "decision": {
+    "outcome": "ready",
+    "businessKey": "MSKU1234565",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "MSKU1234565",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1024"],
+      "batchNumbers": ["B77A", "B77B"],
+      "goodsCount": 2,
+      "validGoodsCount": 2
+    },
+    "missingInformation": [],
+    "validationFailures": [],
+    "emailResponse": null
+  }
+}

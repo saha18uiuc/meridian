@@ -1,0 +1,20 @@
+{
+  "caseKey": "case-07",
+  "description": "An air shipment correlated by master air waybill rather than container.",
+  "specTrace": "Input \"Arrival notice email\" declares correlationKeys containerNumber and mawb; either is sufficient.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/mawb-only.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1027.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-D14E.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-07.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "020-12345675",
+    "externalActions": [],
+    "stepInstanceKeys": ["correlate:020-12345675", "validate-good:INV-1027:LINE-1"],
+    "evidenceKeys": ["assessment:020-12345675"]
+  }
+}

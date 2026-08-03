@@ -1,0 +1,37 @@
+{
+  "name": "@meridian/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@meridian/agent-kit": "workspace:*",
+    "@meridian/core": "workspace:*",
+    "@meridian/evals": "workspace:*",
+    "@meridian/ops": "workspace:*",
+    "@supabase/ssr": "0.12.4",
+    "@supabase/supabase-js": "2.111.0",
+    "@temporalio/client": "1.21.1",
+    "@xyflow/react": "12.11.2",
+    "next": "16.2.12",
+    "openai": "7.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "server-only": "0.0.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.62.1",
+    "@testing-library/jest-dom": "7.0.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.4",
+    "jsdom": "30.0.1"
+  }
+}

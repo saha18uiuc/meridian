@@ -1,0 +1,27 @@
+{
+  "caseKey": "case-06",
+  "description": "A certificate names a batch that appears on no invoice, and one batch has none.",
+  "specTrace": "Rule \"Does each batch have exactly one certificate of analysis?\" requires the match in both directions.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/coa-mismatch.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77A.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77C.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-06.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "MSKU1234565",
+    "missingFields": ["batch:B77B:certificateOfAnalysis", "batch:B77C:certificateOfAnalysis"],
+    "externalActions": [
+      {
+        "actionType": "mail.send",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

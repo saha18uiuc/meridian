@@ -1,0 +1,15 @@
+Message-ID: <missing-coa@forwarder.example>
+X-Meridian-Thread: thread-missing-coa
+Date: 2026-02-05T14:22:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Container CMAU9988771 - invoice attached
+X-Meridian-Attachments: invoice-1026.pdf
+
+Hello,
+
+Invoice for container CMAU9988771 attached. Batch C31D is on the invoice; the
+certificate of analysis is still with the manufacturer.
+
+Regards,
+Global Forwarding Operations

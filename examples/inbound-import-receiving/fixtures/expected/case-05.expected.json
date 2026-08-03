@@ -1,0 +1,26 @@
+{
+  "caseKey": "case-05",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "CMAU9988771",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "CMAU9988771",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1026"],
+      "batchNumbers": ["C31D"],
+      "goodsCount": 1,
+      "validGoodsCount": 1
+    },
+    "missingInformation": ["batch:C31D:certificateOfAnalysis"],
+    "validationFailures": [
+      {
+        "scope": "batch",
+        "key": "C31D",
+        "field": "certificateOfAnalysis",
+        "message": "Batch C31D has no certificate of analysis."
+      }
+    ],
+    "emailResponse": null
+  }
+}

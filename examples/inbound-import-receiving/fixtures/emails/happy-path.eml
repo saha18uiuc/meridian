@@ -1,0 +1,18 @@
+Message-ID: <happy-path@forwarder.example>
+X-Meridian-Thread: thread-happy-path
+Date: 2026-02-03T09:12:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Arrival notice - container MSKU1234565 - PO 88213
+X-Meridian-Attachments: invoice-1024.pdf, packing-list-1024.pdf, coa-B77A.pdf, coa-B77B.pdf
+
+Good morning,
+
+Please find attached the commercial invoice, packing list and certificates of
+analysis for container MSKU1234565, arriving at the Port of Newark on
+2026-02-07.
+
+Invoice INV-1024 covers two line items, batches B77A and B77B.
+
+Regards,
+Global Forwarding Operations

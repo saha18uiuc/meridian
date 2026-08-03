@@ -1,0 +1,78 @@
+{
+  "name": "meridian",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "packageManager": "pnpm@10.32.1",
+  "engines": {
+    "node": ">=22.16.0 <23"
+  },
+  "scripts": {
+    "preflight": "tsx scripts/preflight.ts",
+    "bootstrap": "tsx scripts/bootstrap.ts",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop --no-backup",
+    "db:reset": "supabase db reset",
+    "db:types": "tsx scripts/gen-types.ts",
+    "dev:infra": "tsx scripts/dev-infra.ts",
+    "dev": "concurrently -n web,worker -c cyan,magenta \"pnpm --filter @meridian/web dev\" \"pnpm --filter @meridian/backend dev\"",
+    "stop": "tsx scripts/stop-local.ts",
+    "health": "tsx scripts/health-check.ts",
+    "seed": "tsx scripts/seed-demo.ts",
+    "build": "pnpm build:ts && pnpm build:web",
+    "build:ts": "tsc -b",
+    "build:web": "pnpm --filter @meridian/web build",
+    "lint": "eslint .",
+    "format:check": "prettier --check .",
+    "format": "prettier --write .",
+    "typecheck": "tsc -b --noEmit false --pretty false && pnpm --filter @meridian/web exec tsc --noEmit",
+    "test:unit": "vitest run --config vitest.workspace.ts --project unit",
+    "test:db": "vitest run --config vitest.workspace.ts --project db",
+    "test:service": "vitest run --config vitest.workspace.ts --project service",
+    "test:temporal": "vitest run --config vitest.workspace.ts --project temporal",
+    "test:component": "vitest run --config vitest.workspace.ts --project component",
+    "test:e2e": "pnpm --filter @meridian/web exec playwright test",
+    "test:scale": "vitest run --config vitest.workspace.ts --project db -t \"scale-100\"",
+    "test:multi-agent": "vitest run --config vitest.workspace.ts --project db -t \"multi-agent\"",
+    "evals": "tsx scripts/run-evals.ts",
+    "agent:reserve": "tsx scripts/reserve-agent-version.ts",
+    "agent:export-spec": "tsx scripts/export-frozen-spec.ts",
+    "agent:finalize": "tsx scripts/finalize-agent-version.ts",
+    "agent:verify-manifest": "tsx scripts/verify-build-manifest.ts",
+    "agent:reserve-repair": "tsx scripts/reserve-repair-version.ts",
+    "connect:gmail": "tsx scripts/connect-gmail.ts",
+    "process-inbox": "tsx scripts/process-inbox.ts",
+    "registry:generate": "tsx scripts/generate-registry.ts",
+    "verify:tree": "tsx scripts/verify-tree.ts",
+    "verify": "tsx scripts/verify.ts",
+    "verify:e2e": "tsx scripts/verify-e2e.ts",
+    "demo": "tsx scripts/demo-run.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@meridian/core": "workspace:*",
+    "@meridian/ops": "workspace:*",
+    "@types/node": "26.1.2",
+    "@vitest/coverage-v8": "4.1.10",
+    "concurrently": "10.0.4",
+    "eslint": "9.39.5",
+    "globals": "17.9.0",
+    "prettier": "3.9.6",
+    "tsx": "4.23.4",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.65.0",
+    "vitest": "4.1.10"
+  },
+  "dependencies": {
+    "dotenv": "17.4.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@swc/core",
+      "esbuild",
+      "protobufjs",
+      "sharp",
+      "tesseract.js"
+    ]
+  }
+}

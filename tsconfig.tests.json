@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "outDir": "./.meridian/tsbuild/tests",
+    "tsBuildInfoFile": "./.meridian/tsbuild/tests.tsbuildinfo",
+    "types": ["node", "vitest/globals"]
+  },
+  "include": [
+    "vitest.workspace.ts",
+    "packages/*/test/**/*.ts",
+    "apps/backend/test/**/*.ts",
+    "apps/backend/vitest.temporal.config.ts"
+  ],
+  "references": [
+    { "path": "./packages/core" },
+    { "path": "./packages/agent-kit" },
+    { "path": "./generated-agents" },
+    { "path": "./packages/evals" },
+    { "path": "./packages/ops" },
+    { "path": "./apps/backend" }
+  ]
+}

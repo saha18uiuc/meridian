@@ -1,0 +1,15 @@
+Message-ID: <conflicting-invoice@forwarder.example>
+X-Meridian-Thread: thread-happy-path
+Date: 2026-02-03T15:20:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: RE: Arrival notice - container MSKU1234565 - PO 88213
+X-Meridian-Attachments: invoice-1024-revised.pdf
+
+Hello,
+
+Please use the attached invoice for container MSKU1234565 instead. It carries
+the same invoice number INV-1024 but a different line item and batch.
+
+Regards,
+Global Forwarding Operations

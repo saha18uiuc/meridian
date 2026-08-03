@@ -1,0 +1,20 @@
+{
+  "caseKey": "case-12",
+  "description": "A scanned document with no text layer while OCR is disabled.",
+  "specTrace": "Rule \"Escalate an unexpected failure\" routes a document the process cannot read to Outcome \"Manual review required\".",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/scanned-document.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/scanned-invoice.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-12.expected.json"
+  },
+  "expected": {
+    "outcome": "manual_review",
+    "businessKey": "HLXU1234561",
+    "externalActions": [],
+    "stepInstanceKeys": ["escalate:HLXU1234561"],
+    "evidenceKeys": ["escalation:HLXU1234561"],
+    "humanDecisionRequired": true
+  }
+}

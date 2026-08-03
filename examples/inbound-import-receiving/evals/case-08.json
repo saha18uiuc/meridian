@@ -1,0 +1,17 @@
+{
+  "caseKey": "case-08",
+  "description": "A message with no valid container number or air waybill.",
+  "specTrace": "Rule \"Is a shipment business key present?\" branch \"no usable business key\" leads to Outcome \"Manual review required\".",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/no-business-key.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/scanned-invoice.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-08.expected.json"
+  },
+  "expected": {
+    "outcome": "manual_review",
+    "businessKey": null,
+    "externalActions": []
+  }
+}

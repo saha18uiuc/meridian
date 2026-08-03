@@ -1,0 +1,31 @@
+{
+  "caseKey": "case-02",
+  "description": "A good missing two of the five required regulatory identifiers.",
+  "specTrace": "Rule \"Does every good carry the five required fields?\" branch \"required product fields missing\" leads to Action \"Ask the forwarder for the missing information\".",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/missing-fields.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1025.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B90X.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-02.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "TGHU7654320",
+    "missingFields": ["good:LINE-1:andaNumber", "good:LINE-1:ndcNumber"],
+    "externalActions": [
+      {
+        "actionType": "mail.send",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "stepInstanceKeys": [
+      "extract:TGHU7654320",
+      "validate-good:INV-1025:LINE-1",
+      "respond:TGHU7654320"
+    ],
+    "evidenceKeys": ["assessment:TGHU7654320"]
+  }
+}

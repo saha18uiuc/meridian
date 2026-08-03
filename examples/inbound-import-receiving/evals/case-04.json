@@ -1,0 +1,22 @@
+{
+  "caseKey": "case-04",
+  "description": "One batch appears on two different invoices in the same shipment.",
+  "specTrace": "Rule \"Has this invoice already been received?\" branch \"invoice belongs to a different shipment\" leads to Outcome \"Rejected as inconsistent\"; a batch is one physical lot.",
+  "inputRefs": {
+    "emailPaths": [
+      "examples/inbound-import-receiving/fixtures/emails/happy-path.eml",
+      "examples/inbound-import-receiving/fixtures/emails/duplicate-batch.eml"
+    ],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1028.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-04.expected.json"
+  },
+  "expected": {
+    "outcome": "rejected",
+    "businessKey": "MSKU1234565",
+    "externalActions": [],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

@@ -1,0 +1,14 @@
+Message-ID: <coa-mismatch@forwarder.example>
+X-Meridian-Thread: thread-coa-mismatch
+Date: 2026-02-05T09:40:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Container MSKU1234565 - certificates
+X-Meridian-Attachments: invoice-1024.pdf, coa-B77A.pdf, coa-B77C.pdf
+
+Hello,
+
+Certificates for container MSKU1234565. Batches B77A and B77C are covered.
+
+Regards,
+Global Forwarding Operations

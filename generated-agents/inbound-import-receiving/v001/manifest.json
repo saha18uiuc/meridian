@@ -1,0 +1,41 @@
+{
+  "manifestVersion": 1,
+  "deploymentKey": "inbound-import-receiving",
+  "versionNo": 1,
+  "codePath": "generated-agents/inbound-import-receiving/v001",
+  "specId": "fdb5c683-5c80-5d88-9756-962d90a7e22d",
+  "specHash": "fe51ae2b2d493bf18ec01b17f96152218b182f7a5fcc1c95274835f30d6eb44b",
+  "specVersion": 1,
+  "generatedFiles": ["agent.ts", "rules.ts", "prompts.ts", "manifest.json", "spec.snapshot.json"],
+  "capabilities": ["document.extract", "human.handoff", "mail.read", "mail.send"],
+  "generatedAt": "1970-01-01T00:00:00.000Z",
+  "generator": {
+    "skill": ".codex/skills/spec-to-agent",
+    "model": "gpt-5-codex"
+  },
+  "toolkitVersions": {
+    "@composio/core": "0.14.1",
+    "openai": "7.3.0",
+    "zod": "4.4.3"
+  },
+  "validation": {
+    "commands": ["pnpm lint", "pnpm typecheck", "pnpm test:unit", "pnpm evals"],
+    "evalCaseKeys": [
+      "case-01",
+      "case-02",
+      "case-03",
+      "case-04",
+      "case-05",
+      "case-06",
+      "case-07",
+      "case-08",
+      "case-09",
+      "case-10",
+      "case-11",
+      "case-12",
+      "case-13",
+      "case-14",
+      "case-15"
+    ]
+  }
+}

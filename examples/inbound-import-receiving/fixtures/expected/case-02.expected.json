@@ -1,0 +1,32 @@
+{
+  "caseKey": "case-02",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "TGHU7654320",
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": "TGHU7654320",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1025"],
+      "batchNumbers": ["B90X"],
+      "goodsCount": 1,
+      "validGoodsCount": 0
+    },
+    "missingInformation": ["good:LINE-1:andaNumber", "good:LINE-1:ndcNumber"],
+    "validationFailures": [
+      {
+        "scope": "good",
+        "key": "LINE-1",
+        "field": "andaNumber",
+        "message": "Good LINE-1 is missing its ANDA number."
+      },
+      {
+        "scope": "good",
+        "key": "LINE-1",
+        "field": "ndcNumber",
+        "message": "Good LINE-1 is missing its NDC number."
+      }
+    ],
+    "emailResponse": null
+  }
+}

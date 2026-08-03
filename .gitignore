@@ -1,0 +1,17 @@
+node_modules/
+.next/
+dist/
+.turbo/
+.env
+.env.local
+.temporal/
+.meridian/*
+!.meridian/.gitkeep
+.playwright-browsers/
+test-results/
+playwright-report/
+coverage/
+*.log
+*.tsbuildinfo
+supabase/.temp/
+supabase/.branches/

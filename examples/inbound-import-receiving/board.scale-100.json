@@ -1,0 +1,3717 @@
+{
+  "whiteboardId": "2a9b4ca7-a89b-51f1-a226-fe6ece971396",
+  "title": "Inbound Import Receiving at scale",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 0.25
+  },
+  "nodes": [
+    {
+      "nodeId": "728be6ed-e6a0-5fa0-b547-7e3f0ff2a2aa",
+      "primitiveType": "input",
+      "title": "Consolidated shipment manifest",
+      "data": {
+        "inputKind": "document",
+        "sourceSystem": "Email attachment",
+        "required": true,
+        "fields": [
+          {
+            "name": "invoiceNumber",
+            "type": "string",
+            "required": true,
+            "description": "Invoice number."
+          }
+        ],
+        "correlationKeys": ["containerNumber"]
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "primitiveType": "action",
+      "title": "Split the manifest into goods",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Produce one validation branch per good on the manifest.",
+        "system": "Document extraction service",
+        "inputs": ["Consolidated shipment manifest"],
+        "outputs": ["Goods list"]
+      },
+      "position": {
+        "x": 240,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "da8ddb21-32d8-5e7e-ad0a-a160ab9a39ca",
+      "primitiveType": "action",
+      "title": "Validate good 001",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 001.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 001 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "3bce798b-19f4-5cf7-8809-5ad6a0869f42",
+      "primitiveType": "rule",
+      "title": "Is good 001 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 001 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "30fe62f3-8187-53cb-8fd9-38ad9931b879",
+      "primitiveType": "action",
+      "title": "Validate good 002",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 002.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 002 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "08d6735e-32b9-539e-8d17-51d1c10aefe2",
+      "primitiveType": "rule",
+      "title": "Is good 002 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 002 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "fc478c61-3496-5aed-8a16-469d6505eea0",
+      "primitiveType": "action",
+      "title": "Validate good 003",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 003.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 003 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 240
+      }
+    },
+    {
+      "nodeId": "2b62b0f3-c90e-5d47-bfc4-99303d23974d",
+      "primitiveType": "rule",
+      "title": "Is good 003 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 003 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 240
+      }
+    },
+    {
+      "nodeId": "4eb73c03-da22-524d-95ff-ab8dfce9d692",
+      "primitiveType": "action",
+      "title": "Validate good 004",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 004.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 004 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 360
+      }
+    },
+    {
+      "nodeId": "acf0ffbc-1b58-5914-9378-4ff8d4c198c5",
+      "primitiveType": "rule",
+      "title": "Is good 004 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 004 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 360
+      }
+    },
+    {
+      "nodeId": "337ab7b5-fd81-5b71-9459-12da303cbed8",
+      "primitiveType": "action",
+      "title": "Validate good 005",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 005.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 005 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 480
+      }
+    },
+    {
+      "nodeId": "6e1d2e43-cded-58a4-823e-32495c0b58b1",
+      "primitiveType": "rule",
+      "title": "Is good 005 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 005 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 480
+      }
+    },
+    {
+      "nodeId": "6bfa9643-0fdc-5b16-b138-a6748e4fcadf",
+      "primitiveType": "action",
+      "title": "Validate good 006",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 006.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 006 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 600
+      }
+    },
+    {
+      "nodeId": "5a3e4f7f-e76d-550e-9dba-539f43a551c0",
+      "primitiveType": "rule",
+      "title": "Is good 006 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 006 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 600
+      }
+    },
+    {
+      "nodeId": "d30c073e-0c87-57d9-bfac-f0ed8d413363",
+      "primitiveType": "action",
+      "title": "Validate good 007",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 007.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 007 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 720
+      }
+    },
+    {
+      "nodeId": "e64dd5c5-bb1b-510f-a019-56807a0c78fd",
+      "primitiveType": "rule",
+      "title": "Is good 007 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 007 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 720
+      }
+    },
+    {
+      "nodeId": "91c27aa9-49ff-50e2-94f9-4b0f4139b060",
+      "primitiveType": "action",
+      "title": "Validate good 008",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 008.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 008 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 840
+      }
+    },
+    {
+      "nodeId": "ff1e6a64-a2b4-53ab-8942-e90b5cecb14e",
+      "primitiveType": "rule",
+      "title": "Is good 008 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 008 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 840
+      }
+    },
+    {
+      "nodeId": "c2f0b57f-0971-514d-be2a-52d2166a2654",
+      "primitiveType": "action",
+      "title": "Validate good 009",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 009.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 009 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 960
+      }
+    },
+    {
+      "nodeId": "c19e7e34-8ca0-5453-b3ca-3c869804fac7",
+      "primitiveType": "rule",
+      "title": "Is good 009 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 009 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 960
+      }
+    },
+    {
+      "nodeId": "4905f5a5-4ac5-5b6f-8371-453cd32a5e42",
+      "primitiveType": "action",
+      "title": "Validate good 010",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 010.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 010 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1080
+      }
+    },
+    {
+      "nodeId": "8fa14e01-4bab-5f1d-95c3-fce59de961b9",
+      "primitiveType": "rule",
+      "title": "Is good 010 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 010 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1080
+      }
+    },
+    {
+      "nodeId": "5dd2d77d-8e57-5cf2-a7cf-1cf7c65aeb39",
+      "primitiveType": "action",
+      "title": "Validate good 011",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 011.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 011 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1200
+      }
+    },
+    {
+      "nodeId": "015c5405-7158-556b-87ab-bcca58cd8623",
+      "primitiveType": "rule",
+      "title": "Is good 011 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 011 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1200
+      }
+    },
+    {
+      "nodeId": "a757b846-fa8b-57e0-8ad1-19865c6d8551",
+      "primitiveType": "action",
+      "title": "Validate good 012",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 012.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 012 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1320
+      }
+    },
+    {
+      "nodeId": "47304932-05f3-5979-ad23-341edd1d75a3",
+      "primitiveType": "rule",
+      "title": "Is good 012 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 012 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1320
+      }
+    },
+    {
+      "nodeId": "d43c556b-e745-5356-a399-c797202a378a",
+      "primitiveType": "action",
+      "title": "Validate good 013",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 013.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 013 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1440
+      }
+    },
+    {
+      "nodeId": "6636be52-6027-5158-b193-74dfd226cd39",
+      "primitiveType": "rule",
+      "title": "Is good 013 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 013 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1440
+      }
+    },
+    {
+      "nodeId": "6b15d20a-6402-50a1-9e5b-cae0bf53ddfe",
+      "primitiveType": "action",
+      "title": "Validate good 014",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 014.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 014 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1560
+      }
+    },
+    {
+      "nodeId": "c505c2ef-5334-5ff3-b42a-3af86adf7898",
+      "primitiveType": "rule",
+      "title": "Is good 014 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 014 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1560
+      }
+    },
+    {
+      "nodeId": "044af63b-3ba3-51c3-9288-7bcb780cf729",
+      "primitiveType": "action",
+      "title": "Validate good 015",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 015.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 015 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1680
+      }
+    },
+    {
+      "nodeId": "96b782e2-5419-5b44-b903-22bf1f6ff3e4",
+      "primitiveType": "rule",
+      "title": "Is good 015 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 015 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1680
+      }
+    },
+    {
+      "nodeId": "c56a3739-2198-5d4f-975f-169fac729819",
+      "primitiveType": "action",
+      "title": "Validate good 016",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 016.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 016 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1800
+      }
+    },
+    {
+      "nodeId": "6f67af2d-ecf1-557c-8600-e8896b9f5891",
+      "primitiveType": "rule",
+      "title": "Is good 016 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 016 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1800
+      }
+    },
+    {
+      "nodeId": "a9d9e37b-72af-5d78-a979-01cef5af47a3",
+      "primitiveType": "action",
+      "title": "Validate good 017",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 017.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 017 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 1920
+      }
+    },
+    {
+      "nodeId": "726bf227-f365-5545-b384-391913b42d83",
+      "primitiveType": "rule",
+      "title": "Is good 017 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 017 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 1920
+      }
+    },
+    {
+      "nodeId": "f4bebae1-9916-5b83-8416-4f15d3f5ee3a",
+      "primitiveType": "action",
+      "title": "Validate good 018",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 018.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 018 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2040
+      }
+    },
+    {
+      "nodeId": "fb41fe20-29f4-56fb-b2a2-21973621f2d3",
+      "primitiveType": "rule",
+      "title": "Is good 018 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 018 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2040
+      }
+    },
+    {
+      "nodeId": "24eeb07d-b640-510f-ab5a-9f42e8ac7808",
+      "primitiveType": "action",
+      "title": "Validate good 019",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 019.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 019 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2160
+      }
+    },
+    {
+      "nodeId": "2b365588-34dc-582e-bee6-dbf4981c36bf",
+      "primitiveType": "rule",
+      "title": "Is good 019 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 019 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2160
+      }
+    },
+    {
+      "nodeId": "5bf9183b-c864-5bbf-aa1f-5b3c781c90fb",
+      "primitiveType": "action",
+      "title": "Validate good 020",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 020.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 020 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2280
+      }
+    },
+    {
+      "nodeId": "e4b72fee-d1a2-5f99-b774-23278c968b9a",
+      "primitiveType": "rule",
+      "title": "Is good 020 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 020 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2280
+      }
+    },
+    {
+      "nodeId": "c0b1a948-decf-5b74-b63b-5ffb0fcd84a9",
+      "primitiveType": "action",
+      "title": "Validate good 021",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 021.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 021 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2400
+      }
+    },
+    {
+      "nodeId": "71b2426a-9a95-52b3-8366-30ae36c38b9d",
+      "primitiveType": "rule",
+      "title": "Is good 021 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 021 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2400
+      }
+    },
+    {
+      "nodeId": "f12b2f9b-d7cc-5479-9673-c336641dd5ed",
+      "primitiveType": "action",
+      "title": "Validate good 022",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 022.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 022 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2520
+      }
+    },
+    {
+      "nodeId": "848373f4-c6f2-5a50-87dd-319ce1d8d53f",
+      "primitiveType": "rule",
+      "title": "Is good 022 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 022 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2520
+      }
+    },
+    {
+      "nodeId": "3cf11c26-162e-553d-981c-83b7ebc44d51",
+      "primitiveType": "action",
+      "title": "Validate good 023",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 023.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 023 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2640
+      }
+    },
+    {
+      "nodeId": "de68c5db-a900-537c-9f5f-832217d5608d",
+      "primitiveType": "rule",
+      "title": "Is good 023 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 023 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2640
+      }
+    },
+    {
+      "nodeId": "27f0a2a1-b128-50ad-b9a5-5185a73549d3",
+      "primitiveType": "action",
+      "title": "Validate good 024",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 024.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 024 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2760
+      }
+    },
+    {
+      "nodeId": "14dc14fc-bf1c-521f-9998-74d083b38800",
+      "primitiveType": "rule",
+      "title": "Is good 024 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 024 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2760
+      }
+    },
+    {
+      "nodeId": "4eae5a02-fe25-58bb-9a02-8c355c0840b5",
+      "primitiveType": "action",
+      "title": "Validate good 025",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 025.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 025 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 2880
+      }
+    },
+    {
+      "nodeId": "e942326c-bf0b-5b7c-9153-1bac3007f9fd",
+      "primitiveType": "rule",
+      "title": "Is good 025 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 025 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 2880
+      }
+    },
+    {
+      "nodeId": "79bef38b-5fdd-5c7d-a1f7-99fcecea8cdb",
+      "primitiveType": "action",
+      "title": "Validate good 026",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 026.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 026 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3000
+      }
+    },
+    {
+      "nodeId": "a5c570b2-07b0-5904-ae27-3900b766c420",
+      "primitiveType": "rule",
+      "title": "Is good 026 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 026 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3000
+      }
+    },
+    {
+      "nodeId": "9509e937-f716-5c37-88af-d0627e11b868",
+      "primitiveType": "action",
+      "title": "Validate good 027",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 027.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 027 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3120
+      }
+    },
+    {
+      "nodeId": "37c544a6-bc13-5984-b60f-7827b65732fe",
+      "primitiveType": "rule",
+      "title": "Is good 027 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 027 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3120
+      }
+    },
+    {
+      "nodeId": "57bf80a1-c97f-5587-9b2a-8ce937cfd4c4",
+      "primitiveType": "action",
+      "title": "Validate good 028",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 028.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 028 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3240
+      }
+    },
+    {
+      "nodeId": "72c2e2ab-b7f6-555a-8ad2-029a88b958f0",
+      "primitiveType": "rule",
+      "title": "Is good 028 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 028 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3240
+      }
+    },
+    {
+      "nodeId": "67e21705-168d-5d8b-a793-0aada3fd435c",
+      "primitiveType": "action",
+      "title": "Validate good 029",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 029.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 029 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3360
+      }
+    },
+    {
+      "nodeId": "1c6b2826-fc88-5716-bd25-f60ee1d9f60d",
+      "primitiveType": "rule",
+      "title": "Is good 029 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 029 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3360
+      }
+    },
+    {
+      "nodeId": "6226a58f-dead-5dcc-a33d-dabaa6ef4360",
+      "primitiveType": "action",
+      "title": "Validate good 030",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 030.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 030 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3480
+      }
+    },
+    {
+      "nodeId": "c925c13a-8eaa-5fd1-8b2e-ed351b677390",
+      "primitiveType": "rule",
+      "title": "Is good 030 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 030 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3480
+      }
+    },
+    {
+      "nodeId": "259411a2-d6eb-5c8b-a8f0-d3f77d2a067e",
+      "primitiveType": "action",
+      "title": "Validate good 031",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 031.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 031 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3600
+      }
+    },
+    {
+      "nodeId": "d33b27bd-f575-5b27-919b-a4ce031f30eb",
+      "primitiveType": "rule",
+      "title": "Is good 031 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 031 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3600
+      }
+    },
+    {
+      "nodeId": "75bb8259-4c4d-5198-a01c-8bd34db86f63",
+      "primitiveType": "action",
+      "title": "Validate good 032",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 032.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 032 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3720
+      }
+    },
+    {
+      "nodeId": "3da62acc-3219-51e9-9085-7d9cae3d5f35",
+      "primitiveType": "rule",
+      "title": "Is good 032 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 032 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3720
+      }
+    },
+    {
+      "nodeId": "bfbec75e-f21c-5895-a77c-bb22ddec9d76",
+      "primitiveType": "action",
+      "title": "Validate good 033",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 033.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 033 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3840
+      }
+    },
+    {
+      "nodeId": "4b5bfeb1-5351-52ed-b58d-d23b94aff60c",
+      "primitiveType": "rule",
+      "title": "Is good 033 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 033 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3840
+      }
+    },
+    {
+      "nodeId": "1f424fc7-ce1f-51ce-9a78-1dcde886bb27",
+      "primitiveType": "action",
+      "title": "Validate good 034",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 034.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 034 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 3960
+      }
+    },
+    {
+      "nodeId": "9cc86b56-3b94-5189-904f-84a0f55422c6",
+      "primitiveType": "rule",
+      "title": "Is good 034 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 034 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 3960
+      }
+    },
+    {
+      "nodeId": "aeac5fe5-967c-5d07-b9f3-5eec9d3a7c70",
+      "primitiveType": "action",
+      "title": "Validate good 035",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 035.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 035 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4080
+      }
+    },
+    {
+      "nodeId": "b2713bb7-f951-5cfb-9d91-526f1cac2893",
+      "primitiveType": "rule",
+      "title": "Is good 035 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 035 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4080
+      }
+    },
+    {
+      "nodeId": "a8e22dc2-43e3-5c24-ac3d-170714b34ac7",
+      "primitiveType": "action",
+      "title": "Validate good 036",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 036.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 036 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4200
+      }
+    },
+    {
+      "nodeId": "afe0d769-7c21-5c64-b6b5-3b2998719564",
+      "primitiveType": "rule",
+      "title": "Is good 036 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 036 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4200
+      }
+    },
+    {
+      "nodeId": "ad009b9f-7e52-5d25-8422-aaba76ecbb7b",
+      "primitiveType": "action",
+      "title": "Validate good 037",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 037.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 037 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4320
+      }
+    },
+    {
+      "nodeId": "fd8cc78a-9918-5739-9f08-084cdab671d6",
+      "primitiveType": "rule",
+      "title": "Is good 037 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 037 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4320
+      }
+    },
+    {
+      "nodeId": "165d90aa-e118-5ce4-8368-5e733fc42856",
+      "primitiveType": "action",
+      "title": "Validate good 038",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 038.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 038 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4440
+      }
+    },
+    {
+      "nodeId": "4844c62d-5219-54f0-92f1-08cc4dfd5479",
+      "primitiveType": "rule",
+      "title": "Is good 038 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 038 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4440
+      }
+    },
+    {
+      "nodeId": "0ebd9379-28dc-5ecb-819e-0eb58f930146",
+      "primitiveType": "action",
+      "title": "Validate good 039",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 039.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 039 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4560
+      }
+    },
+    {
+      "nodeId": "1815caa5-482f-52d7-a6cf-fbc3095ba7f6",
+      "primitiveType": "rule",
+      "title": "Is good 039 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 039 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4560
+      }
+    },
+    {
+      "nodeId": "fb540b85-2305-505b-92d9-fb5ee94a59d3",
+      "primitiveType": "action",
+      "title": "Validate good 040",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 040.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 040 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4680
+      }
+    },
+    {
+      "nodeId": "09fb34d7-a0fc-55fd-8c5e-ce4b2a1f1cc8",
+      "primitiveType": "rule",
+      "title": "Is good 040 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 040 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4680
+      }
+    },
+    {
+      "nodeId": "34180c4a-c95f-50f2-9a59-6acd01c69be4",
+      "primitiveType": "action",
+      "title": "Validate good 041",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 041.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 041 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4800
+      }
+    },
+    {
+      "nodeId": "8e0c7a6f-0fdf-5b2a-94e4-89fa46105baa",
+      "primitiveType": "rule",
+      "title": "Is good 041 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 041 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4800
+      }
+    },
+    {
+      "nodeId": "04c507c9-66ee-56f1-81ce-c2e6eef67ac5",
+      "primitiveType": "action",
+      "title": "Validate good 042",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 042.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 042 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 4920
+      }
+    },
+    {
+      "nodeId": "de3aa092-dcab-59dc-9052-fc068b175033",
+      "primitiveType": "rule",
+      "title": "Is good 042 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 042 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 4920
+      }
+    },
+    {
+      "nodeId": "05ac0d06-88bc-5039-9114-23fbcd1283c0",
+      "primitiveType": "action",
+      "title": "Validate good 043",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 043.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 043 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5040
+      }
+    },
+    {
+      "nodeId": "cbb80adf-a258-545c-a8cc-595b8c1a5303",
+      "primitiveType": "rule",
+      "title": "Is good 043 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 043 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5040
+      }
+    },
+    {
+      "nodeId": "f30fff7a-d2dc-5b06-ad49-2caaa123749a",
+      "primitiveType": "action",
+      "title": "Validate good 044",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 044.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 044 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5160
+      }
+    },
+    {
+      "nodeId": "4eae9f42-0309-59e2-9da9-aa1212adcbb0",
+      "primitiveType": "rule",
+      "title": "Is good 044 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 044 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5160
+      }
+    },
+    {
+      "nodeId": "c5b4587a-59cc-5a0c-bb79-ad2badb14fff",
+      "primitiveType": "action",
+      "title": "Validate good 045",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 045.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 045 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5280
+      }
+    },
+    {
+      "nodeId": "295d7004-0d69-5660-955f-d91b6e26ab4d",
+      "primitiveType": "rule",
+      "title": "Is good 045 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 045 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5280
+      }
+    },
+    {
+      "nodeId": "29597b71-9b7a-5042-9a81-1120bbde2be6",
+      "primitiveType": "action",
+      "title": "Validate good 046",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 046.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 046 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5400
+      }
+    },
+    {
+      "nodeId": "b81d5b61-a207-54b1-8163-b1bc42f62d23",
+      "primitiveType": "rule",
+      "title": "Is good 046 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 046 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5400
+      }
+    },
+    {
+      "nodeId": "c4bd2801-0716-5592-abd0-9ece1e1c2bf2",
+      "primitiveType": "action",
+      "title": "Validate good 047",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 047.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 047 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5520
+      }
+    },
+    {
+      "nodeId": "c5a625d5-658f-500f-a5e1-a030c02ddd10",
+      "primitiveType": "rule",
+      "title": "Is good 047 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 047 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5520
+      }
+    },
+    {
+      "nodeId": "9e6b96f8-2640-5b96-b1f2-7693a8912d0e",
+      "primitiveType": "action",
+      "title": "Validate good 048",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the five required regulatory fields for good 048.",
+        "system": "Document extraction service",
+        "inputs": ["Goods list"],
+        "outputs": ["Good 048 fields"]
+      },
+      "position": {
+        "x": 520,
+        "y": 5640
+      }
+    },
+    {
+      "nodeId": "a61c7b6a-9af6-58fd-b50b-4895e16fa25f",
+      "primitiveType": "rule",
+      "title": "Is good 048 complete?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "Good 048 carries all five required regulatory fields.",
+        "branches": [
+          {
+            "label": "complete",
+            "condition": "All five fields are present.",
+            "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a"
+          },
+          {
+            "label": "incomplete",
+            "condition": "At least one field is missing.",
+            "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 800,
+        "y": 5640
+      }
+    },
+    {
+      "nodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "primitiveType": "action",
+      "title": "Assemble the shipment summary",
+      "data": {
+        "actor": "agent",
+        "operation": "summarise shipment",
+        "instructions": "Combine every completed good into one shipment summary.",
+        "system": "Warehouse management system",
+        "inputs": ["Per-good results"],
+        "outputs": ["Shipment summary"]
+      },
+      "position": {
+        "x": 1080,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "072ccb77-f5b1-5570-89a6-88ee18cecad1",
+      "primitiveType": "outcome",
+      "title": "Ready to receive",
+      "data": {
+        "resultKind": "ready",
+        "terminal": true
+      },
+      "position": {
+        "x": 1360,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "primitiveType": "outcome",
+      "title": "Manual review required",
+      "data": {
+        "resultKind": "manual_review",
+        "terminal": true,
+        "requiredAction": {
+          "actionType": "human.handoff",
+          "description": "A specialist resolves the incomplete goods.",
+          "capability": "human.handoff"
+        }
+      },
+      "position": {
+        "x": 1360,
+        "y": 200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "4b5e542b-e169-5824-8ae5-27767f825596",
+      "sourceNodeId": "728be6ed-e6a0-5fa0-b547-7e3f0ff2a2aa",
+      "targetNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "label": "manifest received",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "fac92c92-2ce7-51a9-9adc-ff9c4d21f96a",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "da8ddb21-32d8-5e7e-ad0a-a160ab9a39ca",
+      "label": "good 001",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "84660884-34e2-55dd-b94b-a3cef4d521f9",
+      "sourceNodeId": "da8ddb21-32d8-5e7e-ad0a-a160ab9a39ca",
+      "targetNodeId": "3bce798b-19f4-5cf7-8809-5ad6a0869f42",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "97668dcc-c234-5b8c-9340-c7f5fd80510b",
+      "sourceNodeId": "3bce798b-19f4-5cf7-8809-5ad6a0869f42",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3d48a379-c113-5519-9dc9-058ee0fb1685",
+      "sourceNodeId": "3bce798b-19f4-5cf7-8809-5ad6a0869f42",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "26df8551-c35b-526d-afa5-687c4ba896b7",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "30fe62f3-8187-53cb-8fd9-38ad9931b879",
+      "label": "good 002",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "a898596d-d494-58c0-8a75-9655001a3364",
+      "sourceNodeId": "30fe62f3-8187-53cb-8fd9-38ad9931b879",
+      "targetNodeId": "08d6735e-32b9-539e-8d17-51d1c10aefe2",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "8f5e25bc-ea97-5619-9eaf-b3fdd2b2cfba",
+      "sourceNodeId": "08d6735e-32b9-539e-8d17-51d1c10aefe2",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "0cf8e9ab-9fee-50f3-8b5d-c0516410170a",
+      "sourceNodeId": "08d6735e-32b9-539e-8d17-51d1c10aefe2",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "a2c26592-f1f4-5ab4-aa07-714e0cc27622",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "fc478c61-3496-5aed-8a16-469d6505eea0",
+      "label": "good 003",
+      "condition": null,
+      "priority": 2
+    },
+    {
+      "edgeId": "4bc04f11-83ce-5b56-a316-174f0fa7d5af",
+      "sourceNodeId": "fc478c61-3496-5aed-8a16-469d6505eea0",
+      "targetNodeId": "2b62b0f3-c90e-5d47-bfc4-99303d23974d",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "016759f8-0d90-56ed-8587-9a6d1df26e5d",
+      "sourceNodeId": "2b62b0f3-c90e-5d47-bfc4-99303d23974d",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "584b1e42-cc01-5562-a70c-d94abc35b155",
+      "sourceNodeId": "2b62b0f3-c90e-5d47-bfc4-99303d23974d",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "67d0ad34-b37b-5981-803b-bc1af6dab6ab",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "4eb73c03-da22-524d-95ff-ab8dfce9d692",
+      "label": "good 004",
+      "condition": null,
+      "priority": 3
+    },
+    {
+      "edgeId": "d74a518b-3812-51c1-afd5-780d493d9713",
+      "sourceNodeId": "4eb73c03-da22-524d-95ff-ab8dfce9d692",
+      "targetNodeId": "acf0ffbc-1b58-5914-9378-4ff8d4c198c5",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "d6f314ca-8a6c-5f7c-b1ae-0aa0933d1e55",
+      "sourceNodeId": "acf0ffbc-1b58-5914-9378-4ff8d4c198c5",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "8eae234f-ff9f-50e7-a782-c1a244a46712",
+      "sourceNodeId": "acf0ffbc-1b58-5914-9378-4ff8d4c198c5",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "24d5860b-6bce-5cb9-984f-c7b6106f8280",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "337ab7b5-fd81-5b71-9459-12da303cbed8",
+      "label": "good 005",
+      "condition": null,
+      "priority": 4
+    },
+    {
+      "edgeId": "47cc3613-e68f-5032-8238-2a1df8c395dd",
+      "sourceNodeId": "337ab7b5-fd81-5b71-9459-12da303cbed8",
+      "targetNodeId": "6e1d2e43-cded-58a4-823e-32495c0b58b1",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "b326743b-634f-59d8-9e19-2618cfb5f2e1",
+      "sourceNodeId": "6e1d2e43-cded-58a4-823e-32495c0b58b1",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "a810c2b7-ec3d-523c-811b-a14fc1ab65db",
+      "sourceNodeId": "6e1d2e43-cded-58a4-823e-32495c0b58b1",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "c913c4cd-c7ad-585a-8a85-fa3298037efc",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "6bfa9643-0fdc-5b16-b138-a6748e4fcadf",
+      "label": "good 006",
+      "condition": null,
+      "priority": 5
+    },
+    {
+      "edgeId": "ed6cfe1a-0986-5ddf-8240-02d4e95aad64",
+      "sourceNodeId": "6bfa9643-0fdc-5b16-b138-a6748e4fcadf",
+      "targetNodeId": "5a3e4f7f-e76d-550e-9dba-539f43a551c0",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "a77a7738-7eb1-5911-861a-cf1bc5bb7bb9",
+      "sourceNodeId": "5a3e4f7f-e76d-550e-9dba-539f43a551c0",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "4fbe2455-9586-58d0-8707-0d1f409d1aae",
+      "sourceNodeId": "5a3e4f7f-e76d-550e-9dba-539f43a551c0",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "a4cc6f6f-5490-5f81-b157-790863962d50",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "d30c073e-0c87-57d9-bfac-f0ed8d413363",
+      "label": "good 007",
+      "condition": null,
+      "priority": 6
+    },
+    {
+      "edgeId": "d831a8fd-bbbd-5def-9ff4-deb6dde94f67",
+      "sourceNodeId": "d30c073e-0c87-57d9-bfac-f0ed8d413363",
+      "targetNodeId": "e64dd5c5-bb1b-510f-a019-56807a0c78fd",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "4478fa8f-278b-5c02-ab36-4eabdfc6d31d",
+      "sourceNodeId": "e64dd5c5-bb1b-510f-a019-56807a0c78fd",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "ef47f7b7-bfb7-553a-b2ca-09fc2d36ff2f",
+      "sourceNodeId": "e64dd5c5-bb1b-510f-a019-56807a0c78fd",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "d956d37a-e83f-5857-8d9a-e51fb8e0f8f9",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "91c27aa9-49ff-50e2-94f9-4b0f4139b060",
+      "label": "good 008",
+      "condition": null,
+      "priority": 7
+    },
+    {
+      "edgeId": "2b5ecd25-6a50-54c5-a76d-7ae49d5ad367",
+      "sourceNodeId": "91c27aa9-49ff-50e2-94f9-4b0f4139b060",
+      "targetNodeId": "ff1e6a64-a2b4-53ab-8942-e90b5cecb14e",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "9f4c86cb-40a9-528b-b19a-7655996b591c",
+      "sourceNodeId": "ff1e6a64-a2b4-53ab-8942-e90b5cecb14e",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "6855fdeb-3547-534b-9eb4-358da48cb4a3",
+      "sourceNodeId": "ff1e6a64-a2b4-53ab-8942-e90b5cecb14e",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "2cbf9ebe-2a88-51f8-a16b-4df55a5b6eaf",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "c2f0b57f-0971-514d-be2a-52d2166a2654",
+      "label": "good 009",
+      "condition": null,
+      "priority": 8
+    },
+    {
+      "edgeId": "445b4e24-7d2a-5d8e-8de7-8e94737520b0",
+      "sourceNodeId": "c2f0b57f-0971-514d-be2a-52d2166a2654",
+      "targetNodeId": "c19e7e34-8ca0-5453-b3ca-3c869804fac7",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "94407a55-46b7-57f1-b28c-759da729f923",
+      "sourceNodeId": "c19e7e34-8ca0-5453-b3ca-3c869804fac7",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "29567970-b690-5592-b7f4-728c9ff2ece2",
+      "sourceNodeId": "c19e7e34-8ca0-5453-b3ca-3c869804fac7",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "54ae3a20-8e30-5146-a4c5-57128a61ba62",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "4905f5a5-4ac5-5b6f-8371-453cd32a5e42",
+      "label": "good 010",
+      "condition": null,
+      "priority": 9
+    },
+    {
+      "edgeId": "7af7aa5e-8ada-529e-a440-82424e997d17",
+      "sourceNodeId": "4905f5a5-4ac5-5b6f-8371-453cd32a5e42",
+      "targetNodeId": "8fa14e01-4bab-5f1d-95c3-fce59de961b9",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "c31f811e-1c16-5ac5-9b2e-bc5ea0babdef",
+      "sourceNodeId": "8fa14e01-4bab-5f1d-95c3-fce59de961b9",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "2aefacf0-2972-57d0-be93-971990c7461c",
+      "sourceNodeId": "8fa14e01-4bab-5f1d-95c3-fce59de961b9",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "2626b522-f31c-55bf-a32d-69a7b0d4491e",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "5dd2d77d-8e57-5cf2-a7cf-1cf7c65aeb39",
+      "label": "good 011",
+      "condition": null,
+      "priority": 10
+    },
+    {
+      "edgeId": "e0f222ff-f42c-5225-ab80-3ba19eebea1c",
+      "sourceNodeId": "5dd2d77d-8e57-5cf2-a7cf-1cf7c65aeb39",
+      "targetNodeId": "015c5405-7158-556b-87ab-bcca58cd8623",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "c7612904-8f9c-54c9-a4bd-9867aa4dfa78",
+      "sourceNodeId": "015c5405-7158-556b-87ab-bcca58cd8623",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "2d9d09aa-f933-55aa-8c5f-549b399a5904",
+      "sourceNodeId": "015c5405-7158-556b-87ab-bcca58cd8623",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "aa96bb41-36bf-5794-8128-fe9a7dbcd7d9",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "a757b846-fa8b-57e0-8ad1-19865c6d8551",
+      "label": "good 012",
+      "condition": null,
+      "priority": 11
+    },
+    {
+      "edgeId": "2004ea52-a6ce-54d8-a7e3-951e1ff4e146",
+      "sourceNodeId": "a757b846-fa8b-57e0-8ad1-19865c6d8551",
+      "targetNodeId": "47304932-05f3-5979-ad23-341edd1d75a3",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "fbfb600c-a0e6-5ee6-b265-d910a083a478",
+      "sourceNodeId": "47304932-05f3-5979-ad23-341edd1d75a3",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "ce6ef1b4-b1e0-5709-8bb3-42f20b7cff39",
+      "sourceNodeId": "47304932-05f3-5979-ad23-341edd1d75a3",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "e6eb783d-b3a6-5c19-9c28-d571ccc2f2d0",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "d43c556b-e745-5356-a399-c797202a378a",
+      "label": "good 013",
+      "condition": null,
+      "priority": 12
+    },
+    {
+      "edgeId": "43f1899b-cde2-598a-b70b-1e9297c0109f",
+      "sourceNodeId": "d43c556b-e745-5356-a399-c797202a378a",
+      "targetNodeId": "6636be52-6027-5158-b193-74dfd226cd39",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e7b541a1-dc9f-53ad-84f4-3087cf1c068b",
+      "sourceNodeId": "6636be52-6027-5158-b193-74dfd226cd39",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "cbf6dd5c-6816-5d23-915e-769024c108a3",
+      "sourceNodeId": "6636be52-6027-5158-b193-74dfd226cd39",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "3278f338-8911-5418-bcad-89e4bd1e4091",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "6b15d20a-6402-50a1-9e5b-cae0bf53ddfe",
+      "label": "good 014",
+      "condition": null,
+      "priority": 13
+    },
+    {
+      "edgeId": "d0bee829-7b6a-5944-93ff-ce43b035d98f",
+      "sourceNodeId": "6b15d20a-6402-50a1-9e5b-cae0bf53ddfe",
+      "targetNodeId": "c505c2ef-5334-5ff3-b42a-3af86adf7898",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f34edd54-847a-534f-932f-647b894e7423",
+      "sourceNodeId": "c505c2ef-5334-5ff3-b42a-3af86adf7898",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "51eb2758-4319-588b-bbaa-a40e8c47d510",
+      "sourceNodeId": "c505c2ef-5334-5ff3-b42a-3af86adf7898",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "02a1a918-5a16-5ff4-9024-d822c6830b0b",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "044af63b-3ba3-51c3-9288-7bcb780cf729",
+      "label": "good 015",
+      "condition": null,
+      "priority": 14
+    },
+    {
+      "edgeId": "40ca153e-7922-5134-9d1a-9b1742a43f80",
+      "sourceNodeId": "044af63b-3ba3-51c3-9288-7bcb780cf729",
+      "targetNodeId": "96b782e2-5419-5b44-b903-22bf1f6ff3e4",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "0ab780c4-e588-5d51-8e84-27e18c688125",
+      "sourceNodeId": "96b782e2-5419-5b44-b903-22bf1f6ff3e4",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "7a1a0e04-dcbb-5dcb-9170-6c68395beedf",
+      "sourceNodeId": "96b782e2-5419-5b44-b903-22bf1f6ff3e4",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "86b78328-3ac4-5f98-8a8a-0b3164edebf3",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "c56a3739-2198-5d4f-975f-169fac729819",
+      "label": "good 016",
+      "condition": null,
+      "priority": 15
+    },
+    {
+      "edgeId": "a6cea5ad-8a06-5e8e-8b0c-8943bb3e6f63",
+      "sourceNodeId": "c56a3739-2198-5d4f-975f-169fac729819",
+      "targetNodeId": "6f67af2d-ecf1-557c-8600-e8896b9f5891",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "1c8b6477-1a3c-58e5-86ef-95df3a2dfe03",
+      "sourceNodeId": "6f67af2d-ecf1-557c-8600-e8896b9f5891",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "762cd63c-7b7c-52e3-add8-e6d274bd1f17",
+      "sourceNodeId": "6f67af2d-ecf1-557c-8600-e8896b9f5891",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "dd65877c-e7a2-5d04-9ccb-1da11da72401",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "a9d9e37b-72af-5d78-a979-01cef5af47a3",
+      "label": "good 017",
+      "condition": null,
+      "priority": 16
+    },
+    {
+      "edgeId": "3a49c3f1-1f38-5b20-bb8c-4dad721ee7e6",
+      "sourceNodeId": "a9d9e37b-72af-5d78-a979-01cef5af47a3",
+      "targetNodeId": "726bf227-f365-5545-b384-391913b42d83",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "885c6fbf-b025-592a-b5dd-84db34408f52",
+      "sourceNodeId": "726bf227-f365-5545-b384-391913b42d83",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "b8b53d0b-496a-5a48-8993-d7f6a21a6181",
+      "sourceNodeId": "726bf227-f365-5545-b384-391913b42d83",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "88069d57-56ad-5b8f-88d7-d11a1efa6dc8",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "f4bebae1-9916-5b83-8416-4f15d3f5ee3a",
+      "label": "good 018",
+      "condition": null,
+      "priority": 17
+    },
+    {
+      "edgeId": "c8c275d6-069f-5df2-bb96-0a0b75826068",
+      "sourceNodeId": "f4bebae1-9916-5b83-8416-4f15d3f5ee3a",
+      "targetNodeId": "fb41fe20-29f4-56fb-b2a2-21973621f2d3",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3682b5d1-5a06-5046-b2d0-c93a7c3feec1",
+      "sourceNodeId": "fb41fe20-29f4-56fb-b2a2-21973621f2d3",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "4a073314-a17f-5012-a699-b3e9c3e145e5",
+      "sourceNodeId": "fb41fe20-29f4-56fb-b2a2-21973621f2d3",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "4f9722df-a6a7-54f9-965a-1f0b956bf68f",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "24eeb07d-b640-510f-ab5a-9f42e8ac7808",
+      "label": "good 019",
+      "condition": null,
+      "priority": 18
+    },
+    {
+      "edgeId": "d5943293-e82e-58a3-860e-c59223a68664",
+      "sourceNodeId": "24eeb07d-b640-510f-ab5a-9f42e8ac7808",
+      "targetNodeId": "2b365588-34dc-582e-bee6-dbf4981c36bf",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "339db491-540b-561f-9f31-0133906018db",
+      "sourceNodeId": "2b365588-34dc-582e-bee6-dbf4981c36bf",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "8c31eb04-2ad2-5dd9-82dd-8104e4286cef",
+      "sourceNodeId": "2b365588-34dc-582e-bee6-dbf4981c36bf",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "e03c0606-ad8c-52e4-85b8-84040bb9c037",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "5bf9183b-c864-5bbf-aa1f-5b3c781c90fb",
+      "label": "good 020",
+      "condition": null,
+      "priority": 19
+    },
+    {
+      "edgeId": "6541e898-4fe9-54dd-920f-f7bc4151391f",
+      "sourceNodeId": "5bf9183b-c864-5bbf-aa1f-5b3c781c90fb",
+      "targetNodeId": "e4b72fee-d1a2-5f99-b774-23278c968b9a",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "61c59d70-a95c-5eeb-a8fb-3b9b2ec704a8",
+      "sourceNodeId": "e4b72fee-d1a2-5f99-b774-23278c968b9a",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "6a01fea6-4cba-512c-9891-8c16d4284578",
+      "sourceNodeId": "e4b72fee-d1a2-5f99-b774-23278c968b9a",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "c1bf7608-1f7d-51e8-8637-77841d8f223d",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "c0b1a948-decf-5b74-b63b-5ffb0fcd84a9",
+      "label": "good 021",
+      "condition": null,
+      "priority": 20
+    },
+    {
+      "edgeId": "b8095d26-9e49-5795-ac10-998f7788f124",
+      "sourceNodeId": "c0b1a948-decf-5b74-b63b-5ffb0fcd84a9",
+      "targetNodeId": "71b2426a-9a95-52b3-8366-30ae36c38b9d",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "89bdc321-12f0-514c-8ffc-f6b41165710e",
+      "sourceNodeId": "71b2426a-9a95-52b3-8366-30ae36c38b9d",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "68dc4c3c-683c-5180-8b4f-1324467188f9",
+      "sourceNodeId": "71b2426a-9a95-52b3-8366-30ae36c38b9d",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "8cbc96f1-ce2e-525c-9d1c-fdb4b85a1823",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "f12b2f9b-d7cc-5479-9673-c336641dd5ed",
+      "label": "good 022",
+      "condition": null,
+      "priority": 21
+    },
+    {
+      "edgeId": "cf4e1128-9f54-5a6c-89eb-9893f4e1c3fe",
+      "sourceNodeId": "f12b2f9b-d7cc-5479-9673-c336641dd5ed",
+      "targetNodeId": "848373f4-c6f2-5a50-87dd-319ce1d8d53f",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "69edddad-495f-57ea-98a7-0771c83c1365",
+      "sourceNodeId": "848373f4-c6f2-5a50-87dd-319ce1d8d53f",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "72e2c217-4831-554d-bbd6-a27de7f0e2dc",
+      "sourceNodeId": "848373f4-c6f2-5a50-87dd-319ce1d8d53f",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "682aeddd-c878-52ec-b5e8-9fc55795484b",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "3cf11c26-162e-553d-981c-83b7ebc44d51",
+      "label": "good 023",
+      "condition": null,
+      "priority": 22
+    },
+    {
+      "edgeId": "117d8465-d6c0-56cd-af18-1f3bb46b36e5",
+      "sourceNodeId": "3cf11c26-162e-553d-981c-83b7ebc44d51",
+      "targetNodeId": "de68c5db-a900-537c-9f5f-832217d5608d",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "9e90a3a0-c7e1-5a09-896c-76997e966448",
+      "sourceNodeId": "de68c5db-a900-537c-9f5f-832217d5608d",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "0e8c5d44-4d47-5de1-932f-9aa75774312e",
+      "sourceNodeId": "de68c5db-a900-537c-9f5f-832217d5608d",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "ef157c09-0b55-578d-aea0-075afa9fec7e",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "27f0a2a1-b128-50ad-b9a5-5185a73549d3",
+      "label": "good 024",
+      "condition": null,
+      "priority": 23
+    },
+    {
+      "edgeId": "549aafc3-7c36-55ac-91c4-b8b9edda246b",
+      "sourceNodeId": "27f0a2a1-b128-50ad-b9a5-5185a73549d3",
+      "targetNodeId": "14dc14fc-bf1c-521f-9998-74d083b38800",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "a12f1534-754c-52af-85bf-654e739b6fe2",
+      "sourceNodeId": "14dc14fc-bf1c-521f-9998-74d083b38800",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "a904f63b-c742-58f5-afa6-e3cf1a72bfa6",
+      "sourceNodeId": "14dc14fc-bf1c-521f-9998-74d083b38800",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "33861849-7fbe-5151-b7e2-6a07f417b8ff",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "4eae5a02-fe25-58bb-9a02-8c355c0840b5",
+      "label": "good 025",
+      "condition": null,
+      "priority": 24
+    },
+    {
+      "edgeId": "8640950c-4b79-575f-80fa-f2826c53ec10",
+      "sourceNodeId": "4eae5a02-fe25-58bb-9a02-8c355c0840b5",
+      "targetNodeId": "e942326c-bf0b-5b7c-9153-1bac3007f9fd",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "5c868475-ec32-54df-866f-aef64b28fdc2",
+      "sourceNodeId": "e942326c-bf0b-5b7c-9153-1bac3007f9fd",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e9d17420-9e04-5b34-ad4a-08945eaebc1b",
+      "sourceNodeId": "e942326c-bf0b-5b7c-9153-1bac3007f9fd",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "954b631f-1731-5c3a-8427-7d2fd440f75e",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "79bef38b-5fdd-5c7d-a1f7-99fcecea8cdb",
+      "label": "good 026",
+      "condition": null,
+      "priority": 25
+    },
+    {
+      "edgeId": "c5c72b80-ff6a-5621-aec8-c7351fcfa0f2",
+      "sourceNodeId": "79bef38b-5fdd-5c7d-a1f7-99fcecea8cdb",
+      "targetNodeId": "a5c570b2-07b0-5904-ae27-3900b766c420",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "2d097091-b455-5c00-a55c-0aa663e70620",
+      "sourceNodeId": "a5c570b2-07b0-5904-ae27-3900b766c420",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "89a491db-c3b7-514f-9db7-842325ef2c90",
+      "sourceNodeId": "a5c570b2-07b0-5904-ae27-3900b766c420",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "b486da94-7e50-5512-bb3e-6a57ba6201f5",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "9509e937-f716-5c37-88af-d0627e11b868",
+      "label": "good 027",
+      "condition": null,
+      "priority": 26
+    },
+    {
+      "edgeId": "992163a3-64fa-591d-96ae-820ae2794099",
+      "sourceNodeId": "9509e937-f716-5c37-88af-d0627e11b868",
+      "targetNodeId": "37c544a6-bc13-5984-b60f-7827b65732fe",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e0dc347f-e8f8-510d-8276-743e63815332",
+      "sourceNodeId": "37c544a6-bc13-5984-b60f-7827b65732fe",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "982f13b8-400a-55b4-8874-407a67a8ab6f",
+      "sourceNodeId": "37c544a6-bc13-5984-b60f-7827b65732fe",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "e135cdc1-b874-5b9f-97e5-03782071bfd0",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "57bf80a1-c97f-5587-9b2a-8ce937cfd4c4",
+      "label": "good 028",
+      "condition": null,
+      "priority": 27
+    },
+    {
+      "edgeId": "65e210af-5d2d-58bf-94da-8f8ca58956b0",
+      "sourceNodeId": "57bf80a1-c97f-5587-9b2a-8ce937cfd4c4",
+      "targetNodeId": "72c2e2ab-b7f6-555a-8ad2-029a88b958f0",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f35302fb-8d70-590f-945f-961ff2e3cfc4",
+      "sourceNodeId": "72c2e2ab-b7f6-555a-8ad2-029a88b958f0",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "804b6e8a-c27b-5296-a98e-b3a3c8a7758c",
+      "sourceNodeId": "72c2e2ab-b7f6-555a-8ad2-029a88b958f0",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "d38302e3-8544-50ca-884a-f089663a3a06",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "67e21705-168d-5d8b-a793-0aada3fd435c",
+      "label": "good 029",
+      "condition": null,
+      "priority": 28
+    },
+    {
+      "edgeId": "86b73b51-b125-51a9-a75d-aef0a8681300",
+      "sourceNodeId": "67e21705-168d-5d8b-a793-0aada3fd435c",
+      "targetNodeId": "1c6b2826-fc88-5716-bd25-f60ee1d9f60d",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "45ff71aa-ce27-5860-b4bb-9a3500376e01",
+      "sourceNodeId": "1c6b2826-fc88-5716-bd25-f60ee1d9f60d",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3314fa19-e892-5323-96e8-1d56edd79985",
+      "sourceNodeId": "1c6b2826-fc88-5716-bd25-f60ee1d9f60d",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "b22e3255-ea54-59cb-91df-d5ac60a92528",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "6226a58f-dead-5dcc-a33d-dabaa6ef4360",
+      "label": "good 030",
+      "condition": null,
+      "priority": 29
+    },
+    {
+      "edgeId": "17cd2316-c67c-5238-ba49-6a7cc101c165",
+      "sourceNodeId": "6226a58f-dead-5dcc-a33d-dabaa6ef4360",
+      "targetNodeId": "c925c13a-8eaa-5fd1-8b2e-ed351b677390",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "79cf4b4e-2422-5673-a61c-3e49bb661c8f",
+      "sourceNodeId": "c925c13a-8eaa-5fd1-8b2e-ed351b677390",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "829eb4ac-9518-5723-8bb3-e413b3cdde9d",
+      "sourceNodeId": "c925c13a-8eaa-5fd1-8b2e-ed351b677390",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "3483700c-8eb7-5391-a4b7-07a22946d618",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "259411a2-d6eb-5c8b-a8f0-d3f77d2a067e",
+      "label": "good 031",
+      "condition": null,
+      "priority": 30
+    },
+    {
+      "edgeId": "bf361095-c042-54c3-979e-fd5ca97924a3",
+      "sourceNodeId": "259411a2-d6eb-5c8b-a8f0-d3f77d2a067e",
+      "targetNodeId": "d33b27bd-f575-5b27-919b-a4ce031f30eb",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "61bd81de-00e5-57b5-b75b-1e9a97250291",
+      "sourceNodeId": "d33b27bd-f575-5b27-919b-a4ce031f30eb",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "9f94dce4-8388-5721-b5fe-01946ad3af7c",
+      "sourceNodeId": "d33b27bd-f575-5b27-919b-a4ce031f30eb",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "5f3a3e84-ef14-5601-acb7-c04d6282f8ea",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "75bb8259-4c4d-5198-a01c-8bd34db86f63",
+      "label": "good 032",
+      "condition": null,
+      "priority": 31
+    },
+    {
+      "edgeId": "b7cbc881-0a78-5f0e-88bb-2223b83c9e5b",
+      "sourceNodeId": "75bb8259-4c4d-5198-a01c-8bd34db86f63",
+      "targetNodeId": "3da62acc-3219-51e9-9085-7d9cae3d5f35",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "bb91e4de-972d-5c5b-af10-67043d226291",
+      "sourceNodeId": "3da62acc-3219-51e9-9085-7d9cae3d5f35",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3dc3d425-7320-59a5-a42c-769799d5212d",
+      "sourceNodeId": "3da62acc-3219-51e9-9085-7d9cae3d5f35",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "e884c010-a8a7-5f6c-ac51-da9d18db879f",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "bfbec75e-f21c-5895-a77c-bb22ddec9d76",
+      "label": "good 033",
+      "condition": null,
+      "priority": 32
+    },
+    {
+      "edgeId": "bd8b00fb-37a8-52db-b9b2-7afcd9013916",
+      "sourceNodeId": "bfbec75e-f21c-5895-a77c-bb22ddec9d76",
+      "targetNodeId": "4b5bfeb1-5351-52ed-b58d-d23b94aff60c",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "78bbc0e6-bdbe-5f69-ae3c-3986479d956b",
+      "sourceNodeId": "4b5bfeb1-5351-52ed-b58d-d23b94aff60c",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e084c49b-c3fa-56a6-82a1-adfdbb911d9d",
+      "sourceNodeId": "4b5bfeb1-5351-52ed-b58d-d23b94aff60c",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "56f9cc9f-ce8b-59b9-b2da-2d527aac8c1f",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "1f424fc7-ce1f-51ce-9a78-1dcde886bb27",
+      "label": "good 034",
+      "condition": null,
+      "priority": 33
+    },
+    {
+      "edgeId": "815cce2c-dc94-5ccf-af20-ea6d0cb8d3d4",
+      "sourceNodeId": "1f424fc7-ce1f-51ce-9a78-1dcde886bb27",
+      "targetNodeId": "9cc86b56-3b94-5189-904f-84a0f55422c6",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f3334c30-ddf7-59e6-a5a2-adf05d87ec20",
+      "sourceNodeId": "9cc86b56-3b94-5189-904f-84a0f55422c6",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "27f81169-0abe-560e-b411-2e402254b6be",
+      "sourceNodeId": "9cc86b56-3b94-5189-904f-84a0f55422c6",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "ea9acd96-c93a-5f66-b50a-37066c82417a",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "aeac5fe5-967c-5d07-b9f3-5eec9d3a7c70",
+      "label": "good 035",
+      "condition": null,
+      "priority": 34
+    },
+    {
+      "edgeId": "771563bf-73d8-5fdc-8474-9c670eec2cc5",
+      "sourceNodeId": "aeac5fe5-967c-5d07-b9f3-5eec9d3a7c70",
+      "targetNodeId": "b2713bb7-f951-5cfb-9d91-526f1cac2893",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "17bd7b51-fc14-5c95-a982-6e094df46af7",
+      "sourceNodeId": "b2713bb7-f951-5cfb-9d91-526f1cac2893",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "681c1e1e-aaa9-547c-97cd-8e301fd9f86c",
+      "sourceNodeId": "b2713bb7-f951-5cfb-9d91-526f1cac2893",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "3b73e56c-fd0f-55d0-ba1f-73d108c1a8e5",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "a8e22dc2-43e3-5c24-ac3d-170714b34ac7",
+      "label": "good 036",
+      "condition": null,
+      "priority": 35
+    },
+    {
+      "edgeId": "5b842d4c-edaa-5f8b-b203-30cd2d4d8a75",
+      "sourceNodeId": "a8e22dc2-43e3-5c24-ac3d-170714b34ac7",
+      "targetNodeId": "afe0d769-7c21-5c64-b6b5-3b2998719564",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "85c8e31d-90b4-58d2-9284-ac89cc45025e",
+      "sourceNodeId": "afe0d769-7c21-5c64-b6b5-3b2998719564",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "742d93a0-a630-550b-b332-b2e8be9e0393",
+      "sourceNodeId": "afe0d769-7c21-5c64-b6b5-3b2998719564",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "11590a32-aa2a-5240-8fdd-5952c9327f73",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "ad009b9f-7e52-5d25-8422-aaba76ecbb7b",
+      "label": "good 037",
+      "condition": null,
+      "priority": 36
+    },
+    {
+      "edgeId": "93555fed-e99a-565d-872d-4bdde5d2540a",
+      "sourceNodeId": "ad009b9f-7e52-5d25-8422-aaba76ecbb7b",
+      "targetNodeId": "fd8cc78a-9918-5739-9f08-084cdab671d6",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "86565f83-6736-5147-9172-1138a0238fae",
+      "sourceNodeId": "fd8cc78a-9918-5739-9f08-084cdab671d6",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3f665aa0-c505-51d8-8448-3657a35ca0ec",
+      "sourceNodeId": "fd8cc78a-9918-5739-9f08-084cdab671d6",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "db9f0864-b31c-5ab9-b74c-ffd2843f65b4",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "165d90aa-e118-5ce4-8368-5e733fc42856",
+      "label": "good 038",
+      "condition": null,
+      "priority": 37
+    },
+    {
+      "edgeId": "ab889c94-4ece-5b07-b470-a5fba40ff689",
+      "sourceNodeId": "165d90aa-e118-5ce4-8368-5e733fc42856",
+      "targetNodeId": "4844c62d-5219-54f0-92f1-08cc4dfd5479",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "73077139-a47f-5d62-a62a-858d7cfcafa9",
+      "sourceNodeId": "4844c62d-5219-54f0-92f1-08cc4dfd5479",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "b0558698-3e24-56ea-a295-531d6dcf65b4",
+      "sourceNodeId": "4844c62d-5219-54f0-92f1-08cc4dfd5479",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "90081bba-fceb-5e8d-a002-267c3715fad6",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "0ebd9379-28dc-5ecb-819e-0eb58f930146",
+      "label": "good 039",
+      "condition": null,
+      "priority": 38
+    },
+    {
+      "edgeId": "d8008dfa-0ef2-5807-9e74-ed491620a63a",
+      "sourceNodeId": "0ebd9379-28dc-5ecb-819e-0eb58f930146",
+      "targetNodeId": "1815caa5-482f-52d7-a6cf-fbc3095ba7f6",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "5cab5be1-7398-57a6-b84f-35ca039ebded",
+      "sourceNodeId": "1815caa5-482f-52d7-a6cf-fbc3095ba7f6",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f61dbeee-5da3-566b-95ea-c3f9a8c1d8f8",
+      "sourceNodeId": "1815caa5-482f-52d7-a6cf-fbc3095ba7f6",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "8eebe45b-0b17-5576-86b9-8dc85ac8892b",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "fb540b85-2305-505b-92d9-fb5ee94a59d3",
+      "label": "good 040",
+      "condition": null,
+      "priority": 39
+    },
+    {
+      "edgeId": "29196d0d-4e85-595a-b12c-4d6820e5e2c7",
+      "sourceNodeId": "fb540b85-2305-505b-92d9-fb5ee94a59d3",
+      "targetNodeId": "09fb34d7-a0fc-55fd-8c5e-ce4b2a1f1cc8",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "678e2ca6-2b9e-57a8-a640-e0ad22141d6b",
+      "sourceNodeId": "09fb34d7-a0fc-55fd-8c5e-ce4b2a1f1cc8",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "96860db3-28c9-5ddc-9fb9-609112c36e31",
+      "sourceNodeId": "09fb34d7-a0fc-55fd-8c5e-ce4b2a1f1cc8",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "850f6427-9d5f-5e8e-862b-13c963aeb405",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "34180c4a-c95f-50f2-9a59-6acd01c69be4",
+      "label": "good 041",
+      "condition": null,
+      "priority": 40
+    },
+    {
+      "edgeId": "a902ec68-96dd-5910-9a2a-18924e98dcad",
+      "sourceNodeId": "34180c4a-c95f-50f2-9a59-6acd01c69be4",
+      "targetNodeId": "8e0c7a6f-0fdf-5b2a-94e4-89fa46105baa",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "59b90817-7f8f-5649-96ba-504ec33e7d5f",
+      "sourceNodeId": "8e0c7a6f-0fdf-5b2a-94e4-89fa46105baa",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "dc9520d4-7612-5f26-b823-d2a7caf5a8f0",
+      "sourceNodeId": "8e0c7a6f-0fdf-5b2a-94e4-89fa46105baa",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "1870d310-ac08-5ba1-8413-bf259a545c6f",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "04c507c9-66ee-56f1-81ce-c2e6eef67ac5",
+      "label": "good 042",
+      "condition": null,
+      "priority": 41
+    },
+    {
+      "edgeId": "6cbb799b-1b27-52f9-bf82-303f734f94f4",
+      "sourceNodeId": "04c507c9-66ee-56f1-81ce-c2e6eef67ac5",
+      "targetNodeId": "de3aa092-dcab-59dc-9052-fc068b175033",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "3bc7c526-f172-5128-8861-8fc6de5882cc",
+      "sourceNodeId": "de3aa092-dcab-59dc-9052-fc068b175033",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "761c5b08-0a18-5c16-9559-1604562bf6eb",
+      "sourceNodeId": "de3aa092-dcab-59dc-9052-fc068b175033",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "29dce99e-1d76-5e39-9be0-49dbfca3f05d",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "05ac0d06-88bc-5039-9114-23fbcd1283c0",
+      "label": "good 043",
+      "condition": null,
+      "priority": 42
+    },
+    {
+      "edgeId": "064dc423-b935-5fae-a214-4dbd4c10ae53",
+      "sourceNodeId": "05ac0d06-88bc-5039-9114-23fbcd1283c0",
+      "targetNodeId": "cbb80adf-a258-545c-a8cc-595b8c1a5303",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "4bac6054-542b-56bf-be5f-34df96109440",
+      "sourceNodeId": "cbb80adf-a258-545c-a8cc-595b8c1a5303",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "c7e4a1e9-1da6-5177-9e8f-6919dbb8cff2",
+      "sourceNodeId": "cbb80adf-a258-545c-a8cc-595b8c1a5303",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "0e649e59-69f8-5530-bf42-9cecbfeae190",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "f30fff7a-d2dc-5b06-ad49-2caaa123749a",
+      "label": "good 044",
+      "condition": null,
+      "priority": 43
+    },
+    {
+      "edgeId": "6878c143-35ad-5f2d-9aa5-987573c43c50",
+      "sourceNodeId": "f30fff7a-d2dc-5b06-ad49-2caaa123749a",
+      "targetNodeId": "4eae9f42-0309-59e2-9da9-aa1212adcbb0",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "8f162226-93f4-5c91-8433-73ae244e4e65",
+      "sourceNodeId": "4eae9f42-0309-59e2-9da9-aa1212adcbb0",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "682a3c2c-ea1a-50f2-a6e6-7222d7fb7b33",
+      "sourceNodeId": "4eae9f42-0309-59e2-9da9-aa1212adcbb0",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "9abd799a-eba9-554b-9cad-e77f7b0b83d5",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "c5b4587a-59cc-5a0c-bb79-ad2badb14fff",
+      "label": "good 045",
+      "condition": null,
+      "priority": 44
+    },
+    {
+      "edgeId": "e4c98248-f6a6-5076-86e2-88e8d41fb8b8",
+      "sourceNodeId": "c5b4587a-59cc-5a0c-bb79-ad2badb14fff",
+      "targetNodeId": "295d7004-0d69-5660-955f-d91b6e26ab4d",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e2acea74-ff7a-5084-b37a-12636db6b82f",
+      "sourceNodeId": "295d7004-0d69-5660-955f-d91b6e26ab4d",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "88dd6753-926d-5799-9d26-b0353103aa23",
+      "sourceNodeId": "295d7004-0d69-5660-955f-d91b6e26ab4d",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "13eafb6e-83d2-5824-bbab-7a774d13430b",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "29597b71-9b7a-5042-9a81-1120bbde2be6",
+      "label": "good 046",
+      "condition": null,
+      "priority": 45
+    },
+    {
+      "edgeId": "c562bbc9-da20-5729-a8e7-fb4dcf54a6af",
+      "sourceNodeId": "29597b71-9b7a-5042-9a81-1120bbde2be6",
+      "targetNodeId": "b81d5b61-a207-54b1-8163-b1bc42f62d23",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "886f2a28-c267-5959-98ef-3aacffc7ece4",
+      "sourceNodeId": "b81d5b61-a207-54b1-8163-b1bc42f62d23",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f770cade-4807-5da0-b0e2-ae81ab1a5644",
+      "sourceNodeId": "b81d5b61-a207-54b1-8163-b1bc42f62d23",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "bc227ecf-7e09-5bca-a976-b0e35330d83d",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "c4bd2801-0716-5592-abd0-9ece1e1c2bf2",
+      "label": "good 047",
+      "condition": null,
+      "priority": 46
+    },
+    {
+      "edgeId": "4cee2900-e6aa-539b-9553-d656251e1733",
+      "sourceNodeId": "c4bd2801-0716-5592-abd0-9ece1e1c2bf2",
+      "targetNodeId": "c5a625d5-658f-500f-a5e1-a030c02ddd10",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "c2d4d950-48c9-564f-9cf9-c7722a97a128",
+      "sourceNodeId": "c5a625d5-658f-500f-a5e1-a030c02ddd10",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f8ca7a15-98bf-58ca-a137-0640cb19b0ff",
+      "sourceNodeId": "c5a625d5-658f-500f-a5e1-a030c02ddd10",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "2bac633e-980a-5210-a760-39109e62a7e1",
+      "sourceNodeId": "466a1cb3-48d1-54ff-9b9e-9f209c6c7170",
+      "targetNodeId": "9e6b96f8-2640-5b96-b1f2-7693a8912d0e",
+      "label": "good 048",
+      "condition": null,
+      "priority": 47
+    },
+    {
+      "edgeId": "14b2a8cb-9c4e-586c-ab78-98187576d157",
+      "sourceNodeId": "9e6b96f8-2640-5b96-b1f2-7693a8912d0e",
+      "targetNodeId": "a61c7b6a-9af6-58fd-b50b-4895e16fa25f",
+      "label": "fields read",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "4c1b9c5b-041e-5ea0-aca7-f447a2e08b64",
+      "sourceNodeId": "a61c7b6a-9af6-58fd-b50b-4895e16fa25f",
+      "targetNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "label": "complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "20a95800-0f73-5d15-a4d2-b523def9a061",
+      "sourceNodeId": "a61c7b6a-9af6-58fd-b50b-4895e16fa25f",
+      "targetNodeId": "40fc0d84-365d-5c6d-af99-6abc3cace350",
+      "label": "incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "28d2b01a-4dcf-52c5-a5b6-3a70c3d575ca",
+      "sourceNodeId": "0bd3f107-9936-5341-8839-5e67be12215a",
+      "targetNodeId": "072ccb77-f5b1-5570-89a6-88ee18cecad1",
+      "label": "summary assembled",
+      "condition": null,
+      "priority": 0
+    }
+  ]
+}

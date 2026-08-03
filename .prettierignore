@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+dist
+.next
+coverage
+supabase/.temp
+generated-agents/**/spec.snapshot.json
+.meridian
+examples/inbound-import-receiving/fixtures/attachments

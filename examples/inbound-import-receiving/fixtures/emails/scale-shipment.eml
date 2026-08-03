@@ -1,0 +1,15 @@
+Message-ID: <scale-shipment@forwarder.example>
+X-Meridian-Thread: thread-scale-shipment
+Date: 2026-02-08T05:15:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Container OOLU1234567 - consolidated shipment
+X-Meridian-Attachments: invoice-scale.pdf, coa-SCL01.pdf, coa-SCL02.pdf, coa-SCL03.pdf, coa-SCL04.pdf, coa-SCL05.pdf, coa-SCL06.pdf, coa-SCL07.pdf, coa-SCL08.pdf, coa-SCL09.pdf, coa-SCL10.pdf, coa-SCL11.pdf, coa-SCL12.pdf, coa-SCL13.pdf, coa-SCL14.pdf, coa-SCL15.pdf, coa-SCL16.pdf, coa-SCL17.pdf, coa-SCL18.pdf, coa-SCL19.pdf, coa-SCL20.pdf, coa-SCL21.pdf, coa-SCL22.pdf, coa-SCL23.pdf, coa-SCL24.pdf
+
+Hello,
+
+Consolidated invoice INV-1040 for container OOLU1234567 covering 24
+line items, each with its certificate of analysis attached.
+
+Regards,
+Global Forwarding Operations

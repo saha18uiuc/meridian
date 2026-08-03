@@ -1,0 +1,13 @@
+Message-ID: <duplicate-invoice@forwarder.example>
+X-Meridian-Thread: thread-happy-path
+Date: 2026-02-03T11:40:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: RE: Arrival notice - container MSKU1234565 - PO 88213
+X-Meridian-Attachments: invoice-1024.pdf
+
+Resending the invoice for container MSKU1234565 in case the first message was
+caught by your filter. Same document, no changes.
+
+Regards,
+Global Forwarding Operations

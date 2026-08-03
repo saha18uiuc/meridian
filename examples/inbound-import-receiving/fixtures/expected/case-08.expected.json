@@ -1,0 +1,19 @@
+{
+  "caseKey": "case-08",
+  "decision": {
+    "outcome": "manual_review",
+    "businessKey": null,
+    "reason": "",
+    "shipmentSummary": {
+      "containerNumber": null,
+      "mawb": null,
+      "invoiceNumbers": [],
+      "batchNumbers": [],
+      "goodsCount": 0,
+      "validGoodsCount": 0
+    },
+    "missingInformation": [],
+    "validationFailures": [],
+    "emailResponse": null
+  }
+}

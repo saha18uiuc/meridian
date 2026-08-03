@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.16.0
+          cache: pnpm
+
+      - name: install
+        run: pnpm install --frozen-lockfile
+
+      - name: lint
+        run: pnpm lint
+
+      - name: format:check
+        run: pnpm format:check
+
+      - name: typecheck
+        run: pnpm typecheck
+
+      - name: build:ts
+        run: pnpm build:ts
+
+      # A28: the Next.js production build is its own step so a regression in it is attributable at
+      # a glance instead of being buried inside a composite script. Placeholder public values are
+      # sufficient to compile and keep CI credential-free.
+      - name: build:web
+        run: pnpm --filter @meridian/web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54521
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+          NEXT_PUBLIC_APP_BASE_URL: http://localhost:3000
+
+      - name: test:unit
+        run: pnpm test:unit

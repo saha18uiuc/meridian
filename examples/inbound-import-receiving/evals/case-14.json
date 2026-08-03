@@ -1,0 +1,42 @@
+{
+  "caseKey": "case-14",
+  "description": "A shipment with 24 goods validated in bounded parallel batches.",
+  "specTrace": "Rule \"Does every good carry the five required fields?\" applies per good; step identity is step_instance_key, never sequence_no.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/scale-shipment.eml"],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-scale.pdf"],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-14.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "OOLU1234567",
+    "externalActions": [],
+    "stepInstanceKeys": [
+      "validate-good:INV-1040:LINE-01",
+      "validate-good:INV-1040:LINE-02",
+      "validate-good:INV-1040:LINE-03",
+      "validate-good:INV-1040:LINE-04",
+      "validate-good:INV-1040:LINE-05",
+      "validate-good:INV-1040:LINE-06",
+      "validate-good:INV-1040:LINE-07",
+      "validate-good:INV-1040:LINE-08",
+      "validate-good:INV-1040:LINE-09",
+      "validate-good:INV-1040:LINE-10",
+      "validate-good:INV-1040:LINE-11",
+      "validate-good:INV-1040:LINE-12",
+      "validate-good:INV-1040:LINE-13",
+      "validate-good:INV-1040:LINE-14",
+      "validate-good:INV-1040:LINE-15",
+      "validate-good:INV-1040:LINE-16",
+      "validate-good:INV-1040:LINE-17",
+      "validate-good:INV-1040:LINE-18",
+      "validate-good:INV-1040:LINE-19",
+      "validate-good:INV-1040:LINE-20",
+      "validate-good:INV-1040:LINE-21",
+      "validate-good:INV-1040:LINE-22",
+      "validate-good:INV-1040:LINE-23",
+      "validate-good:INV-1040:LINE-24"
+    ],
+    "evidenceKeys": ["assessment:OOLU1234567"]
+  }
+}

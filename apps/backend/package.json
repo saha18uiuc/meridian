@@ -1,0 +1,28 @@
+{
+  "name": "@meridian/backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/temporal/worker.ts",
+    "start": "node dist/temporal/worker.js"
+  },
+  "dependencies": {
+    "@meridian/agent-kit": "workspace:*",
+    "@meridian/core": "workspace:*",
+    "@meridian/generated-agents": "workspace:*",
+    "@meridian/ops": "workspace:*",
+    "@supabase/supabase-js": "2.111.0",
+    "@temporalio/activity": "1.21.1",
+    "@temporalio/client": "1.21.1",
+    "@temporalio/common": "1.21.1",
+    "@temporalio/worker": "1.21.1",
+    "@temporalio/workflow": "1.21.1",
+    "openai": "7.3.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@temporalio/testing": "1.21.1"
+  }
+}

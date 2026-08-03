@@ -1,0 +1,22 @@
+{
+  "caseKey": "case-15",
+  "description": "The agent is replayed after dispatching an email; the send is not repeated.",
+  "specTrace": "Action \"Ask the forwarder for the missing information\" states exactly one request per shipment per round.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/missing-coa.eml"],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-1026.pdf"],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-15.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "CMAU9988771",
+    "externalActions": [
+      {
+        "actionType": "mail.send",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "evidenceKeys": ["assessment:CMAU9988771"]
+  }
+}

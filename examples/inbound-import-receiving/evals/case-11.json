@@ -1,0 +1,21 @@
+{
+  "caseKey": "case-11",
+  "description": "A transient extraction failure that succeeds on the next attempt.",
+  "specTrace": "Rule \"Retry a transient extraction failure\" bounds retries at three attempts before the exception path.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/happy-path.eml"],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/packing-list-1024.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77A.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-B77B.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-11.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "MSKU1234565",
+    "externalActions": [],
+    "evidenceKeys": ["assessment:MSKU1234565"]
+  }
+}

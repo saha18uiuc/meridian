@@ -1,0 +1,27 @@
+{
+  "name": "@meridian/evals",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "dependencies": {
+    "@meridian/agent-kit": "workspace:*",
+    "@meridian/core": "workspace:*",
+    "@supabase/supabase-js": "2.111.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "pg": "8.22.0",
+    "@types/pg": "8.15.6"
+  }
+}

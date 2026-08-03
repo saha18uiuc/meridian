@@ -1,0 +1,15 @@
+Message-ID: <duplicate-batch@forwarder.example>
+X-Meridian-Thread: thread-happy-path
+Date: 2026-02-03T13:05:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: RE: Arrival notice - container MSKU1234565 - additional invoice
+X-Meridian-Attachments: invoice-1028.pdf
+
+Hello,
+
+A second invoice for container MSKU1234565 is attached. It covers batch B77A,
+which also appears on invoice INV-1024.
+
+Regards,
+Global Forwarding Operations
