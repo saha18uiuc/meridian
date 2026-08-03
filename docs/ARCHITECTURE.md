@@ -114,9 +114,12 @@ message arrives
      └─ exactly one key
             │
             ├─ workflowId = receiving:<KEY>          (derived, not allocated)
+            ├─ seen before, case closed? ──▶ already_processed, no row, no workflow
+            ├─ describe(workflowId)                   (ask Temporal, do not infer from the row)
             ├─ create_execution                       (idempotent on idempotency_key)
             ├─ client.workflow.signalWithStart(...)   (start-or-signal, atomic, server-side)
-            └─ start_execution(runId)                 (retried; sweeper repairs if it fails)
+            ├─ start_execution(runId)                 (retried; sweeper repairs if it fails)
+            └─ append message:ingested:<providerMessageId>
 ```
 
 `signalWithStart` is the whole design. The obvious implementation — try `start`, catch
@@ -129,6 +132,39 @@ anything. The one irrecoverable arrangement is a running workflow that no row na
 row first makes it impossible. The reverse failure — a row in `queued` whose run ID never got
 persisted — is recoverable, and `reconcile-queued-executions` recovers it by re-describing the
 workflow and replaying `start_execution`, which is a no-op that returns `wasAlreadyStarted`.
+
+**Liveness is read from Temporal, not from the row.** Before deciding whether a message joins an
+open case or opens a new one, intake calls `describe(workflowId)`. The row and the server disagree
+for a real interval — between a workflow writing its terminal status and its run actually closing —
+and a decision made from the row alone lands in exactly that window: intake reads "finished",
+creates a second execution, and `signalWithStart` hands the message to the still-open run under
+`USE_EXISTING`. That run is carrying the _previous_ execution ID, so the row just created is named
+by nothing and sits in `running` forever. Three rules follow from asking the server instead:
+
+- A run that is open and is the run the latest row names is joined as it stands. Recomputing a case
+  key here would try to insert a second live row for one workflow, which
+  `uq_executions_active_workflow` forbids.
+- A run that is open and that no known row names is given a bounded moment to settle
+  (`RUN_SETTLE_ATTEMPTS × RUN_SETTLE_INTERVAL_MS`), then re-read. A concurrent intake that has
+  started a run but not yet recorded its ID resolves itself in that window.
+- A run still unclaimed after `RUN_ADOPTION_GRACE_MS` is terminated. It has nowhere to report:
+  every step it writes points at an execution row that does not exist. Locally this is what
+  `supabase db reset` leaves behind, because the Temporal dev server keeps its own store; in
+  production it is the shape of a restore from a backup taken before the run started.
+
+**Redelivery is answered from an ingest log, not from the case key.** Every correlated message
+appends `message:ingested:<providerMessageId>` to `execution_events` after its run ID is recorded.
+When that key already exists and the execution it belongs to is terminal, intake returns
+`already_processed` and does nothing else. The case key cannot answer this question: a first message
+and a late follow-up are given different case keys by design, so a redelivery of the first message
+after the case closed is indistinguishable from a genuinely new document — and re-running a shipment
+re-sends everything the first run sent. The log also happens to be the only durable answer to "which
+messages is this case made of", which is otherwise visible only inside Temporal history.
+
+The sweeper covers the same ground from the other side. `reconcile-queued-executions` reads both
+`queued` and `running` rows: a `queued` row whose run exists gets its run ID; a `running` row whose
+run has closed is completed or failed to match; a `running` row whose run belongs to a different
+execution is failed, because it has been superseded and will never report.
 
 ## The external-action protocol
 

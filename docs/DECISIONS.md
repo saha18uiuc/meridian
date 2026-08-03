@@ -244,6 +244,51 @@ it, and `pnpm verify` greps for it.
 
 ---
 
+## Intake asks Temporal whether a run is open
+
+Correlation intake calls `describe(workflowId)` before it decides anything, rather than reading
+`status` from the latest `executions` row.
+
+The row is written by the workflow and the run is closed by the server, and those are two events
+with a gap between them. An intake that reads the row inside that gap concludes the case is over,
+creates a new execution, and then watches `signalWithStart` deliver its message to the old run under
+`USE_EXISTING` — because the old run is, in fact, still open. The new row is then named by no
+workflow. It is not queued, not running anywhere, and nothing will ever finish it. This is not a
+hypothetical: it is what produced the second stuck `running` row in the demo, reproducibly, whenever
+two messages for one container arrived close together.
+
+The cost is one extra RPC per message. The alternative designs are worse: locking the workflow ID
+across the read and the write serialises intake on the hottest path, and reconciling afterwards
+means the orphan exists — visible in the executions list, indistinguishable from a real hang — until
+a sweep notices. Asking the party that actually knows is both cheaper and honest.
+
+Terminating an unclaimed run follows from the same principle in reverse. If Temporal has a run open
+and the database has no row for it, the database is right and the run is the anomaly, because every
+write that run attempts will fail against a foreign key. The grace period exists only to avoid
+racing an intake that has started a run and not yet recorded its ID.
+
+---
+
+## Redelivery is detected from an ingest log, not from the case key
+
+Intake appends `message:ingested:<providerMessageId>` for every message it correlates, and consults
+that log before creating anything.
+
+The case key was the obvious candidate and it cannot work. The first message of a case gets
+`live:<KEY>`; a message that arrives after the case closed gets
+`live:<KEY>:followup:<providerMessageId>`. That distinction is deliberate and correct — a late
+packing list should open a new case rather than mutate a closed one — but it means the redelivery of
+a first message and the arrival of a new document are the same shape to the key. Guessing wrong in
+one direction drops a real document; guessing wrong in the other re-runs a shipment, and re-running
+a shipment re-sends every email the first run sent. Neither is acceptable, so the question is
+answered from a record of what was actually taken in.
+
+Logging after `start_execution` rather than before is deliberate: an ingest that is recorded is one
+that provably reached a workflow. The write is also non-fatal — losing it costs a redelivery check,
+not the run — so a failure there is logged and swallowed rather than surfaced as a lost message.
+
+---
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:
