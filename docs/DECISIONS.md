@@ -269,6 +269,38 @@ racing an intake that has started a run and not yet recorded its ID.
 
 ---
 
+## A live row is the case, even before its run exists
+
+Asking Temporal is necessary and not sufficient. Between the moment the winning intake writes its
+`executions` row and the moment it reaches `signalWithStart` there is no open run and no finished
+one, and an intake that treats "no run open" as "no case in progress" concludes it should start a
+new case. It then computes a follow-up case key, attempts a second live row for the same workflow
+ID, and is refused by `uq_executions_active_workflow`. Two messages for one container arriving
+together failed this way about one time in five.
+
+So the row and the server answer different questions, and both are asked. A `queued` or `running`
+row is the case by construction — the unique index reserves exactly those two statuses, so while
+such a row exists there is no second row to be had and joining it is the only insert that can
+succeed. Temporal is then asked about the case the row says is _over_, which is the window the
+previous decision describes.
+
+The same race has a second half inside `create_execution`. Its `on conflict (idempotency_key)`
+names one arbiter, but an insert is checked against every unique index on the table, and a
+collision on a non-arbiter index raises instead of resolving. Two callers with the _same_
+idempotency key — the ordinary duplicate — therefore surfaced as a raw constraint error from the
+active-workflow index. The RPC now re-reads the row the other caller wrote, and still re-raises
+when nothing exists under that key, because then the refusal is the constraint correctly telling a
+genuinely different case that this workflow already has a live run. The index was not relaxed;
+what changed is that a duplicate is answered rather than thrown.
+
+This was invisible for as long as it was because the Temporal test double reported `RUNNING` for a
+workflow that had never been started. The ordinary first-message path never took the branch it
+takes against a real server. A double that is wrong in a convenient direction is worse than no
+double, and this one now raises `WorkflowNotFoundError` for an unknown ID exactly as the client
+does.
+
+---
+
 ## Redelivery is detected from an ingest log, not from the case key
 
 Intake appends `message:ingested:<providerMessageId>` for every message it correlates, and consults

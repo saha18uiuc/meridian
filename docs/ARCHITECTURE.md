@@ -116,6 +116,7 @@ message arrives
             ├─ workflowId = receiving:<KEY>          (derived, not allocated)
             ├─ seen before, case closed? ──▶ already_processed, no row, no workflow
             ├─ describe(workflowId)                   (ask Temporal, do not infer from the row)
+            ├─ live row for this workflow? ──▶ join it (the unique index allows only one)
             ├─ create_execution                       (idempotent on idempotency_key)
             ├─ client.workflow.signalWithStart(...)   (start-or-signal, atomic, server-side)
             ├─ start_execution(runId)                 (retried; sweeper repairs if it fails)
