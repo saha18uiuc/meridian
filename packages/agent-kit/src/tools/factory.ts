@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import type { Database } from '@meridian/core/database';
 import type { WorkerEnv } from '@meridian/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -29,7 +30,7 @@ export function createTools(options: ToolFactoryOptions): ToolRegistry {
   const humanHandoff = options.humanHandoff ?? unavailableHandoff();
 
   if (!env.GMAIL_LIVE_MODE) {
-    const root = options.fixtureRoot ?? 'examples/inbound-import-receiving/fixtures';
+    const root = options.fixtureRoot ?? defaultFixtureRoot();
     return {
       mailbox: createMockMailbox({
         emailDir: `${root}/emails`,
@@ -45,6 +46,21 @@ export function createTools(options: ToolFactoryOptions): ToolRegistry {
     throw new ToolUnavailableError('tools', 'live mode requires a Supabase service client');
   }
   return createLiveTools({ ...options, supabase: options.supabase, humanHandoff });
+}
+
+/**
+ * The fixture corpus, located from this module rather than from the working directory.
+ *
+ * The same mock tools are constructed by the eval harness (cwd: the repository root), by the
+ * Temporal worker (cwd: `apps/backend`), and by the Next.js server (cwd: `apps/web`). A relative
+ * default is correct in exactly one of those three, and the two failures are ugly: the worker's
+ * activity throws `ENOENT` deep inside a run, which surfaces as a workflow that failed rather than
+ * as a misconfiguration anyone can see.
+ */
+function defaultFixtureRoot(): string {
+  return fileURLToPath(
+    new URL('../../../../examples/inbound-import-receiving/fixtures', import.meta.url),
+  );
 }
 
 function unavailableHandoff(): HumanHandoffTool {
