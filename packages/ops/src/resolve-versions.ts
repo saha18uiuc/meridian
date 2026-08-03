@@ -11,8 +11,36 @@ import { writeResolvedVersions, type ResolvedVersions } from './lib/state.js';
  * and refuses to guess when it cannot.
  */
 
+export interface ToolkitResponse {
+  version?: string;
+  latestVersion?: string;
+  /** Where Composio actually publishes the version list; there is no scalar version field. */
+  meta?: { availableVersions?: string[] };
+}
+
 export interface ToolkitClient {
-  toolkits: { get(slug: string): Promise<{ version?: string; latestVersion?: string }> };
+  toolkits: { get(slug: string): Promise<ToolkitResponse> };
+}
+
+/** Composio stamps toolkit versions as a zero-padded date and a same-day counter: `20260721_00`. */
+const TOOLKIT_VERSION = /^\d{8}_\d{2}$/;
+
+/**
+ * Pick the newest version Composio lists.
+ *
+ * The array arrives newest-first today, but nothing in the API contract promises it will stay that
+ * way, and taking `[0]` on faith is precisely the silent-wrong-lineage failure this module exists
+ * to prevent. The format is zero-padded, so the newest entry is the lexicographic maximum and the
+ * ordering does not have to be trusted. Entries that do not match the format are ignored rather
+ * than compared, because a string of an unknown shape cannot be ranked against one of a known one.
+ */
+export function newestToolkitVersion(available: readonly string[] | undefined): string | undefined {
+  if (available === undefined) return undefined;
+  const known = available
+    .map((entry) => entry.trim())
+    .filter((entry) => TOOLKIT_VERSION.test(entry));
+  if (known.length === 0) return undefined;
+  return known.reduce((newest, entry) => (entry > newest ? entry : newest));
 }
 
 export class VersionResolutionError extends Error {
@@ -81,7 +109,10 @@ export async function resolveToolkitVersion(input: ResolveInput): Promise<Resolv
   let resolved: string | undefined;
   try {
     const toolkit = await input.client.toolkits.get('gmail');
-    resolved = toolkit.version ?? toolkit.latestVersion;
+    resolved =
+      toolkit.version ??
+      toolkit.latestVersion ??
+      newestToolkitVersion(toolkit.meta?.availableVersions);
   } catch (error) {
     throw new VersionResolutionError(
       `failed to resolve the Gmail toolkit version from Composio: ${(error as Error).message}`,

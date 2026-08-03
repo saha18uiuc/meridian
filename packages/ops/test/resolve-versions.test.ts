@@ -17,7 +17,11 @@ import {
 
 const now = () => new Date('2026-02-11T00:00:00.000Z');
 
-function toolkitClient(response: { version?: string; latestVersion?: string }): ToolkitClient {
+function toolkitClient(response: {
+  version?: string;
+  latestVersion?: string;
+  meta?: { availableVersions?: string[] };
+}): ToolkitClient {
   return { toolkits: { get: async () => response } };
 }
 
@@ -64,6 +68,40 @@ describe('toolkit version resolution', () => {
       now,
     });
     expect(resolved.composioGmailToolkit).toBe('20260201_01');
+  });
+
+  it('reads meta.availableVersions, which is where Composio actually publishes them', async () => {
+    const resolved = await resolveToolkitVersion({
+      requested: 'latest',
+      apiKeyPresent: true,
+      client: toolkitClient({ meta: { availableVersions: ['20260721_00', '20260702_01'] } }),
+      now,
+    });
+    expect(resolved.composioGmailToolkit).toBe('20260721_00');
+    expect(resolved.resolvedFrom).toBe('composio.toolkits.get(gmail)');
+  });
+
+  it('takes the newest available version rather than trusting the array order', async () => {
+    const resolved = await resolveToolkitVersion({
+      requested: 'latest',
+      apiKeyPresent: true,
+      client: toolkitClient({
+        meta: { availableVersions: ['20260126_00', '20260721_00', '20260702_01'] },
+      }),
+      now,
+    });
+    expect(resolved.composioGmailToolkit).toBe('20260721_00');
+  });
+
+  it('ignores available versions whose shape it cannot rank', async () => {
+    await expect(
+      resolveToolkitVersion({
+        requested: 'latest',
+        apiKeyPresent: true,
+        client: toolkitClient({ meta: { availableVersions: ['latest', 'stable'] } }),
+        now,
+      }),
+    ).rejects.toThrow(/concrete/);
   });
 
   it('refuses to record the literal string "latest" even if the provider returns it', async () => {
