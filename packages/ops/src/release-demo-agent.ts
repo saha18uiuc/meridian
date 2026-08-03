@@ -23,12 +23,14 @@ import { opsClient } from './lib/supabase.js';
  * through the same RPC the application uses, so if the chain cannot be built here it cannot be built
  * in the product either — which is the point of doing it this way rather than inserting rows.
  *
- * The one shortcut is the Git SHA. The real path is `pnpm agent:finalize`, which stages the
- * generated files, makes a commit, and verifies the commit object before recording it. Here the code
- * for v001 is already committed, so the current HEAD is named instead of a new commit being created
- * — a demo must not write to the repository's history as a side effect of being run.
+ * There is no shortcut around the Git SHA: `finalizeAgentVersion` runs exactly as `pnpm
+ * agent:finalize` runs it, verifying the commit object with `git ls-tree` and `git show` before the
+ * SHA is recorded. When the generated files are already committed it names HEAD rather than
+ * manufacturing an empty commit, so running the demo does not write to the repository's history.
  *
- * Re-running is safe: an agent that already holds an active version is left exactly as it is.
+ * Every step resumes rather than repeats. A release interrupted after the freeze but before the
+ * commit — which is what a failed run leaves behind — is picked up from where it stopped, because
+ * re-freezing a board that is already frozen is not a retry, it is a second contract.
  */
 
 const DEPLOYMENT_KEY = 'inbound-import-receiving';
@@ -191,20 +193,36 @@ export async function releaseDemoAgent(options: {
     );
   }
 
-  const frozen = await service.rpc('freeze_whiteboard_spec', {
-    p_actor_user_id: (await operator.auth.getUser()).data.user?.id ?? '',
-    p_whiteboard_id: options.whiteboardId,
-    p_expected_revision_no: revisionNo,
-    p_canvas_json: graph as unknown as Json,
-    p_canvas_hash: canvasHash,
-    p_spec_json: compiled.specJson as unknown as Json,
-    p_spec_hash: specHash,
-    p_unresolved_comment_ids: [],
-    p_ack_blockers: false,
-    p_ack_stale_review: true,
-  });
-  if (frozen.error !== null) throw new Error(`freeze_whiteboard_spec: ${frozen.error.message}`);
-  const specId = (frozen.data as unknown as { specId: string }).specId;
+  // A spec that is already frozen for this board at this hash is the same contract, so it is reused
+  // rather than frozen again. Freezing twice would allocate `spec_version` 2 for a board that has
+  // not changed, and the second contract would be indistinguishable from a real revision.
+  const priorSpec = await service
+    .from('frozen_specs')
+    .select('spec_id')
+    .eq('whiteboard_id', options.whiteboardId)
+    .eq('spec_hash', specHash)
+    .maybeSingle();
+  if (priorSpec.error !== null) throw new Error(`could not read specs: ${priorSpec.error.message}`);
+
+  let specId: string;
+  if (priorSpec.data !== null) {
+    specId = priorSpec.data.spec_id;
+  } else {
+    const frozen = await service.rpc('freeze_whiteboard_spec', {
+      p_actor_user_id: (await operator.auth.getUser()).data.user?.id ?? '',
+      p_whiteboard_id: options.whiteboardId,
+      p_expected_revision_no: revisionNo,
+      p_canvas_json: graph as unknown as Json,
+      p_canvas_hash: canvasHash,
+      p_spec_json: compiled.specJson as unknown as Json,
+      p_spec_hash: specHash,
+      p_unresolved_comment_ids: [],
+      p_ack_blockers: false,
+      p_ack_stale_review: true,
+    });
+    if (frozen.error !== null) throw new Error(`freeze_whiteboard_spec: ${frozen.error.message}`);
+    specId = (frozen.data as unknown as { specId: string }).specId;
+  }
 
   const agentId =
     existing.data?.agent_id ??
@@ -220,29 +238,60 @@ export async function releaseDemoAgent(options: {
       })()
     ).agentId;
 
-  const version = await operator.rpc('create_agent_version', {
-    p_agent_id: agentId,
-    p_spec_id: specId,
-    // v001 has no parent, and the RPC is typed as taking a UUID rather than an optional one.
-    p_parent_agent_version_id: null as unknown as string,
-  });
-  if (version.error !== null) throw new Error(`create_agent_version: ${version.error.message}`);
-  const agentVersionId = (version.data as unknown as { agentVersionId: string }).agentVersionId;
+  const priorVersion = await service
+    .from('agent_versions')
+    .select('agent_version_id, status, git_commit_sha')
+    .eq('agent_id', agentId)
+    .eq('spec_id', specId)
+    .maybeSingle();
+  if (priorVersion.error !== null) {
+    throw new Error(`could not read versions: ${priorVersion.error.message}`);
+  }
 
-  // The real finalize path, not a shortcut around it: it stages only the generated files, makes one
-  // local commit, verifies that commit's *object* with `git ls-tree` and `git show`, checks the
-  // committed snapshot re-canonicalizes to the spec hash, and only then records the SHA. Calling it
-  // here means the demo exercises the lineage guarantee rather than asserting it.
-  const finalized = await finalizeAgentVersion(agentVersionId);
-  const gitCommitSha = finalized.gitCommitSha;
+  const agentVersionId =
+    priorVersion.data?.agent_version_id ??
+    (
+      await (async () => {
+        const version = await operator.rpc('create_agent_version', {
+          p_agent_id: agentId,
+          p_spec_id: specId,
+          // v001 has no parent, and the RPC takes a UUID rather than an optional one.
+          p_parent_agent_version_id: null as unknown as string,
+        });
+        if (version.error !== null) {
+          throw new Error(`create_agent_version: ${version.error.message}`);
+        }
+        return version.data as unknown as { agentVersionId: string };
+      })()
+    ).agentVersionId;
 
-  for (const status of ['evaluating', 'approved'] as const) {
+  // The real finalize path, not a shortcut around it: it stages only the generated files, verifies
+  // the commit *object* with `git ls-tree` and `git show`, checks the committed snapshot
+  // re-canonicalizes to the spec hash, and only then records the SHA. Calling it here means the demo
+  // exercises the lineage guarantee rather than asserting it. It only runs while the version is
+  // still `generated`, which is the one state `record_agent_commit` accepts.
+  const status = priorVersion.data?.status ?? 'generated';
+  const gitCommitSha =
+    status === 'generated'
+      ? (await finalizeAgentVersion(agentVersionId)).gitCommitSha
+      : (priorVersion.data?.git_commit_sha ?? '');
+
+  // Only the transitions the version has not already made. Replaying `generated → evaluating` on a
+  // version that is already approved is not idempotent; the lifecycle trigger rejects it, and
+  // rightly so.
+  const remaining: readonly ('evaluating' | 'approved')[] =
+    status === 'generated'
+      ? ['evaluating', 'approved']
+      : status === 'evaluating'
+        ? ['approved']
+        : [];
+  for (const next of remaining) {
     const moved = await operator.rpc('transition_agent_version', {
       p_agent_version_id: agentVersionId,
-      p_status: status,
+      p_status: next,
     });
     if (moved.error !== null) {
-      throw new Error(`transition to ${status}: ${moved.error.message}`);
+      throw new Error(`transition to ${next}: ${moved.error.message}`);
     }
   }
 
