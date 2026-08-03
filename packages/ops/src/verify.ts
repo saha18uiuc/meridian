@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { sha256Hex } from '@meridian/core';
 import { loadOpsEnv } from './env.js';
 import { buildSnapshot } from './fixtures/spec-snapshot.js';
+import { formatGates, gates } from './gates.js';
 import { flag, parseArgs } from './lib/args.js';
 import { runAsync } from './lib/proc.js';
 import { repoPath } from './lib/state.js';
@@ -262,6 +263,25 @@ export function verifySteps(): VerifyStep[] {
       name: 'spec snapshot matches the example board',
       required: true,
       run: () => Promise.resolve(checkCommittedSnapshot()),
+    },
+    {
+      // Reported, not enforced. Four claims need a credential this repository cannot contain, and
+      // a green summary that stays silent about them invites the reader to assume the live paths
+      // were exercised. The step passes when the report is produced; what it says is the point.
+      name: 'external gates reported',
+      required: true,
+      run: () => {
+        const all = gates();
+        process.stdout.write(`${formatGates(all)}\n`);
+        const notRun = all.filter((gate) => gate.state === 'not run');
+        return Promise.resolve({
+          ok: true,
+          detail:
+            notRun.length === 0
+              ? 'all gates have prerequisites'
+              : `not run: ${notRun.map((gate) => gate.id).join(', ')}`,
+        });
+      },
     },
     { name: 'test:unit', required: true, run: () => command('unit', ['pnpm', 'test:unit']) },
     { name: 'test:db', required: true, run: () => command('db', ['pnpm', 'test:db']) },

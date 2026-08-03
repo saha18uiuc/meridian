@@ -99,3 +99,48 @@ describe('runReview', () => {
     }
   });
 });
+
+/**
+ * The one test in the suite that spends money, and the only one that can fail because a vendor
+ * changed something.
+ *
+ * Everything above proves the pipeline against a deterministic stand-in, which is what makes the
+ * suite runnable on a laptop with no credentials. What it cannot prove is that a real model, asked
+ * this prompt, returns something the structured-output schema accepts — and that is exactly the
+ * claim that breaks silently when a model is deprecated or its parse behaviour shifts. So it is a
+ * separate gate: skipped without credentials, reported as not run by `pnpm gates`, and never
+ * quietly passing on the mock.
+ *
+ *   AI_MODE=live pnpm test:service -t "live model smoke"
+ */
+const LIVE_MODEL =
+  process.env['AI_MODE'] === 'live' && (process.env['OPENAI_API_KEY'] ?? '') !== '';
+
+// Declared only when the credentials are there, rather than declared and skipped. A skipped test
+// reports success without running — `pnpm verify` bans the construct outright for that reason —
+// and this gate's whole value is that its absence is visible. `pnpm gates` names it as not run.
+if (LIVE_MODEL) {
+  describe('live model smoke', () => {
+    it('a real model returns findings that satisfy the structured-output schema', async () => {
+      const live = await createBoard(owner);
+      const result = await runReview(owner, ownerId, live.whiteboardId, live.revisionNo);
+
+      expect(result.status).toBe('completed');
+      // The model that answered, not the one that was asked for: a fallback is legitimate, and
+      // recording which surface actually produced this is the point of the smoke.
+      expect(result.modelName.length).toBeGreaterThan(0);
+      process.stdout.write(
+        `live model smoke: ${result.modelName} (${result.reasoningEffort}) returned ${String(result.findings.length)} finding(s)\n`,
+      );
+
+      // Parsing is the assertion. Anything that reached here already satisfied the structured
+      // output schema, so what is left to check is that the model contributed at all rather than
+      // the deterministic checks carrying the round on their own.
+      expect(result.findings.length).toBeGreaterThan(0);
+      for (const finding of result.findings) {
+        expect(finding.issueKey.length).toBeGreaterThan(0);
+        expect(['blocking', 'non_blocking']).toContain(finding.severity);
+      }
+    }, 180_000);
+  });
+}

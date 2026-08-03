@@ -9,6 +9,7 @@
   },
   "scripts": {
     "preflight": "tsx scripts/preflight.ts",
+    "gates": "tsx scripts/gates.ts",
     "bootstrap": "tsx scripts/bootstrap.ts",
     "db:start": "supabase start",
     "db:stop": "supabase stop --no-backup",

@@ -289,6 +289,29 @@ not the run — so a failure there is logged and swallowed rather than surfaced 
 
 ---
 
+## The external gates are reported, never enforced
+
+`pnpm gates` names the four verifications that need a credential this repository cannot contain,
+says which of them can run here, and exits 0 either way. `pnpm verify` prints the same report as a
+step.
+
+Failing when a key is absent would be the obvious alternative and it is wrong twice over. It makes
+the absence of a credential look like a defect in the code, and it puts `pnpm verify` permanently
+red on precisely the machine the README is written for — which trains the reader to ignore the one
+signal the suite exists to give. The opposite failure is worse still: staying silent lets an
+all-green summary imply that the live paths were exercised, when what actually happened is that
+nobody checked.
+
+So the report is unconditional and the wording is blunt. `NOT RUN` is not a warning to be cleared;
+it is the accurate description of a claim this run did not test, printed next to the exact command
+that would test it.
+
+The same reasoning shapes the live model smoke. It is **declared only when its credentials are
+present**, rather than declared and skipped — `pnpm verify` bans `.skipIf` outright, because a
+skipped test reports success without running, and a gate whose absence is invisible is not a gate.
+
+---
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:

@@ -2,7 +2,7 @@ import { createTools } from '@meridian/agent-kit';
 import { createLogger, workerEnv } from '@meridian/core';
 import { intakeMessage, type IntakeResult } from './intake/index.js';
 import { reconcileQueuedExecutions } from './intake/reconcile-queued-executions.js';
-import { optionalArg, parseArgs } from './lib/args.js';
+import { optionalArg, parseArgs, positional } from './lib/args.js';
 import { opsClient } from './lib/supabase.js';
 import { closeOpsTemporalClient, opsTemporalClient } from './lib/temporal.js';
 
@@ -97,7 +97,10 @@ export async function main(argv: readonly string[] = process.argv.slice(2)): Pro
   const args = parseArgs(argv);
   try {
     const report = await processInbox({
-      deploymentKey: optionalArg(args, 'agent') ?? argv[0] ?? 'inbound-import-receiving',
+      // The positional form is `process-inbox <deployment-key>`. A leading `--once` — which the
+      // live-gate command in the README passes and this script satisfies by never looping — is a
+      // flag, not a deployment key, and taking it as one looks up an agent that cannot exist.
+      deploymentKey: optionalArg(args, 'agent') ?? positional(argv) ?? 'inbound-import-receiving',
       ...(optionalArg(args, 'query') === undefined ? {} : { query: optionalArg(args, 'query')! }),
       ...(optionalArg(args, 'fixtures') === undefined
         ? {}

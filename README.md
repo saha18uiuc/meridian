@@ -122,9 +122,35 @@ pnpm stop
 | `pnpm verify:e2e`  | Everything that needs a live stack: reset, seed, service and component suites, the mock demo, Playwright, and a health read.                                  |
 | `pnpm demo`        | The end-to-end mock demo, run as assertions rather than as output to read.                                                                                    |
 | `pnpm verify:tree` | Every required path exists and no undeclared file has crept in.                                                                                               |
+| `pnpm gates`       | Which external gates can run here, and which are reported unverified. Never fails.                                                                            |
 
 `pnpm verify` includes `next build`. A broken server component fails verification rather than
 surfacing at deploy time.
+
+## External gates
+
+Four claims cannot be proven from this repository alone, because they need a credential it must not
+contain. `pnpm verify` prints their status on every run and `pnpm gates` prints it on demand, so a
+green summary never implies the live paths were exercised.
+
+| Gate                        | Needs                                                                 | Command                                                |
+| --------------------------- | --------------------------------------------------------------------- | ------------------------------------------------------ |
+| Real-model review           | `OPENAI_API_KEY`                                                      | `AI_MODE=live pnpm test:service -t "live model smoke"` |
+| Composio OAuth consent      | `COMPOSIO_API_KEY`, `COMPOSIO_GMAIL_AUTH_CONFIG_ID`                   | `pnpm connect:gmail`                                   |
+| Live Gmail fetch and send   | the above, plus `GMAIL_LIVE_MODE=true` and `GMAIL_ALLOWED_RECIPIENTS` | `GMAIL_LIVE_MODE=true pnpm process-inbox --once`       |
+| Operator-invoked generation | nothing; the operator runs the skill                                  | step 9 above                                           |
+
+To enable the live paths, add the keys to `.env` and re-run `pnpm preflight`. That is what resolves
+`COMPOSIO_GMAIL_TOOLKIT_VERSION=latest` to a concrete published version and rewrites
+`.meridian/resolved-versions.json`; without a Composio key it records `mock`, and no execution ever
+records the literal string `latest`. `pnpm connect:gmail` prints a consent URL and then the exact
+`COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID=` line to paste back.
+
+`GMAIL_LIVE_MODE` is a hard switch, not a hint: every send and draft throws before contacting
+Composio while it is false, and even when true a recipient outside `GMAIL_ALLOWED_RECIPIENTS` is
+refused. The live smoke is the only test in the suite that spends money, and it is declared only
+when its credentials are present — not declared and skipped, because a skipped test reports success
+without running.
 
 ## Reset
 

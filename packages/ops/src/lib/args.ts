@@ -41,3 +41,20 @@ export function optionalArg(args: Args, name: string): string | undefined {
 export function flag(args: Args, name: string): boolean {
   return args[name] === true || args[name] === 'true';
 }
+
+/**
+ * The first bare token, skipping flags and the values they consume.
+ *
+ * `argv[0]` is not the same thing: a command that leads with `--once` would take the flag itself
+ * as the positional argument and then look up something named after it.
+ */
+export function positional(argv: readonly string[]): string | undefined {
+  for (let i = 0; i < argv.length; i += 1) {
+    const token = argv[i];
+    if (token === undefined) continue;
+    if (!token.startsWith('--')) return token;
+    const next = argv[i + 1];
+    if (next !== undefined && !next.startsWith('--')) i += 1;
+  }
+  return undefined;
+}
