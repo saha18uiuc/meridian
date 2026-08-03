@@ -12,19 +12,20 @@ import * as browser from './browser.js';
 import * as documents from './documents.js';
 import * as recorder from './execution-recorder.js';
 import * as mail from './mail.js';
-import * as model from './model.js';
 
 /**
  * The activity surface the worker registers and the workflow proxies.
  *
  * `releaseExecution` and the runtime helpers are intentionally excluded: they are process-local
  * housekeeping, not durable operations, and registering them would make them look replayable.
+ * `modelExtractStructured` is excluded for the same reason from the other direction — it is real
+ * I/O, but the workflow reaches it through `documents.extractFields`, so registering it as well
+ * would advertise a durable operation no proxy calls. `workflow-boundary.test.ts` holds the line.
  */
 export const activities = {
   ...mail,
   ...documents,
   ...browser,
-  ...model,
   ...recorder,
   performMailAction: actions.performMailAction,
   recordHumanDecisionRequest: actions.recordHumanDecisionRequest,

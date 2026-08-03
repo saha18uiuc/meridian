@@ -17,6 +17,15 @@ export interface ToolFactoryOptions {
   supabase?: SupabaseClient<Database>;
   fixtureRoot?: string;
   humanHandoff?: HumanHandoffTool;
+  /**
+   * The model boundary, supplied by the worker.
+   *
+   * Injected rather than built here for the same reason `createLiveDocumentTool` injects it one
+   * level down: this package must be importable without pulling a model SDK into a bundle that
+   * only ever wanted the mock path. The worker passes `modelExtractStructured`; the eval harness
+   * and every mock run pass nothing and never reach a live document.
+   */
+  extractStructured?: (text: string, schemaName: string) => Promise<Record<string, unknown>>;
 }
 
 /**
@@ -201,31 +210,21 @@ function createLiveDocuments(
 
   async function build(): Promise<ToolRegistry['documents']> {
     const { createLiveDocumentTool } = await import('./live/openai-documents.js');
+    const extractStructured = options.extractStructured;
+    if (extractStructured === undefined) {
+      // Reached only by a caller that turned live mode on and then asked a document for its
+      // fields without supplying a model. Refusing here is the point: the alternative is a second
+      // copy of the call kept alive for a caller that does not exist.
+      throw new ToolUnavailableError(
+        'documents',
+        'live field extraction needs a model boundary; pass extractStructured to createTools',
+      );
+    }
     return createLiveDocumentTool({
       store,
       ocrEnabled: env.OCR_ENABLED,
       ocrMinTextChars: env.OCR_MIN_TEXT_CHARS,
-      extractStructured: async (text, schemaName) => {
-        if (env.AI_MODE !== 'live' || env.OPENAI_API_KEY === undefined) {
-          throw new ToolUnavailableError(
-            'documents',
-            'structured extraction requires AI_MODE=live',
-          );
-        }
-        const { default: OpenAI } = await import('openai');
-        const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
-        const response = await client.responses.create({
-          model: env.AI_REVIEW_MODEL,
-          input: [
-            {
-              role: 'system',
-              content: `Extract the fields for schema "${schemaName}" as strict JSON. Use null for anything absent; never invent a value.`,
-            },
-            { role: 'user', content: text.slice(0, 100_000) },
-          ],
-        });
-        return JSON.parse(response.output_text) as Record<string, unknown>;
-      },
+      extractStructured,
     });
   }
 

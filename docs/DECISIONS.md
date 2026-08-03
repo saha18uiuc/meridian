@@ -344,6 +344,27 @@ skipped test reports success without running, and a gate whose absence is invisi
 
 ---
 
+## The model boundary is not a registered activity
+
+Structured extraction is real, non-deterministic I/O, so it has to happen inside an activity. It
+does: an agent asks for fields through `DocumentTool.extractFields`, which the workflow reaches via
+the `documentExtractFields` activity, which calls `modelExtractStructured` in
+`apps/backend/src/temporal/activities/model.ts`. That function is _not_ registered in the activity
+map, because no proxy invokes it directly and a registration nothing calls advertises a durable
+operation that does not exist.
+
+It was registered at first, and the cost showed up immediately. The plan enumerates `model.ts`
+among the activity files while its own `ToolRegistry` has exactly four members and no model tool —
+so the file was created with nowhere to be called from, and the extraction that agents actually
+perform was written a second time, inline, in `createTools`. Two implementations of one OpenAI call,
+already disagreeing about reasoning effort, neither one wrong enough to fail.
+
+The single implementation now lives in `model.ts` and is injected into `createTools`, which is where
+`createLiveDocumentTool` already expected to receive it. `agent-kit` keeps its property that
+importing it never pulls a model SDK toward a mock run. `workflow-boundary.test.ts` asserts that
+every registered activity is called by workflow code, which is the check that would have caught the
+duplicate on the day it was written.
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:

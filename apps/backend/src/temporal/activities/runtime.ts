@@ -7,6 +7,7 @@ import {
 import { type WorkerEnv, workerEnv } from '@meridian/core';
 import type { Database } from '@meridian/core/database';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { modelExtractStructured } from './model.js';
 
 /**
  * Everything with I/O lives behind this module.
@@ -54,6 +55,7 @@ export function toolsFor(envelope: ActivityEnvelope): ToolRegistry {
       executionId: envelope.executionId,
       capabilities: envelope.capabilities,
       supabase: serviceClient(env),
+      extractStructured: modelExtractStructured,
     });
     toolRegistries.set(envelope.executionId, tools);
   }

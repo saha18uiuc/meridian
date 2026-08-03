@@ -43,9 +43,9 @@ const FORBIDDEN = [
   'p-limit',
 ];
 
-describe('the workflow bundle', () => {
-  const sources = sourcesIn(workflowDir);
+const sources = sourcesIn(workflowDir);
 
+describe('the workflow bundle', () => {
   it('contains source files to check', () => {
     expect(sources.length).toBeGreaterThan(0);
   });
@@ -97,5 +97,18 @@ describe('the activity surface', () => {
   it('does not register process-local housekeeping as a durable activity', () => {
     expect(Object.keys(activities)).not.toContain('releaseExecution');
     expect(Object.keys(activities)).not.toContain('serviceClient');
+  });
+
+  it('registers nothing the workflow never calls', () => {
+    // The converse of the check above, and the one that actually finds things. A registration with
+    // no caller costs nothing at runtime, so nothing fails and nobody notices; it is discovered
+    // later as a second implementation of something that already works, drifted away from the copy
+    // being used. `modelExtractStructured` sat here for exactly that reason — it duplicated the
+    // extraction the documents activity performs, and had already diverged on reasoning effort.
+    const called = sources.map((source) => source.text).join('\n');
+    const orphans = Object.keys(activities).filter(
+      (name) => !new RegExp(`\\.${name}\\(`).test(called),
+    );
+    expect(orphans).toEqual([]);
   });
 });
