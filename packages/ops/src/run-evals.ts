@@ -63,24 +63,60 @@ async function loadVersion(
   deploymentKey: string,
 ): Promise<VersionRow> {
   const client = opsClient();
-  const query = client
-    .from('agent_versions')
-    .select(
-      'agent_version_id, agent_id, version_no, spec_id, spec_hash, git_commit_sha, build_manifest_json, status, agents!inner(deployment_key, whiteboard_id)',
-    );
+  // Two round trips rather than one embedded select. `agents` and `agent_versions` reference each
+  // other — the version names its agent for lineage, and the agent names its active version — so
+  // PostgREST refuses to guess which relationship an embed means, and a name hint would pin this
+  // query to a constraint name that a later migration is free to rename. Two plain reads say the
+  // same thing and cannot become ambiguous.
+  const columns =
+    'agent_version_id, agent_id, version_no, spec_id, git_commit_sha, build_manifest_json, status, whiteboard_id';
 
-  const { data, error } =
+  const found =
     agentVersionId === undefined
-      ? await query
-          .eq('agents.deployment_key', deploymentKey)
-          .order('version_no', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-      : await query.eq('agent_version_id', agentVersionId).maybeSingle();
+      ? await (async () => {
+          const agent = await client
+            .from('agents')
+            .select('agent_id')
+            .eq('deployment_key', deploymentKey)
+            .maybeSingle();
+          if (agent.error !== null) throw new Error(agent.error.message);
+          if (agent.data === null) throw new Error(`no agent for deployment key ${deploymentKey}`);
+          return client
+            .from('agent_versions')
+            .select(columns)
+            .eq('agent_id', agent.data.agent_id)
+            .order('version_no', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        })()
+      : await client
+          .from('agent_versions')
+          .select(columns)
+          .eq('agent_version_id', agentVersionId)
+          .maybeSingle();
 
-  if (error !== null) throw new Error(error.message);
-  if (data === null) throw new Error('no agent version matched; reserve and finalize one first');
-  return data as unknown as VersionRow;
+  if (found.error !== null) throw new Error(found.error.message);
+  if (found.data === null)
+    throw new Error('no agent version matched; reserve and finalize one first');
+
+  const [agent, spec] = await Promise.all([
+    client
+      .from('agents')
+      .select('deployment_key, whiteboard_id')
+      .eq('agent_id', found.data.agent_id)
+      .single(),
+    // `spec_hash` lives on the frozen spec, not on the version: the version points at a contract,
+    // and the contract owns its hash. Reading it here keeps the single source intact.
+    client.from('frozen_specs').select('spec_hash').eq('spec_id', found.data.spec_id).single(),
+  ]);
+  if (agent.error !== null) throw new Error(agent.error.message);
+  if (spec.error !== null) throw new Error(spec.error.message);
+
+  return {
+    ...found.data,
+    spec_hash: spec.data.spec_hash,
+    agents: agent.data,
+  } as unknown as VersionRow;
 }
 
 /**
