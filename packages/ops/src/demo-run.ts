@@ -1,10 +1,13 @@
 import { spawn } from 'node:child_process';
+import { appendEvent } from '@meridian/agent-kit';
+import { sha256Hex } from '@meridian/core';
+import { HUMAN_DECISION_SIGNAL } from '@meridian/core/temporal-contract';
 import { loadOpsEnv, optionalEnv } from './env.js';
 import { flag, optionalArg, parseArgs } from './lib/args.js';
 import { runAsync, sleep, waitFor } from './lib/proc.js';
 import { repoPath } from './lib/state.js';
 import { opsClient } from './lib/supabase.js';
-import { closeOpsTemporalClient } from './lib/temporal.js';
+import { closeOpsTemporalClient, opsTemporalClient } from './lib/temporal.js';
 import { processInbox } from './process-inbox.js';
 
 /**
@@ -217,6 +220,8 @@ async function ensureWorker(port: number): Promise<() => Promise<void>> {
 export interface DemoReport {
   considered: number;
   reconciled: number;
+  /** Handoff questions answered on the operator's behalf while the demo ran. */
+  answered: number;
   summaries: ExecutionSummary[];
   assertions: DemoAssertion[];
   ok: boolean;
@@ -229,6 +234,12 @@ export async function demoRun(options: { deploymentKey: string }): Promise<DemoR
   });
 
   const executionIds = inbox.results.map((result) => result.executionId);
+
+  // One shipment reaches a question the specification does not answer and asks a person. Nobody is
+  // watching a terminal during a scripted demo, so the operator's part is played here — the same
+  // signal the review UI sends, through the same path. Without it that run waits its full 24-hour
+  // timeout and the demo reports a hang where the design intends a handoff.
+  const answered = await answerPendingHandoffs(executionIds);
 
   const settled = await waitForSettled(executionIds);
   const summaries = await summarize(executionIds);
@@ -245,15 +256,81 @@ export async function demoRun(options: { deploymentKey: string }): Promise<DemoR
   return {
     considered: inbox.considered,
     reconciled: inbox.reconciled,
+    answered,
     summaries,
     assertions,
     ok: assertions.every((assertion) => assertion.ok),
   };
 }
 
+/**
+ * Answer every handoff question that is still open, standing in for the receiving specialist.
+ *
+ * The requests are read from `execution_events` rather than from Temporal: the event is what the
+ * workflow durably wrote when it asked, so a request that exists is a request a person could see in
+ * the UI. Answering signals the workflow and records the answer, in that order — a signal that
+ * lands with no record would leave the run resumed and the history silent about why.
+ */
+async function answerPendingHandoffs(executionIds: readonly string[]): Promise<number> {
+  if (executionIds.length === 0) return 0;
+  const client = opsClient();
+
+  // The wait is bounded and short: the request event is written by an activity that runs after the
+  // workflow has already been through several steps, so it is not there the instant intake returns.
+  const requests = new Map<string, { executionId: string; workflowId: string }>();
+  await waitFor(
+    async () => {
+      const { data, error } = await client
+        .from('execution_events')
+        .select('execution_id, event_key, payload_json')
+        .in('execution_id', [...executionIds])
+        .like('event_key', 'handoff:requested:%');
+      if (error !== null) return false;
+
+      for (const row of data ?? []) {
+        const payload = row.payload_json as { requestId?: unknown };
+        if (typeof payload.requestId !== 'string') continue;
+        const { data: execution } = await client
+          .from('executions')
+          .select('temporal_workflow_id, status')
+          .eq('execution_id', row.execution_id)
+          .single();
+        if (execution?.temporal_workflow_id == null) continue;
+        if (TERMINAL_STATUSES.has(execution.status)) continue;
+        requests.set(payload.requestId, {
+          executionId: row.execution_id,
+          workflowId: execution.temporal_workflow_id,
+        });
+      }
+      return requests.size > 0;
+    },
+    { timeoutMs: 30_000, intervalMs: 1000 },
+  );
+
+  const temporal = await opsTemporalClient();
+  for (const [requestId, target] of requests) {
+    await temporal.workflow.getHandle(target.workflowId).signal(HUMAN_DECISION_SIGNAL, {
+      requestId,
+      decision: 'escalated',
+      notes: 'answered by the receiving specialist during the demo',
+    });
+    await appendEvent(client, {
+      executionId: target.executionId,
+      stepExecutionId: null,
+      // `evidence`, not `state_transition`: the run's status does not change because a human
+      // answered. What changed is that it now holds a fact it did not have before.
+      eventType: 'evidence',
+      eventKey: `human-decision:${requestId}`,
+      payload: { requestId, decision: 'escalated', source: 'demo' },
+      idempotencyKey: sha256Hex(['human-decision', target.executionId, requestId].join('|')),
+    });
+  }
+  return requests.size;
+}
+
 function render(report: DemoReport): string {
   const lines = [
-    `inbox: ${String(report.considered)} message(s) considered, ${String(report.reconciled)} reconciled`,
+    `inbox: ${String(report.considered)} message(s) considered, ${String(report.reconciled)} reconciled, ${String(report.answered)} handoff(s) answered`,
     '',
   ];
   for (const summary of report.summaries) {

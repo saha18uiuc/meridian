@@ -155,6 +155,16 @@ export async function receivingWorkflow(input: ReceivingInput): Promise<Receivin
       context,
     );
   } catch (error) {
+    // The row is closed before the failure is rethrown, because a workflow that ends without
+    // closing it leaves the execution reading `running` forever — the operator would see a shipment
+    // still in flight that failed minutes ago. `fail_execution` is idempotent, so a replay is free.
+    await activities.executionFail({
+      executionId: input.executionId,
+      error: {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : 'UnknownError',
+      },
+    });
     // Without this the run would not fail — it would hang, because Temporal retries a workflow
     // task forever when the error is not an `ApplicationFailure`.
     throw asWorkflowFailure(error);
@@ -165,6 +175,22 @@ export async function receivingWorkflow(input: ReceivingInput): Promise<Receivin
     stepExecutionId: null,
     payload: { phase: 'decision', outcome: decision.outcome, reason: decision.reason },
     eventKey: `decision:${input.businessKey}`,
+  });
+
+  // `resultKind` rather than a top-level `outcome`: that key is reserved by
+  // `ck_executions_manual_review_has_no_workflow` for the intake manual-review path, and a workflow
+  // that wrote it would be claiming to be an execution with no workflow. The eval harness records
+  // the same shape, so one reader serves both.
+  await activities.executionComplete({
+    executionId: input.executionId,
+    status: 'passed',
+    outputSummary: {
+      resultKind: decision.outcome,
+      businessKey: input.businessKey,
+      reason: decision.reason,
+      messageCount: messages.length,
+      shipmentSummary: decision.shipmentSummary,
+    },
   });
 
   return {

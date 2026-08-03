@@ -1,7 +1,7 @@
 import type { ExecutionStep } from '@meridian/core/schemas';
 import { Context } from '@temporalio/activity';
 import { withFailureMapping } from './failures.js';
-import { recorderFor } from './runtime.js';
+import { recorderFor, serviceClient } from './runtime.js';
 
 /**
  * Persistence activities.
@@ -67,6 +67,45 @@ export async function recorderAppendEvidence(args: {
       args.eventKey === undefined ? {} : { eventKey: args.eventKey },
     ),
   );
+}
+
+/**
+ * Close the execution row the intake path opened.
+ *
+ * The workflow closing the row itself, as its last durable act, is the only arrangement that keeps
+ * the two in step: Temporal knows the run ended, but nothing watches Temporal on the application's
+ * behalf, so an execution whose workflow completed without this call sits in `running` forever and
+ * the UI shows a shipment still being processed that finished minutes ago.
+ *
+ * Both RPCs are idempotent on an already-terminal row, so a replayed activity is free.
+ */
+export async function executionComplete(args: {
+  executionId: string;
+  status: 'passed' | 'failed';
+  outputSummary: Record<string, unknown>;
+}): Promise<void> {
+  return withFailureMapping(async () => {
+    const { error } = await serviceClient().rpc('complete_execution', {
+      p_execution_id: args.executionId,
+      p_status: args.status,
+      p_output_summary: args.outputSummary as never,
+      p_diff_summary: null as never,
+    });
+    if (error !== null) throw new Error(`complete_execution failed: ${error.message}`);
+  });
+}
+
+export async function executionFail(args: {
+  executionId: string;
+  error: Record<string, unknown>;
+}): Promise<void> {
+  return withFailureMapping(async () => {
+    const { error } = await serviceClient().rpc('fail_execution', {
+      p_execution_id: args.executionId,
+      p_error: args.error as never,
+    });
+    if (error !== null) throw new Error(`fail_execution failed: ${error.message}`);
+  });
 }
 
 /**

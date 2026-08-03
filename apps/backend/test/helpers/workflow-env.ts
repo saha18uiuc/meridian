@@ -74,6 +74,8 @@ function defaultActivities(record: (call: ActivityCall) => void): Activities {
     recorderCompleteStep: stub('recorderCompleteStep'),
     recorderFailStep: stub('recorderFailStep'),
     recorderAppendEvidence: stub('recorderAppendEvidence'),
+    executionComplete: stub('executionComplete'),
+    executionFail: stub('executionFail'),
     recordHumanDecisionRequest: stub('recordHumanDecisionRequest'),
   } as unknown as Activities;
 }
