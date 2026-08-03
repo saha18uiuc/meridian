@@ -26,6 +26,27 @@ function loadDotEnvFile(): void {
   if (existsSync(path)) process.loadEnvFile(path);
 }
 
+/**
+ * The workflow bundle entry has a different extension depending on how the worker was launched.
+ *
+ * `pnpm start` runs the compiled tree, where the sibling is `index.js`; `pnpm dev` runs the source
+ * through tsx, where only `index.ts` exists and a hardcoded `.js` resolves to nothing. Temporal's
+ * bundler accepts either, so the question is settled by looking for the file rather than by
+ * assuming which launch path is in use.
+ */
+function workflowsEntryPoint(): string {
+  const candidates = ['./workflows/index.js', './workflows/index.ts'].map((relative) =>
+    fileURLToPath(new URL(relative, import.meta.url)),
+  );
+  const found = candidates.find((candidate) => existsSync(candidate));
+  if (found === undefined) {
+    throw new Error(
+      `no workflow entry point beside the worker; looked for ${candidates.join(', ')}`,
+    );
+  }
+  return found;
+}
+
 async function main(): Promise<void> {
   loadDotEnvFile();
   const env = workerEnv();
@@ -35,7 +56,7 @@ async function main(): Promise<void> {
     connection,
     namespace: env.TEMPORAL_NAMESPACE,
     taskQueue: TASK_QUEUE,
-    workflowsPath: fileURLToPath(new URL('./workflows/index.js', import.meta.url)),
+    workflowsPath: workflowsEntryPoint(),
     activities,
     // `zod` is pulled in through the agent definitions and must run as real code inside the
     // sandbox rather than being stubbed out by the bundler's Node-module shims.
