@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { createLogger, workerEnv } from '@meridian/core';
+import { createLogger, forgetEmptyEnvVars, workerEnv } from '@meridian/core';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { activities } from './activities/index.js';
 import { startHealthServer } from './health-server.js';
@@ -17,9 +17,11 @@ const logger = createLogger('worker');
  * `SUPABASE_SERVICE_ROLE_KEY` does not fail loudly at the point of the mistake: it answers
  * `/healthz`, accepts workflow tasks, and leaves every execution sitting in `running`. Loading the
  * file here is what makes the three launch paths identical. Real environment variables still win,
- * because `process.loadEnvFile` does not overwrite what is already set.
+ * because `process.loadEnvFile` does not overwrite what is already set — but an empty one is not a
+ * value, and leaving it would reproduce the exact silent failure this function exists to prevent.
  */
 function loadDotEnvFile(): void {
+  forgetEmptyEnvVars();
   const path = fileURLToPath(new URL('../../../../.env', import.meta.url));
   if (existsSync(path)) process.loadEnvFile(path);
 }

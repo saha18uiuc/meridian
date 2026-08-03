@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { forgetEmptyEnvVars } from '@meridian/core';
 import { config as loadDotenv } from 'dotenv';
 import { REPO_ROOT } from './lib/state.js';
 
@@ -9,7 +10,7 @@ import { REPO_ROOT } from './lib/state.js';
  * The web app and the worker get their configuration from their own runtimes; a script invoked as
  * `pnpm preflight` gets nothing, so it reads `.env` explicitly. `override: false` matters: a value
  * already exported in the shell is the operator being deliberate, and a file should not quietly
- * countermand it.
+ * countermand it. An *empty* export is not deliberate, which is why it is cleared first.
  */
 
 let loaded = false;
@@ -17,6 +18,7 @@ let loaded = false;
 export function loadOpsEnv(): void {
   if (loaded) return;
   loaded = true;
+  forgetEmptyEnvVars();
   const envPath = join(REPO_ROOT, '.env');
   if (existsSync(envPath)) loadDotenv({ path: envPath, override: false, quiet: true });
 }

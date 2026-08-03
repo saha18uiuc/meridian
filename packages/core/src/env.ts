@@ -8,6 +8,32 @@ import { z } from 'zod';
  * the situation an env contract is supposed to prevent.
  */
 
+/**
+ * Delete environment variables whose value is the empty string, and report which.
+ *
+ * Every `.env` loader in this repository refuses to override a variable already present in the
+ * environment, on the grounds that an exported value is the operator being deliberate. That is
+ * right for a value and wrong for an empty string, which is not a decision anyone makes on
+ * purpose — it arrives from a CI matrix that declares a secret it was not given, a shell profile
+ * that exports a name before it has a key, or an editor that injects a placeholder.
+ *
+ * Left in place it is worse than a missing variable, because it silently wins: the file's real key
+ * is never read, `OPENAI_API_KEY` reports absent while sitting in `.env` two feet away, and the
+ * review path quietly stays on the deterministic mock. Every reader here already treats `''` as
+ * absent — `requireEnv`, `optionalEnv`, `credentialPresence`, the gate report — so this only makes
+ * the loaders agree with the rest of the codebase.
+ */
+export function forgetEmptyEnvVars(env: NodeJS.ProcessEnv = process.env): string[] {
+  const cleared: string[] = [];
+  for (const name of Object.keys(env)) {
+    if (env[name] === '') {
+      delete env[name];
+      cleared.push(name);
+    }
+  }
+  return cleared.sort();
+}
+
 export class EnvironmentError extends Error {
   readonly names: string[];
 

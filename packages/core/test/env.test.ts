@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   EnvironmentError,
   SECRET_ENV_NAMES,
+  forgetEmptyEnvVars,
   parseBrowserEnv,
   parseServerEnv,
   parseWorkerEnv,
@@ -19,6 +20,23 @@ const minimalServer = {
   SUPABASE_DB_URL: 'postgresql://postgres:postgres@127.0.0.1:54522/postgres',
   APP_BASE_URL: 'http://localhost:3000',
 };
+
+describe('an environment variable set to nothing', () => {
+  it('is removed, so a loader that will not override can supply the real one', () => {
+    const env = { OPENAI_API_KEY: '', COMPOSIO_API_KEY: '', KEEP: 'value' };
+    expect(forgetEmptyEnvVars(env)).toEqual(['COMPOSIO_API_KEY', 'OPENAI_API_KEY']);
+    expect('OPENAI_API_KEY' in env).toBe(false);
+    expect(env.KEEP).toBe('value');
+  });
+
+  it('is distinguished from a variable whose value is whitespace', () => {
+    // A space is a value, and a wrong one. Deleting it would hide a typo behind a working default
+    // instead of letting the schema reject it, which is a different mistake from the one above.
+    const env = { PADDED: ' ' };
+    expect(forgetEmptyEnvVars(env)).toEqual([]);
+    expect(env.PADDED).toBe(' ');
+  });
+});
 
 describe('server environment', () => {
   it('parses a minimal environment and applies documented defaults', () => {
