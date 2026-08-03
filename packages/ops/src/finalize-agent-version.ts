@@ -142,7 +142,9 @@ async function rerunValidation(commands: readonly string[]): Promise<void> {
     const result = await runAsync(bin, args, { cwd: repoPath() });
     if (result.code !== 0) {
       throw new FinalizeError(
-        `recorded validation command "${command}" failed at the committed tree:\n${result.stderr.trim().slice(0, 2000)}`,
+        // Both streams: lint and test runners report failures on stdout, and an error that quoted
+        // only stderr would print the command name above an empty line.
+        `recorded validation command "${command}" failed at the committed tree:\n${`${result.stdout}\n${result.stderr}`.trim().slice(-4000)}`,
       );
     }
   }

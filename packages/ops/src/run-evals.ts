@@ -112,11 +112,7 @@ async function loadVersion(
   if (agent.error !== null) throw new Error(agent.error.message);
   if (spec.error !== null) throw new Error(spec.error.message);
 
-  return {
-    ...found.data,
-    spec_hash: spec.data.spec_hash,
-    agents: agent.data,
-  } as unknown as VersionRow;
+  return { ...found.data, spec_hash: spec.data.spec_hash, agents: agent.data };
 }
 
 /**
