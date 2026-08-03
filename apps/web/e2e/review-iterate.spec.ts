@@ -103,8 +103,8 @@ test.describe('review iteration', () => {
       .poll(async () => {
         const response = await page.request.get(`/api/whiteboards/${whiteboardId}/assumptions`);
         if (!response.ok()) return [];
-        const body = (await response.json()) as { assumptions: { text: string }[] };
-        return body.assumptions.map((assumption) => assumption.text);
+        const body = (await response.json()) as { assumptions: { assumptionText: string }[] };
+        return body.assumptions.map((assumption) => assumption.assumptionText);
       })
       .toContainEqual(expect.stringContaining('matching CoA'));
   });

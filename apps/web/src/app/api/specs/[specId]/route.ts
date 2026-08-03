@@ -16,8 +16,10 @@ export async function GET(request: Request, { params }: Params): Promise<NextRes
     const spec = await getSpec(client, specId);
 
     if (new URL(request.url).searchParams.get('download') === '1') {
-      // Re-canonicalize rather than echoing the stored bytes: PostgreSQL `jsonb` does not
-      // preserve key order, so only the canonical serialization hashes back to `spec_hash`.
+      // Re-canonicalize rather than echoing whatever `jsonb` hands back, which does not preserve
+      // key order: two downloads of one spec must be byte-identical for a diff to mean anything.
+      // The bytes do not hash to `spec_hash` directly — that is taken over the semantic view — so
+      // a reader verifying the artifact applies `deriveSpecHash` to the parsed document.
       return new NextResponse(canonicalJson(spec.specJson), {
         status: 200,
         headers: {

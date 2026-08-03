@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { openSeededBoard, readBoard, signIn } from './fixtures';
+import { expectRevision, openSeededBoard, readBoard, signIn } from './fixtures';
 
 /**
  * What happens when two writers disagree about which revision they are editing.
@@ -25,6 +25,7 @@ test.describe('whiteboard conflicts', () => {
     const original = await field.inputValue();
     await field.fill(`${original} (conflict probe)`);
     await field.blur();
+    await expectRevision(page, before.revisionNo + 1);
     const current = await readBoard(page, whiteboardId);
     expect(current.revisionNo).toBe(before.revisionNo + 1);
 
@@ -41,8 +42,11 @@ test.describe('whiteboard conflicts', () => {
     const unchanged = await readBoard(page, whiteboardId);
     expect(unchanged.revisionNo).toBe(current.revisionNo);
 
+    // Restore the title, and wait for that write too: a spec that ends with a request in flight
+    // hands the next one a board that is still moving.
     await field.fill(original);
     await field.blur();
+    await expectRevision(page, current.revisionNo + 1);
   });
 
   test('the board keeps rendering after a refused write', async ({ page }) => {

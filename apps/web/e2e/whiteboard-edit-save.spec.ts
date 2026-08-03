@@ -1,5 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-import { openSeededBoard, readBoard, signIn } from './fixtures';
+import { expect, test } from '@playwright/test';
+import { expectRevision, openSeededBoard, readBoard, signIn } from './fixtures';
 
 /**
  * The authoring loop, asserted through the revision counter rather than through pixels.
@@ -8,18 +8,6 @@ import { openSeededBoard, readBoard, signIn } from './fixtures';
  * nothing. Those are the properties a second editor depends on, and they are invisible in a
  * screenshot.
  */
-
-/**
- * Wait until the toolbar reports a given revision.
- *
- * It reads `Revision N` when idle and `Saved · revision N` just after a write, so the number is
- * matched and the wording is not.
- */
-async function expectRevision(page: Page, revisionNo: number): Promise<void> {
-  await expect(page.getByTestId('save-status')).toHaveText(
-    new RegExp(`revision ${String(revisionNo)}\\b`, 'i'),
-  );
-}
 
 test.describe('whiteboard editing', () => {
   test.beforeEach(async ({ page }) => {

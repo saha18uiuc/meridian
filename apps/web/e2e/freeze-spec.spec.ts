@@ -1,4 +1,5 @@
-import { createHash } from 'node:crypto';
+import { deriveSpecHash } from '@meridian/core';
+import type { SpecJson } from '@meridian/core/schemas';
 import { expect, test } from '@playwright/test';
 import { openSeededBoard, readBoard, signIn } from './fixtures';
 
@@ -10,8 +11,9 @@ import { openSeededBoard, readBoard, signIn } from './fixtures';
  * can do is refuse to let the acknowledgement be implicit, which is why the confirm button stays
  * disabled until every warning shown has been ticked.
  *
- * The download assertion re-hashes the served bytes. That is the only way to show the published
- * `spec_hash` identifies the artifact the reader actually has, rather than one the server remembers.
+ * The download assertion re-derives the hash from the served bytes. That is the only way to show
+ * the published `spec_hash` identifies the artifact the reader actually has, rather than one the
+ * server merely remembers.
  */
 
 test.describe('freeze', () => {
@@ -57,8 +59,12 @@ test.describe('freeze', () => {
 
     const download = await page.request.get(`/api/specs/${specId!}?download=1`);
     expect(download.ok()).toBe(true);
-    const bytes = await download.body();
-    expect(createHash('sha256').update(bytes).digest('hex')).toBe(specHash);
+    // `deriveSpecHash`, not a hash of the whole document. `spec_hash` is taken over the semantic
+    // view — the contract without `specId`, `specVersion`, `frozenAt`, the review session IDs or
+    // the acknowledgement flags — so that re-freezing an unchanged board is recognisably the same
+    // spec. Hashing the served bytes whole would assert a rule the system does not use.
+    const downloaded = JSON.parse(await download.text()) as SpecJson;
+    expect(deriveSpecHash(downloaded)).toBe(specHash);
   });
 
   test('freezing an unchanged board twice does not mint a second spec', async ({ page }) => {

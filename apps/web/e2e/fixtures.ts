@@ -39,6 +39,20 @@ export async function openSeededBoard(page: Page): Promise<string> {
   return id;
 }
 
+/**
+ * Wait until the toolbar reports a given revision.
+ *
+ * Every editing control writes asynchronously, so reading the board straight after a `blur()` races
+ * the request the blur only started. The toolbar reads `Revision N` when idle and `Saved · revision
+ * N` just after a write, so the number is matched and the wording is not — waiting for the word
+ * "saved" alone can be satisfied by the canvas persisting its viewport, which changes no revision.
+ */
+export async function expectRevision(page: Page, revisionNo: number): Promise<void> {
+  await expect(page.getByTestId('save-status')).toHaveText(
+    new RegExp(`revision ${String(revisionNo)}\\b`, 'i'),
+  );
+}
+
 /** Read a board through the API using the browser's own session, so RLS applies exactly as it does to the UI. */
 export async function readBoard(
   page: Page,

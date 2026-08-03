@@ -517,6 +517,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'builds a committed, approved, active agent version, which nine db tests need before they can begin',
   'packages/core/test/helpers/review.ts':
     'builds a finalized review session with comments, which the comment and freeze tests need before they can begin',
+  'apps/web/test/service/error-map.test.ts':
+    'the §12 status contract, pinned. Every route delegates its status code to one module, so a code the mapping does not recognise is answered as a server fault — telling a caller to retry a refusal that will never succeed. The exhaustive case reads the codes out of the migrations rather than out of a list, which is what makes it notice a raise that was added without a status.',
   'apps/web/test/service/helpers.ts':
     'the service-test counterpart of the db factories: signs users in and walks a board to frozen and active',
   'apps/backend/test/helpers/workflow-env.ts':
