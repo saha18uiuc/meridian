@@ -175,7 +175,15 @@ async function readDocuments(
   attachments: readonly AttachmentRef[],
 ): Promise<CollectedDocuments> {
   const documents = context.toolRegistry.documents;
-  const sorted = [...attachments].sort((a, b) => a.filename.localeCompare(b.filename));
+  // Delivery order, deliberately not filename order. The specification asks "has this invoice
+  // already been received?", and "already" is a fact about arrival: the invoice in the earlier
+  // message is the one the shipment holds, and a later message carrying the same number with
+  // different line items is the one that conflicts. Sorting by filename would answer that question
+  // with an alphabetical accident — `invoice-1024-revised.pdf` sorts ahead of `invoice-1024.pdf` —
+  // and the shipment would end up summarised by the very document the run rejects. The order here
+  // is still deterministic: threads are visited in sorted order and the mailbox returns each
+  // thread's messages oldest-first, so the same inbox always yields the same sequence.
+  const sorted = [...attachments];
   const classified: ClassifiedDocument[] = [];
 
   // Chunked rather than unbounded, and never `p-limit`: the workflow sandbox replays promise

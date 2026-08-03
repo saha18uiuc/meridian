@@ -228,11 +228,10 @@ export function drafts(): Draft[] {
           goods: 3,
           validGoods: 3,
         }),
-        missingInformation: [
-          'batch:B77A:batchNumber',
-          'batch:B77A:certificateOfAnalysis',
-          'batch:B77B:certificateOfAnalysis',
-        ],
+        // The duplicated batch is the only finding: `happy-path.eml` carries coa-B77A and coa-B77B,
+        // so both batches on this shipment are certified. The failure is that INV-1028 re-uses a
+        // batch INV-1024 already claimed, and one batch is one physical lot.
+        missingInformation: ['batch:B77A:batchNumber'],
         validationFailures: [
           {
             scope: 'batch',
@@ -240,8 +239,6 @@ export function drafts(): Draft[] {
             field: 'batchNumber',
             message: 'Batch B77A appears on more than one good in this shipment.',
           },
-          batchFailure('B77A', 'Batch B77A has no certificate of analysis.'),
-          batchFailure('B77B', 'Batch B77B has no certificate of analysis.'),
         ],
         emailResponse: null,
       },

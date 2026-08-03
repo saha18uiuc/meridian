@@ -12,29 +12,13 @@
       "goodsCount": 3,
       "validGoodsCount": 3
     },
-    "missingInformation": [
-      "batch:B77A:batchNumber",
-      "batch:B77A:certificateOfAnalysis",
-      "batch:B77B:certificateOfAnalysis"
-    ],
+    "missingInformation": ["batch:B77A:batchNumber"],
     "validationFailures": [
       {
         "scope": "batch",
         "key": "B77A",
         "field": "batchNumber",
         "message": "Batch B77A appears on more than one good in this shipment."
-      },
-      {
-        "scope": "batch",
-        "key": "B77A",
-        "field": "certificateOfAnalysis",
-        "message": "Batch B77A has no certificate of analysis."
-      },
-      {
-        "scope": "batch",
-        "key": "B77B",
-        "field": "certificateOfAnalysis",
-        "message": "Batch B77B has no certificate of analysis."
       }
     ],
     "emailResponse": null
