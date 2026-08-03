@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { openSeededBoard, readBoard, signIn } from './fixtures';
 
 /**
@@ -8,6 +8,18 @@ import { openSeededBoard, readBoard, signIn } from './fixtures';
  * nothing. Those are the properties a second editor depends on, and they are invisible in a
  * screenshot.
  */
+
+/**
+ * Wait until the toolbar reports a given revision.
+ *
+ * It reads `Revision N` when idle and `Saved · revision N` just after a write, so the number is
+ * matched and the wording is not.
+ */
+async function expectRevision(page: Page, revisionNo: number): Promise<void> {
+  await expect(page.getByTestId('save-status')).toHaveText(
+    new RegExp(`revision ${String(revisionNo)}\\b`, 'i'),
+  );
+}
 
 test.describe('whiteboard editing', () => {
   test.beforeEach(async ({ page }) => {
@@ -32,7 +44,11 @@ test.describe('whiteboard editing', () => {
     await title.fill(`Fetch the thread ${String(Date.now())}`);
     await title.blur();
 
-    await expect(page.getByTestId('save-status')).toHaveText(/saved/i);
+    // The revision, not the word "saved". The canvas also persists its viewport, and that write
+    // leaves the status reading "Saved" without changing the revision — so waiting for the word
+    // alone can be satisfied by a save that has nothing to do with this edit, and the read below
+    // then races the one that does.
+    await expectRevision(page, before.revisionNo + 1);
 
     const after = await readBoard(page, whiteboardId);
     expect(after.revisionNo).toBe(before.revisionNo + 1);
@@ -48,7 +64,9 @@ test.describe('whiteboard editing', () => {
 
     await field.fill(`${original} (renamed)`);
     await field.blur();
-    await expect(field).toHaveValue(`${original} (renamed)`);
+    // The rename is a request, so the revision the toolbar reports is what says it has landed.
+    // Reading the board straight after the blur races the PATCH that the blur only started.
+    await expectRevision(page, before.revisionNo + 1);
 
     const renamed = await readBoard(page, whiteboardId);
     expect(renamed.revisionNo).toBe(before.revisionNo + 1);
@@ -56,12 +74,15 @@ test.describe('whiteboard editing', () => {
 
     await field.fill(original);
     await field.blur();
+    await expectRevision(page, renamed.revisionNo + 1);
     const restored = await readBoard(page, whiteboardId);
     expect(restored.revisionNo).toBe(renamed.revisionNo + 1);
 
-    // Now the no-op: submitting the identical title must not increment anything.
+    // Now the no-op: submitting the identical title must not increment anything. There is nothing
+    // to wait for, which is the point — a second request would show up as a revision that moved.
     await field.fill(original);
     await field.blur();
+    await expect(field).toHaveValue(original);
     const unchanged = await readBoard(page, whiteboardId);
     expect(unchanged.revisionNo).toBe(restored.revisionNo);
   });

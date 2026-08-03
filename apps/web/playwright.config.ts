@@ -13,6 +13,19 @@ import { defineConfig, devices } from '@playwright/test';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000';
 
+/**
+ * `PLAYWRIGHT_BROWSERS_PATH` is written as a repo-relative path in `.env`, and a relative path
+ * means a different directory depending on where the command was started from: `pnpm bootstrap`
+ * installs the browser from this package, while `pnpm test:e2e` and `pnpm verify:e2e` start at the
+ * repository root. The failure that produces is a downloaded browser the runner cannot find, which
+ * reads like a broken installation rather than a disagreement about one dot. Anchoring the path to
+ * this file makes every entry point name the same directory.
+ */
+const browsersPath = process.env.PLAYWRIGHT_BROWSERS_PATH;
+if (browsersPath !== undefined && browsersPath.startsWith('.')) {
+  process.env.PLAYWRIGHT_BROWSERS_PATH = fileURLToPath(new URL(browsersPath, import.meta.url));
+}
+
 export default defineConfig({
   testDir: fileURLToPath(new URL('./e2e', import.meta.url)),
   outputDir: fileURLToPath(new URL('./test-results', import.meta.url)),

@@ -29,6 +29,10 @@ test.describe('freeze', () => {
     await page.getByTestId('freeze-open').click();
     const dialog = page.getByTestId('freeze-dialog');
     await expect(dialog).toBeVisible();
+    // The dialog opens before it knows anything: the warnings are rendered from a preview it
+    // fetches on open. Counting the checkboxes while that request is still out finds none, ticks
+    // none, and then waits forever on a Freeze button that is disabled for the right reason.
+    await expect(dialog.getByText('Checking the board…')).toBeHidden();
 
     // Each warning is a separate acknowledgement, ticked only when it is actually present. A
     // rejected finding produces no warning at all, which is the point of separating dismissal from
@@ -74,6 +78,9 @@ test.describe('freeze', () => {
     });
     // A spec is identified by the revision it was compiled from, so the second attempt on an
     // unchanged board is a conflict rather than a new version.
-    expect([first.status(), second.status()]).toContain(409);
+    expect(
+      [first.status(), second.status()],
+      `bodies: ${await first.text()} / ${await second.text()}`,
+    ).toContain(409);
   });
 });
