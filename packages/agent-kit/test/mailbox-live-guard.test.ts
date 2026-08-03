@@ -87,6 +87,84 @@ describe('live Gmail safety switches', () => {
     expect(execute).not.toHaveBeenCalled();
   });
 
+  it('names the file when downloading, which the toolkit requires and rejects the call without', async () => {
+    const put = vi.fn(async () => '');
+    const execute = vi.fn(async (slug: string) => {
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID')
+        return { successful: true, data: { messages: [{ id: 'm1' }] } };
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID') {
+        return {
+          successful: true,
+          data: {
+            messageId: 'm1',
+            threadId: 't1',
+            attachmentList: [{ attachmentId: 'att-1', filename: 'invoice-1024.pdf', size: 10 }],
+          },
+        };
+      }
+      return { successful: true, data: { data: 'ZmlsZQ' } };
+    });
+    const mailbox = createComposioMailbox(
+      { tools: { execute } },
+      {
+        apiKey: 'k',
+        userId: 'u',
+        connectedAccountId: 'ca',
+        toolkitVersion: '20260101_00',
+        liveMode: true,
+        allowedRecipients: [],
+        maxResults: 5,
+        store: { ...store, put },
+        attachmentBucket: 'attachments',
+        executionId: 'exec-1',
+      },
+    );
+
+    await mailbox.downloadAttachments('t1');
+
+    const download = execute.mock.calls.find(
+      (call) => call[0] === 'GMAIL_GET_ATTACHMENT',
+    ) as unknown as [string, { arguments: Record<string, string> }];
+    expect(download[1].arguments.file_name).toBe('invoice-1024.pdf');
+    expect(download[1].arguments.attachment_id).toBe('att-1');
+  });
+
+  it('falls back to the attachment id when Gmail leaves the filename blank', async () => {
+    const execute = vi.fn(async (slug: string) => {
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID')
+        return { successful: true, data: { messages: [{ id: 'm1' }] } };
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID') {
+        return {
+          successful: true,
+          data: { messageId: 'm1', attachmentList: [{ attachmentId: 'att-2', size: 3 }] },
+        };
+      }
+      return { successful: true, data: { data: 'ZmlsZQ' } };
+    });
+    const mailbox = createComposioMailbox(
+      { tools: { execute } },
+      {
+        apiKey: 'k',
+        userId: 'u',
+        connectedAccountId: 'ca',
+        toolkitVersion: '20260101_00',
+        liveMode: true,
+        allowedRecipients: [],
+        maxResults: 5,
+        store,
+        attachmentBucket: 'attachments',
+        executionId: 'exec-1',
+      },
+    );
+
+    await mailbox.downloadAttachments('t1');
+
+    const download = execute.mock.calls.find(
+      (call) => call[0] === 'GMAIL_GET_ATTACHMENT',
+    ) as unknown as [string, { arguments: Record<string, string> }];
+    expect(download[1].arguments.file_name).toBe('att-2');
+  });
+
   it('treats an unsuccessful Composio response as an external action failure', async () => {
     const execute = vi.fn(async () => ({ successful: false, error: 'rate limited', data: {} }));
     const mailbox = createComposioMailbox(

@@ -175,6 +175,10 @@ export function createComposioMailbox(
             message_id: message.messageId,
             attachment_id: attachment.attachmentId,
             user_id: 'me',
+            // Required by the toolkit with a non-empty value, even though the bytes are returned
+            // inline rather than written to disk. Gmail leaves the filename blank on inline parts,
+            // so the attachment ID stands in — it is unique and the stored path uses it anyway.
+            file_name: attachment.filename === '' ? attachment.attachmentId : attachment.filename,
           });
           const base64 = str(data.data ?? data.file);
           if (base64 === '') continue;
