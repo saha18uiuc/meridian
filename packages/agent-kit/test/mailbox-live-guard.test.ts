@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ToolUnavailableError } from '../src/errors.js';
 import { createComposioMailbox } from '../src/tools/live/composio-mailbox.js';
+import type { AttachmentRef } from '../src/contracts.js';
 import type { ArtifactStore } from '../src/storage.js';
 
 const store: ArtifactStore = {
@@ -27,6 +28,26 @@ function harness(overrides: { liveMode?: boolean; allowedRecipients?: string[] }
     },
   );
   return { mailbox, execute };
+}
+
+/** Runs `downloadAttachments` against a mailbox wired to the supplied Composio stub. */
+async function downloadWith(
+  execute: (slug: string, input: unknown) => Promise<unknown>,
+  put: ArtifactStore['put'],
+): Promise<readonly AttachmentRef[]> {
+  const mailbox = createComposioMailbox({ tools: { execute } } as never, {
+    apiKey: 'k',
+    userId: 'u',
+    connectedAccountId: 'ca',
+    toolkitVersion: '20260101_00',
+    liveMode: true,
+    allowedRecipients: [],
+    maxResults: 5,
+    store: { ...store, put },
+    attachmentBucket: 'attachments',
+    executionId: 'exec-1',
+  });
+  return mailbox.downloadAttachments('t1');
 }
 
 describe('live Gmail safety switches', () => {
@@ -88,7 +109,6 @@ describe('live Gmail safety switches', () => {
   });
 
   it('names the file when downloading, which the toolkit requires and rejects the call without', async () => {
-    const put = vi.fn(async () => '');
     const execute = vi.fn(async (slug: string) => {
       if (slug === 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID')
         return { successful: true, data: { messages: [{ id: 'm1' }] } };
@@ -97,36 +117,22 @@ describe('live Gmail safety switches', () => {
           successful: true,
           data: {
             messageId: 'm1',
-            threadId: 't1',
-            attachmentList: [{ attachmentId: 'att-1', filename: 'invoice-1024.pdf', size: 10 }],
+            attachmentList: [{ attachmentId: 'att-1', filename: 'invoice-1024.pdf' }],
           },
         };
       }
       return { successful: true, data: { data: 'ZmlsZQ' } };
     });
-    const mailbox = createComposioMailbox(
-      { tools: { execute } },
-      {
-        apiKey: 'k',
-        userId: 'u',
-        connectedAccountId: 'ca',
-        toolkitVersion: '20260101_00',
-        liveMode: true,
-        allowedRecipients: [],
-        maxResults: 5,
-        store: { ...store, put },
-        attachmentBucket: 'attachments',
-        executionId: 'exec-1',
-      },
+
+    await downloadWith(
+      execute,
+      vi.fn(async () => ''),
     );
 
-    await mailbox.downloadAttachments('t1');
-
-    const download = execute.mock.calls.find(
-      (call) => call[0] === 'GMAIL_GET_ATTACHMENT',
-    ) as unknown as [string, { arguments: Record<string, string> }];
-    expect(download[1].arguments.file_name).toBe('invoice-1024.pdf');
-    expect(download[1].arguments.attachment_id).toBe('att-1');
+    const download = execute.mock.calls.find((call) => call[0] === 'GMAIL_GET_ATTACHMENT') as
+      [string, { arguments: Record<string, string> }] | undefined;
+    expect(download?.[1].arguments.file_name).toBe('invoice-1024.pdf');
+    expect(download?.[1].arguments.attachment_id).toBe('att-1');
   });
 
   it('falls back to the attachment id when Gmail leaves the filename blank', async () => {
@@ -136,33 +142,75 @@ describe('live Gmail safety switches', () => {
       if (slug === 'GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID') {
         return {
           successful: true,
-          data: { messageId: 'm1', attachmentList: [{ attachmentId: 'att-2', size: 3 }] },
+          data: { messageId: 'm1', attachmentList: [{ attachmentId: 'att-2' }] },
         };
       }
       return { successful: true, data: { data: 'ZmlsZQ' } };
     });
-    const mailbox = createComposioMailbox(
-      { tools: { execute } },
-      {
-        apiKey: 'k',
-        userId: 'u',
-        connectedAccountId: 'ca',
-        toolkitVersion: '20260101_00',
-        liveMode: true,
-        allowedRecipients: [],
-        maxResults: 5,
-        store,
-        attachmentBucket: 'attachments',
-        executionId: 'exec-1',
-      },
+
+    await downloadWith(
+      execute,
+      vi.fn(async () => ''),
     );
 
-    await mailbox.downloadAttachments('t1');
+    const download = execute.mock.calls.find((call) => call[0] === 'GMAIL_GET_ATTACHMENT') as
+      [string, { arguments: Record<string, string> }] | undefined;
+    expect(download?.[1].arguments.file_name).toBe('att-2');
+  });
 
-    const download = execute.mock.calls.find(
-      (call) => call[0] === 'GMAIL_GET_ATTACHMENT',
-    ) as unknown as [string, { arguments: Record<string, string> }];
-    expect(download[1].arguments.file_name).toBe('att-2');
+  it('downloads the bytes when the toolkit answers with a presigned URL instead of inline data', async () => {
+    const put = vi.fn<ArtifactStore['put']>(async () => '');
+    const fetchMock = vi.fn(async () => new Response(new Uint8Array([37, 80, 68, 70, 45])));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const execute = vi.fn(async (slug: string) => {
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID')
+        return { successful: true, data: { messages: [{ id: 'm1' }] } };
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID') {
+        return {
+          successful: true,
+          data: {
+            messageId: 'm1',
+            attachmentList: [{ attachmentId: 'att-1', filename: 'invoice-1024.pdf' }],
+          },
+        };
+      }
+      return {
+        successful: true,
+        data: { file: { name: 'invoice-1024.pdf', s3url: 'https://temp.example/signed' } },
+      };
+    });
+
+    const stored = await downloadWith(execute, put);
+
+    expect(fetchMock).toHaveBeenCalledWith('https://temp.example/signed');
+    expect(put.mock.calls[0]?.[1]).toEqual(new Uint8Array([37, 80, 68, 70, 45]));
+    expect(stored[0]?.sizeBytes).toBe(5);
+    vi.unstubAllGlobals();
+  });
+
+  it('fails loudly when the response carries no bytes, rather than dropping the attachment', async () => {
+    const execute = vi.fn(async (slug: string) => {
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_THREAD_ID')
+        return { successful: true, data: { messages: [{ id: 'm1' }] } };
+      if (slug === 'GMAIL_FETCH_MESSAGE_BY_MESSAGE_ID') {
+        return {
+          successful: true,
+          data: {
+            messageId: 'm1',
+            attachmentList: [{ attachmentId: 'att-1', filename: 'invoice-1024.pdf' }],
+          },
+        };
+      }
+      return { successful: true, data: { display_url: 'https://mail.google.com/x' } };
+    });
+
+    await expect(
+      downloadWith(
+        execute,
+        vi.fn(async () => ''),
+      ),
+    ).rejects.toThrow(/no bytes for 'invoice-1024.pdf'/);
   });
 
   it('treats an unsuccessful Composio response as an external action failure', async () => {

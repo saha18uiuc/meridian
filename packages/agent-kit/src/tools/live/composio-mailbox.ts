@@ -1,5 +1,5 @@
 import type { AttachmentRef, MailboxTool, MailMessage, SentMail } from '../../contracts.js';
-import { ExternalActionError, ToolUnavailableError } from '../../errors.js';
+import { ExternalActionError, NonRetryableToolError, ToolUnavailableError } from '../../errors.js';
 import type { ArtifactStore } from '../../storage.js';
 import { withMarker } from '../mailbox.js';
 
@@ -59,6 +59,44 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function str(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
+}
+
+/**
+ * The attachment's bytes, however the toolkit chose to hand them over.
+ *
+ * Composio does not return the bytes inline: `GMAIL_GET_ATTACHMENT` uploads the file and answers
+ * with a short-lived presigned URL under `file.s3url`. The inline forms are still accepted because
+ * smaller payloads have arrived that way.
+ *
+ * The one thing this must never do is return empty for a shape it does not recognise. The previous
+ * version read a single field and skipped the attachment when it was blank, so a change on
+ * Composio's side turned every PDF into silence: the run went on to report "no commercial invoice"
+ * for a mail that plainly carried one, which is a far more expensive failure than stopping here.
+ */
+async function attachmentBytes(
+  data: Record<string, unknown>,
+  filename: string,
+): Promise<Uint8Array> {
+  const inline = str(data.data) !== '' ? str(data.data) : str(data.file);
+  if (inline !== '') return Buffer.from(inline, 'base64url');
+
+  const url = str(asRecord(data.file).s3url);
+  if (url === '') {
+    throw new NonRetryableToolError(
+      GMAIL_SLUGS.getAttachment,
+      `no bytes for '${filename}': the response carried neither inline data nor a download URL`,
+      { responseKeys: Object.keys(data).sort() },
+    );
+  }
+
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new ExternalActionError(
+      GMAIL_SLUGS.getAttachment,
+      `could not download '${filename}': HTTP ${String(response.status)}`,
+    );
+  }
+  return new Uint8Array(await response.arrayBuffer());
 }
 
 export function createComposioMailbox(
@@ -180,11 +218,11 @@ export function createComposioMailbox(
             // so the attachment ID stands in — it is unique and the stored path uses it anyway.
             file_name: attachment.filename === '' ? attachment.attachmentId : attachment.filename,
           });
-          const base64 = str(data.data ?? data.file);
-          if (base64 === '') continue;
+          const bytes = await attachmentBytes(data, attachment.filename);
           const path = `${options.attachmentBucket}/${options.executionId}/${message.messageId}/${attachment.filename}`;
-          await options.store.put(path, Buffer.from(base64, 'base64url'), attachment.mimeType);
-          stored.push({ ...attachment, storagePath: path });
+          await options.store.put(path, bytes, attachment.mimeType);
+          // Gmail's thread listing omits the size, so the transferred length is the honest value.
+          stored.push({ ...attachment, sizeBytes: bytes.byteLength, storagePath: path });
         }
       }
       return stored;
