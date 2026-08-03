@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import { createLogger, workerEnv } from '@meridian/core';
@@ -8,7 +9,23 @@ import { TASK_QUEUE } from './task-queue.js';
 
 const logger = createLogger('worker');
 
+/**
+ * The worker reads `.env` itself rather than relying on whoever launched it.
+ *
+ * It is started three ways — `pnpm dev`, `pnpm demo`, and by hand — and only the first of those
+ * runs through a process manager that could export the file for it. A worker that starts without
+ * `SUPABASE_SERVICE_ROLE_KEY` does not fail loudly at the point of the mistake: it answers
+ * `/healthz`, accepts workflow tasks, and leaves every execution sitting in `running`. Loading the
+ * file here is what makes the three launch paths identical. Real environment variables still win,
+ * because `process.loadEnvFile` does not overwrite what is already set.
+ */
+function loadDotEnvFile(): void {
+  const path = fileURLToPath(new URL('../../../../.env', import.meta.url));
+  if (existsSync(path)) process.loadEnvFile(path);
+}
+
 async function main(): Promise<void> {
+  loadDotEnvFile();
   const env = workerEnv();
   const connection = await NativeConnection.connect({ address: env.TEMPORAL_ADDRESS });
 

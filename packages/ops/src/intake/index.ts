@@ -1,3 +1,4 @@
+import { workerEnv } from '@meridian/core';
 import { canonicalJson, sha256Hex } from '@meridian/core/hashing';
 import type { Database } from '@meridian/core/database';
 import type { MessageRef } from '@meridian/core/schemas';
@@ -36,6 +37,30 @@ export interface IntakeDeps {
   };
   /** Injected for tests; production uses real backoff. */
   sleep?: (ms: number) => Promise<void>;
+  /** Injected for tests; production reads the worker environment. */
+  runtime?: RuntimeSettings;
+}
+
+/**
+ * The environment-derived half of the workflow argument.
+ *
+ * Read once, at intake, and pinned into the argument. The workflow cannot read the environment
+ * itself without breaking replay determinism, and an activity that re-read it could quietly change
+ * the toolkit version or the fan-out width in the middle of a run.
+ */
+export interface RuntimeSettings {
+  toolkitVersion: string;
+  operatorEmail: string;
+  maxConcurrency: number;
+}
+
+export function runtimeFromEnv(): RuntimeSettings {
+  const env = workerEnv();
+  return {
+    toolkitVersion: env.COMPOSIO_GMAIL_TOOLKIT_VERSION,
+    operatorEmail: env.OPERATOR_EMAIL,
+    maxConcurrency: env.AGENT_MAX_CONCURRENCY,
+  };
 }
 
 export type IntakeResult =
@@ -65,6 +90,8 @@ interface ResolvedAgent {
   versionNo: number;
   specHash: string;
   gitCommitSha: string | null;
+  /** The allow-list carried by the frozen spec, which is the only place it may come from. */
+  capabilities: string[];
 }
 
 export async function resolveActiveAgent(
@@ -103,7 +130,7 @@ export async function resolveActiveAgent(
 
   const { data: spec, error: specError } = await supabase
     .from('frozen_specs')
-    .select('spec_hash')
+    .select('spec_hash, spec_json')
     .eq('spec_id', version.spec_id)
     .single();
   if (specError !== null) {
@@ -117,7 +144,23 @@ export async function resolveActiveAgent(
     versionNo: version.version_no,
     specHash: spec.spec_hash,
     gitCommitSha: version.git_commit_sha,
+    capabilities: specCapabilities(spec.spec_json),
   };
+}
+
+/**
+ * The capability allow-list, read from the frozen spec rather than from configuration.
+ *
+ * A run may use exactly what the contract it was compiled from asked for. Taking the list from the
+ * environment, or letting the agent name its own, would make the allow-list a property of the
+ * machine rather than of the approved specification, and the enforcement in `assertCapability`
+ * would then be checking the agent against itself.
+ */
+function specCapabilities(specJson: unknown): string[] {
+  if (typeof specJson !== 'object' || specJson === null) return [];
+  const capabilities = (specJson as { capabilities?: unknown }).capabilities;
+  if (!Array.isArray(capabilities)) return [];
+  return capabilities.filter((entry): entry is string => typeof entry === 'string');
 }
 
 /** `sha256(runType | businessKey | caseKey)`, the shape the `executions` unique key expects. */
@@ -135,6 +178,7 @@ export async function intakeMessage(
   message: IntakeMessage,
 ): Promise<IntakeResult> {
   const agent = await resolveActiveAgent(deps.supabase, agentId);
+  const runtime = deps.runtime ?? runtimeFromEnv();
   const extraction = extractBusinessKey(message.content);
 
   if (extraction.kind !== 'ok') {
@@ -197,6 +241,14 @@ export async function intakeMessage(
       specHash: agent.specHash,
       gitCommitSha: agent.gitCommitSha,
       businessKey,
+      capabilities: agent.capabilities,
+      // Resolved here, at the one place that knows both the pinned version and the running
+      // environment, and then frozen into the workflow argument. A workflow that read the
+      // environment itself would be non-deterministic on replay, and one that re-read it per
+      // activity could change toolkit mid-run.
+      toolkitVersion: runtime.toolkitVersion,
+      operatorEmail: runtime.operatorEmail,
+      maxConcurrency: runtime.maxConcurrency,
       messageRefs: [message.messageRef],
     },
     signalArg: message.messageRef,

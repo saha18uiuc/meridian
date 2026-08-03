@@ -1,3 +1,4 @@
+import type { ReceivingWorkflowInput } from '@meridian/core/temporal-contract';
 import type { Client } from '@temporalio/client';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -5,7 +6,24 @@ import {
   signalWithStartReceiving,
 } from '../src/intake/signal-with-start.js';
 
-const input = { executionId: 'e1', businessKey: 'MSKU1234565' };
+// The complete workflow argument, not a convenient subset: the wire type is the contract between
+// intake and the worker, and a test that passed a partial object would still compile if a field
+// were dropped from the real call site.
+const input: ReceivingWorkflowInput = {
+  executionId: 'e1',
+  agentId: 'a1',
+  agentVersionId: 'v1',
+  deploymentKey: 'inbound-import-receiving',
+  versionNo: 1,
+  specHash: 'f'.repeat(64),
+  gitCommitSha: null,
+  businessKey: 'MSKU1234565',
+  capabilities: ['mail.read', 'mail.send'],
+  toolkitVersion: '20250101_00',
+  operatorEmail: 'operator@meridian.local',
+  maxConcurrency: 4,
+  messageRefs: [],
+};
 const signalArg = { providerMessageId: 'm1' };
 
 describe('buildSignalWithStartOptions', () => {

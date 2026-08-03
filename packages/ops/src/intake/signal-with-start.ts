@@ -2,6 +2,7 @@ import {
   NEW_MESSAGE_SIGNAL,
   RECEIVING_WORKFLOW_TYPE,
   TEMPORAL_TASK_QUEUE,
+  type ReceivingWorkflowInput,
 } from '@meridian/core/temporal-contract';
 import type { Client } from '@temporalio/client';
 
@@ -21,7 +22,7 @@ export interface SignalWithStartOptions {
   client: Client;
   workflowId: string;
   /** The pinned workflow argument: agent identity, spec hash, Git SHA, execution ID, messages. */
-  input: Record<string, unknown>;
+  input: ReceivingWorkflowInput;
   /** The first message, delivered as a signal as well; the workflow deduplicates it. */
   signalArg: Record<string, unknown>;
   taskQueue?: string;

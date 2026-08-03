@@ -146,9 +146,20 @@ export function createMockMailbox(options: {
 
   return {
     async searchMessages(query, maxResults = 25) {
-      const needle = query.toLowerCase();
-      // The mock supports substring matching only; a Gmail query language emulation would give a
-      // false sense of parity with the live adapter.
+      // Gmail operators are dropped rather than emulated. The default inbox query is
+      // `label:INBOX newer_than:7d`, and a mock that matched it literally would return nothing and
+      // make an empty run look like a working one. Emulating the operators would be worse: it would
+      // claim a parity with Gmail the mock does not have. So `operator:value` terms are discarded —
+      // a fixture directory has no labels and no age — and whatever free text remains is matched as
+      // a substring. A query made only of operators therefore selects the whole fixture inbox.
+      const needle = query
+        .split(/\s+/)
+        // `[a-z_]`, because Gmail spells some operators with an underscore — `newer_than:7d`,
+        // `has_attachment` — and a class that stopped at letters would leave those terms in the
+        // needle and match nothing.
+        .filter((term) => term !== '' && !/^-?[a-z_]+:/i.test(term))
+        .join(' ')
+        .toLowerCase();
       return messages
         .filter(
           (message) =>

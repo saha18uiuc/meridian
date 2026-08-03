@@ -5,6 +5,7 @@ import {
   runAgent,
 } from '@meridian/agent-kit/contracts';
 import type { AgentDecision, MessageRef } from '@meridian/core/schemas';
+import type { ReceivingWorkflowInput } from '@meridian/core/temporal-contract';
 import { AGENT_REGISTRY } from '@meridian/generated-agents';
 import * as workflow from '@temporalio/workflow';
 import { humanDecisionSignal, type HumanDecisionPayload, newMessageSignal } from '../signals.js';
@@ -30,21 +31,14 @@ import {
  * a redelivered signal or a replayed history adds nothing.
  */
 
-export interface ReceivingInput {
-  executionId: string;
-  agentId: string;
-  agentVersionId: string;
-  deploymentKey: string;
-  versionNo: number;
-  specHash: string;
-  gitCommitSha: string | null;
-  businessKey: string;
-  capabilities: string[];
-  toolkitVersion: string;
-  operatorEmail: string;
-  maxConcurrency: number;
+/**
+ * The wire type from `@meridian/core/temporal-contract`, narrowed to the schema-inferred
+ * `MessageRef` the workflow body actually works with. Declaring it as an intersection rather than
+ * re-listing the fields is what keeps the worker and the intake service from drifting apart.
+ */
+export type ReceivingInput = Omit<ReceivingWorkflowInput, 'messageRefs'> & {
   messageRefs: MessageRef[];
-}
+};
 
 export interface ReceivingResult {
   executionId: string;
