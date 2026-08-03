@@ -47,7 +47,18 @@ export async function readBoard(
   const response = await page.request.get(`/api/whiteboards/${whiteboardId}`);
   expect(response.ok()).toBe(true);
   const body = (await response.json()) as {
-    metadata: { revisionNo: number; status: string; lastReviewedRevisionNo: number | null };
+    metadata: { revisionNo: number; status: string };
   };
-  return body.metadata;
+
+  // The review marker is a property of the board's review history rather than of the graph, so it
+  // is published by the list endpoint and not by the snapshot the canvas loads. The board page
+  // reads it the same way; asking the snapshot for it would assert a field the API never sends.
+  const list = await page.request.get('/api/whiteboards');
+  expect(list.ok()).toBe(true);
+  const { boards } = (await list.json()) as {
+    boards: { whiteboardId: string; lastReviewedRevisionNo: number | null }[];
+  };
+  const entry = boards.find((board) => board.whiteboardId === whiteboardId);
+
+  return { ...body.metadata, lastReviewedRevisionNo: entry?.lastReviewedRevisionNo ?? null };
 }

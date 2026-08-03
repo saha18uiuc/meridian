@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openSeededBoard, readBoard, signIn } from './fixtures';
 
 /**
@@ -8,6 +8,19 @@ import { openSeededBoard, readBoard, signIn } from './fixtures';
  * `answered`, not `resolved`. Answering a question and fixing the thing it asks about are different
  * events, and a system that conflates them lets a board be frozen on the strength of a conversation.
  */
+
+/**
+ * Only open and answered roots carry reply, reject and assumption controls; a rejected or resolved
+ * root is history. Selecting on the rendered status rather than on position keeps these specs
+ * honest when a previous round has already dismissed something.
+ */
+function actionableThreads(page: Page): Locator {
+  return page
+    .getByTestId('thread-list')
+    .locator(
+      '[data-testid^="thread-"][data-status="open"], [data-testid^="thread-"][data-status="answered"]',
+    );
+}
 
 test.describe('review iteration', () => {
   test.beforeEach(async ({ page }) => {
@@ -40,7 +53,7 @@ test.describe('review iteration', () => {
     await page.getByTestId('review-process').click();
     await expect(page.getByTestId('review-process')).toBeEnabled({ timeout: 120_000 });
 
-    const threads = page.getByTestId('thread-list').locator('[data-testid^="thread-"]');
+    const threads = actionableThreads(page);
     await expect(threads.first()).toBeVisible();
     expect(await threads.count()).toBeGreaterThan(1);
 
@@ -69,7 +82,8 @@ test.describe('review iteration', () => {
     await page.getByTestId('review-process').click();
     await expect(page.getByTestId('review-process')).toBeEnabled({ timeout: 120_000 });
 
-    const threads = page.getByTestId('thread-list').locator('[data-testid^="thread-"]');
+    const threads = actionableThreads(page);
+    await expect(threads.first()).toBeVisible();
     const threadId = (await threads.nth(0).getAttribute('data-testid'))?.replace('thread-', '');
     expect(threadId).toBeDefined();
 
