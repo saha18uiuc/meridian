@@ -5,6 +5,7 @@ import {
   createExecutionRecorder,
   createMockBrowser,
   createMockDocumentTool,
+  createReservingMailbox,
   fixedClock,
   runAgent,
   silentLogger,
@@ -334,9 +335,30 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
         options.repoRoot,
         'examples/inbound-import-receiving/fixtures/attachments',
       );
+      const recorder = createExecutionRecorder(options.supabase, { executionId });
+
+      // The step the next external action is attributed to. The workflow proxy keeps the same
+      // cursor; tracking it here is what lets the harness hand the agent a mailbox that reserves,
+      // dispatches, and completes exactly as the activity does, instead of a raw adapter the agent
+      // would have to drive itself.
+      let currentStepExecutionId: string | null = null;
+      const trackingRecorder: typeof recorder = {
+        ...recorder,
+        async startStep(input) {
+          const step = await recorder.startStep(input);
+          currentStepExecutionId = step.stepExecutionId;
+          return step;
+        },
+      };
+
       const registry: ToolRegistry = withFaults(
         {
-          mailbox,
+          mailbox: createReservingMailbox({
+            mailbox,
+            recorder: trackingRecorder,
+            toolkitVersion: options.toolkitVersion,
+            currentStepExecutionId: () => currentStepExecutionId,
+          }),
           documents: createMockDocumentTool({ attachmentDir }),
           browser: createMockBrowser({ allowList: [] }),
           humanHandoff: stubHandoff(handoffState),
@@ -344,8 +366,6 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
         faults,
         counters,
       );
-
-      const recorder = createExecutionRecorder(options.supabase, { executionId });
       const context = createAgentContext({
         executionId,
         pinned: {
@@ -361,7 +381,7 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
         clock: fixedClock(EVAL_CLOCK_EPOCH_MS),
         logger: silentLogger,
         toolRegistry: registry,
-        recorder,
+        recorder: trackingRecorder,
         config: {
           toolkitVersions: { composioGmailToolkit: options.toolkitVersion },
           operatorEmail: options.operatorEmail,

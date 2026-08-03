@@ -12,7 +12,7 @@
     "businessKey": "CMAU9988771",
     "externalActions": [
       {
-        "actionType": "mail.send",
+        "actionType": "mail.reply",
         "count": 1,
         "finalStatus": "succeeded"
       }

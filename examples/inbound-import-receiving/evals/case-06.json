@@ -17,7 +17,7 @@
     "missingFields": ["batch:B77B:certificateOfAnalysis", "batch:B77C:certificateOfAnalysis"],
     "externalActions": [
       {
-        "actionType": "mail.send",
+        "actionType": "mail.reply",
         "count": 1,
         "finalStatus": "succeeded"
       }

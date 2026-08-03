@@ -324,13 +324,18 @@ async function escalate(
 }
 
 /**
- * Send the information request exactly once.
+ * Ask the forwarder for what is missing.
  *
- * The reservation is derived from the execution, the step instance, and the canonical payload, so
- * a replay after a crash finds the existing reservation rather than creating a second one. Meridian
- * provides replay deduplication and best-effort external exactly-once delivery; Gmail accepts no
- * idempotency token, so the honest claim stops there and the reconciliation path in the runtime
- * covers the remaining window.
+ * The agent states the intent — one message, this recipient, this thread — and the runtime owns the
+ * delivery guarantee. `sendMessage` reserves the action against the execution, the step instance,
+ * and the canonical payload before it dispatches, so a replay after a crash finds the existing
+ * reservation rather than creating a second one. Meridian provides replay deduplication and
+ * best-effort external exactly-once delivery; Gmail accepts no idempotency token, so the honest
+ * claim stops there and the reconciliation path in the runtime covers the remaining window.
+ *
+ * Generated code deliberately does not drive `reserve → dispatch → complete` itself. Crash recovery
+ * is not customer policy, and a hundred deployments each with their own copy of that dance is a
+ * hundred chances to get it subtly wrong.
  */
 async function requestMissingInformation(
   context: AgentContext,
@@ -356,31 +361,15 @@ async function requestMissingInformation(
     recipient,
   };
 
-  const action = await context.recorder.reserveAction(step.stepExecutionId, 'mail.send', {
+  const sent = await context.toolRegistry.mailbox.sendMessage({
     to: recipient,
     subject: email.subject,
     body: email.body,
     ...(threadId === undefined ? {} : { threadId }),
   });
 
-  if (action.status === 'reserved') {
-    await context.recorder.dispatchAction(action.executionActionId);
-    const sent = await context.toolRegistry.mailbox.sendMessage({
-      to: recipient,
-      subject: email.subject,
-      body: email.body,
-      ...(threadId === undefined ? {} : { threadId }),
-      markerToken: action.markerToken,
-    });
-    await context.recorder.completeAction(action.executionActionId, {
-      status: 'succeeded',
-      providerActionId: sent.providerMessageId,
-      response: { threadId: sent.threadId },
-    });
-  }
-
   await context.recorder.completeStep(step.stepExecutionId, {
-    executionActionId: action.executionActionId,
+    providerMessageId: sent.providerMessageId,
     recipient,
   });
   return email;

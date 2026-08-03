@@ -148,7 +148,10 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingFields,
         missingFields: missingList(case02Failures),
-        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        // `mail.reply`, not `mail.send`: the information request goes back onto the forwarder's own
+        // thread, and the runtime types the action from the payload it is given. Both runtimes
+        // derive it the same way, so this is what a live run records too.
+        externalActions: [{ actionType: 'mail.reply', count: 1, finalStatus: 'succeeded' }],
         stepInstanceKeys: [
           `extract:${CONTAINERS.missingFields}`,
           'validate-good:INV-1025:LINE-1',
@@ -255,7 +258,7 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingCoa,
         missingFields: missingList(case05Failures),
-        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        externalActions: [{ actionType: 'mail.reply', count: 1, finalStatus: 'succeeded' }],
         stepInstanceKeys: [`respond:${CONTAINERS.missingCoa}`],
         evidenceKeys: [`assessment:${CONTAINERS.missingCoa}`],
       },
@@ -288,7 +291,7 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.happyPath,
         missingFields: missingList(case06Failures),
-        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        externalActions: [{ actionType: 'mail.reply', count: 1, finalStatus: 'succeeded' }],
         evidenceKeys: [`assessment:${CONTAINERS.happyPath}`],
       },
       decision: {
@@ -538,7 +541,7 @@ export function drafts(): Draft[] {
       expected: {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingCoa,
-        externalActions: [{ actionType: 'mail.send', count: 1, finalStatus: 'succeeded' }],
+        externalActions: [{ actionType: 'mail.reply', count: 1, finalStatus: 'succeeded' }],
         evidenceKeys: [`assessment:${CONTAINERS.missingCoa}`],
       },
       decision: {

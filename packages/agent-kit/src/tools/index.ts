@@ -3,6 +3,7 @@ export * from './documents.js';
 export * from './factory.js';
 export * from './human-handoff.js';
 export * from './mailbox.js';
+export * from './reserved-send.js';
 export { createMockBrowser } from './mock/browser.js';
 export { createMockDocumentTool } from './mock/documents.js';
 export { createMockMailbox, parseEml } from './mock/mailbox.js';

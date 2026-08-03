@@ -13,7 +13,7 @@
     "missingFields": ["batch:C31D:certificateOfAnalysis"],
     "externalActions": [
       {
-        "actionType": "mail.send",
+        "actionType": "mail.reply",
         "count": 1,
         "finalStatus": "succeeded"
       }

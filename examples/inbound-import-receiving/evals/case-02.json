@@ -16,7 +16,7 @@
     "missingFields": ["good:LINE-1:andaNumber", "good:LINE-1:ndcNumber"],
     "externalActions": [
       {
-        "actionType": "mail.send",
+        "actionType": "mail.reply",
         "count": 1,
         "finalStatus": "succeeded"
       }
