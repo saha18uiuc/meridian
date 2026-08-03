@@ -125,7 +125,15 @@ export function createMockMailbox(options: {
         options.attachmentDir,
       ),
     )
-    .filter((message) => visible === null || visible.has(message.messageId));
+    .filter((message) => visible === null || visible.has(message.messageId))
+    // Oldest first, which is the order Gmail returns a thread in and the order the receiving policy
+    // depends on: "has this invoice already been received?" is a question about arrival, so a
+    // mailbox that handed messages back in filename order would let an alphabetical accident decide
+    // which of two conflicting invoices the shipment is taken to hold. The message ID breaks ties so
+    // two messages stamped with the same second still enumerate identically on every run.
+    .sort(
+      (a, b) => a.receivedAt.localeCompare(b.receivedAt) || a.messageId.localeCompare(b.messageId),
+    );
 
   let counter = 0;
   const sent: SentOutboundMail[] = [];
