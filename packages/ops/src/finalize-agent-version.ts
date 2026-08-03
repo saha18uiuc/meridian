@@ -8,6 +8,7 @@ import {
   add,
   assertSha1Repository,
   commit,
+  headSha,
   showFile,
   stagedPaths,
   treePaths,
@@ -195,9 +196,18 @@ export async function finalizeAgentVersion(agentVersionId: string): Promise<Fina
     );
   }
 
-  const sha = commit(
-    `feat(agent): generate ${version.code_path} from spec ${version.spec_hash.slice(0, 12)}`,
-  );
+  // An empty stage means the generated files are already in HEAD exactly as they stand — the code
+  // was committed before the version was reserved, which is what happens when a release is built
+  // from a checked-in agent rather than from a fresh generation run. Naming HEAD is then the honest
+  // answer; forcing an empty commit would invent a commit that changed nothing, and failing would
+  // refuse a lineage that is already sound. Either way the verification below still reads the
+  // commit object, so the SHA is only recorded if it genuinely contains the right bytes.
+  const sha =
+    staged.length === 0
+      ? headSha()
+      : commit(
+          `feat(agent): generate ${version.code_path} from spec ${version.spec_hash.slice(0, 12)}`,
+        );
 
   const paths = treePaths(sha);
   const missing = versionPaths.filter((path) => !paths.includes(path));
