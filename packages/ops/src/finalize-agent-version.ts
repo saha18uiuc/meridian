@@ -62,30 +62,40 @@ interface VersionRow {
   owner_id: string;
 }
 
+/**
+ * Three reads rather than one embedded read.
+ *
+ * `agent_versions` reaches both `frozen_specs` and `whiteboards` through *composite* foreign keys —
+ * the lineage keys that bind an agent, its spec, and its board to the same whiteboard — and
+ * PostgREST cannot choose an embedding for those without a hint that breaks the moment a constraint
+ * is renamed. Following the two identifiers by hand says the same thing in terms the schema cache
+ * cannot misread.
+ */
 async function loadVersion(agentVersionId: string): Promise<VersionRow> {
   const client = opsClient();
-  const { data, error } = await client
+  const { data: row, error } = await client
     .from('agent_versions')
-    .select(
-      'agent_version_id, code_path, status, spec_id, whiteboard_id, frozen_specs(spec_hash), whiteboards(owner_id)',
-    )
+    .select('agent_version_id, code_path, status, spec_id, whiteboard_id')
     .eq('agent_version_id', agentVersionId)
     .maybeSingle();
   if (error !== null) throw new FinalizeError(error.message);
-  if (data === null) throw new FinalizeError(`no agent version ${agentVersionId}`);
+  if (row === null) throw new FinalizeError(`no agent version ${agentVersionId}`);
 
-  const row = data as unknown as {
-    agent_version_id: string;
-    code_path: string;
-    status: string;
-    spec_id: string;
-    whiteboard_id: string;
-    frozen_specs: { spec_hash: string } | null;
-    whiteboards: { owner_id: string } | null;
-  };
-  const specHash = row.frozen_specs?.spec_hash;
-  const ownerId = row.whiteboards?.owner_id;
-  if (specHash === undefined || ownerId === undefined) {
+  const spec = await client
+    .from('frozen_specs')
+    .select('spec_hash')
+    .eq('spec_id', row.spec_id)
+    .maybeSingle();
+  if (spec.error !== null) throw new FinalizeError(spec.error.message);
+
+  const board = await client
+    .from('whiteboards')
+    .select('owner_id')
+    .eq('whiteboard_id', row.whiteboard_id)
+    .maybeSingle();
+  if (board.error !== null) throw new FinalizeError(board.error.message);
+
+  if (spec.data === null || board.data === null) {
     throw new FinalizeError(`agent version ${agentVersionId} has an incomplete lineage`);
   }
   return {
@@ -94,8 +104,8 @@ async function loadVersion(agentVersionId: string): Promise<VersionRow> {
     status: row.status,
     spec_id: row.spec_id,
     whiteboard_id: row.whiteboard_id,
-    spec_hash: specHash,
-    owner_id: ownerId,
+    spec_hash: spec.data.spec_hash,
+    owner_id: board.data.owner_id,
   };
 }
 
