@@ -89,6 +89,9 @@ export const START_EXECUTION_ATTEMPTS = 3;
 export const RUN_SETTLE_ATTEMPTS = 5;
 export const RUN_SETTLE_INTERVAL_MS = 200;
 
+/** How long a run is given to have its ID recorded before it counts as claimed by nothing. */
+export const RUN_ADOPTION_GRACE_MS = 10_000;
+
 interface ResolvedAgent {
   agentId: string;
   agentVersionId: string;
@@ -273,6 +276,7 @@ export async function intakeMessage(
     await awaitRunSettled(deps, workflowId, openRunId);
     const current = await findLatestExecution(deps.supabase, workflowId);
     if (current !== null && current.temporalRunId === openRunId && current.isLive) host = current;
+    else await terminateIfUnclaimed(deps, workflowId, openRunId);
   }
 
   const execution =
@@ -403,6 +407,44 @@ async function findIngestedMessage(
     temporalRunId: row.executions.temporal_run_id,
     isLive: row.executions.status === 'queued' || row.executions.status === 'running',
   };
+}
+
+/**
+ * End a run that no execution row claims and that is too old for one to still be on its way.
+ *
+ * The database is the system of record for which runs exist. A run that no row names has nowhere to
+ * report: every step it records points at an execution that is not there, and the first write it
+ * attempts fails deep inside the run rather than at the point of the mistake. Locally this is what a
+ * `supabase db reset` leaves behind, because the Temporal dev server keeps its own store; in
+ * production it is the same shape as a restore from a backup taken before the run started.
+ *
+ * Terminating is the conservative action here, not the aggressive one — the alternative is to hand
+ * the message to that run and let it fail with a foreign key error. The grace period is what keeps
+ * this from racing a concurrent intake that has started a run but not yet recorded its ID.
+ */
+async function terminateIfUnclaimed(
+  deps: IntakeDeps,
+  workflowId: string,
+  runId: string,
+): Promise<void> {
+  const { data, error } = await deps.supabase
+    .from('executions')
+    .select('execution_id')
+    .eq('temporal_run_id', runId)
+    .limit(1);
+  if (error !== null) throw new Error(`Could not check the run's execution: ${error.message}`);
+  if ((data ?? []).length > 0) return;
+
+  const handle = deps.temporal.workflow.getHandle(workflowId, runId);
+  const described = await handle.describe();
+  if (described.status.name !== 'RUNNING') return;
+  if (Date.now() - described.startTime.getTime() < RUN_ADOPTION_GRACE_MS) return;
+
+  await handle.terminate('no execution row names this run; the database does not know it exists');
+  deps.logger?.info(
+    { code: 'STALE_RUN_TERMINATED', workflowId, runId },
+    'terminated a workflow run that no execution row claims',
+  );
 }
 
 /** The run ID Temporal currently has open for this workflow ID, or null if none is running. */
