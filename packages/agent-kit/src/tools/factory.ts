@@ -1,3 +1,4 @@
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Database } from '@meridian/core/database';
 import type { WorkerEnv } from '@meridian/core';
@@ -56,11 +57,14 @@ export function createTools(options: ToolFactoryOptions): ToolRegistry {
  * default is correct in exactly one of those three, and the two failures are ugly: the worker's
  * activity throws `ENOENT` deep inside a run, which surfaces as a workflow that failed rather than
  * as a misconfiguration anyone can see.
+ *
+ * Resolved with `path.resolve` rather than `new URL(literal, import.meta.url)`, because webpack
+ * reads the latter as an asset reference and tries to bundle a directory that does not exist inside
+ * the Next.js build. The result is identical at runtime; only the bundler's opinion differs.
  */
 function defaultFixtureRoot(): string {
-  return fileURLToPath(
-    new URL('../../../../examples/inbound-import-receiving/fixtures', import.meta.url),
-  );
+  const here = dirname(fileURLToPath(import.meta.url));
+  return resolve(here, '..', '..', '..', '..', 'examples', 'inbound-import-receiving', 'fixtures');
 }
 
 function unavailableHandoff(): HumanHandoffTool {

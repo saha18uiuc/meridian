@@ -500,6 +500,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'generators that reproduce the committed example boards, documents, and eval cases',
   'packages/ops/src/release-demo-agent.ts':
     'the operator gates for the demo agent — freeze, create, finalize, evaluate, approve, activate — run in order by pnpm seed so a fresh clone has an active version to demonstrate; it calls the same RPCs and the same finalize path a human operator would, rather than writing the rows directly',
+  'packages/agent-kit/src/tools/reserved-send.ts':
+    'the external-action protocol — reserve, dispatch, complete, reconcile — in the one place both runtimes reach: the Temporal activity delegates to it and the eval harness wraps its mailbox with it, so "send once" cannot come to mean two different things, and no generated agent has to drive crash recovery by hand',
   'packages/evals/src/index.ts': 'barrel for the evals package',
   'packages/evals/src/fixture-mailbox.ts':
     'per-case mailbox restriction, so one case cannot see another case fixtures',
