@@ -130,6 +130,19 @@ export function parseManifest(text: string, source: string): BuildManifest {
 }
 
 /**
+ * Commands that belong to the evaluating phase and cannot honestly run here.
+ *
+ * The eval harness runs a version's *committed* code and asserts, per case, that the execution it
+ * produced names the version's `git_commit_sha`. Finalize is the step that records that SHA, so
+ * running the suite from inside finalize asks the harness to check a fact finalize has not yet
+ * established — the version is still `generated` and its SHA is still null. Deferring is not a
+ * weakening of the gate: `transition_agent_version` moves the version to `evaluating` immediately
+ * after this returns, `pnpm evals` runs against it there, and a suite that fails moves the version
+ * to `failed` rather than to `approved`.
+ */
+const DEFERRED_TO_EVALUATING = new Set(['pnpm evals']);
+
+/**
  * Re-run the validation commands the manifest claims passed.
  *
  * A manifest that says `lint: pass` is an assertion by the thing being audited. Running the gates
@@ -137,6 +150,7 @@ export function parseManifest(text: string, source: string): BuildManifest {
  */
 async function rerunValidation(commands: readonly string[]): Promise<void> {
   for (const command of commands) {
+    if (DEFERRED_TO_EVALUATING.has(command)) continue;
     const [bin, ...args] = command.split(/\s+/);
     if (bin === undefined) continue;
     const result = await runAsync(bin, args, { cwd: repoPath() });
