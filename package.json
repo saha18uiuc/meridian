@@ -22,6 +22,7 @@
     "seed": "tsx scripts/seed-demo.ts",
     "build": "pnpm build:ts && pnpm build:web",
     "build:ts": "tsc -b",
+    "build:worker": "tsc -b apps/backend",
     "build:web": "pnpm --filter @meridian/web build",
     "lint": "eslint .",
     "format:check": "prettier --check .",

@@ -1,0 +1,46 @@
+# Everything the worker image has no use for.
+#
+# Without this the build context is the working tree, `node_modules` and all, which is both slow to
+# send to the daemon and wrong: the image installs its own dependencies for its own platform, and a
+# macOS `node_modules` copied into a Linux container is a subtle way to ship a broken binary.
+
+node_modules
+**/node_modules
+
+# Build output. The image runs `tsc -b` itself; a local `dist` or `.next` would be stale.
+#
+# The build info has to be excluded at every depth, not just the root. `tsc` writes it beside each
+# `tsconfig.json`, so a root-only `*.tsbuildinfo` let `packages/*/tsconfig.tsbuildinfo` into the
+# image while `**/dist` kept the outputs out. `tsc -b` then read "already built", emitted nothing,
+# and every dependent project failed to find declarations that were never written.
+dist
+**/dist
+.next
+**/.next
+**/*.tsbuildinfo
+
+# Local state, none of which means anything in a container.
+.git
+.github
+.env
+.env.*
+.temporal
+.meridian
+supabase/.branches
+supabase/.temp
+test-results
+playwright-report
+coverage
+.DS_Store
+
+# Tests. The image builds `apps/backend` and its references, so no test project is compiled and no
+# test source is needed. `examples/` is deliberately *not* excluded: in mock mode the tool factory
+# reads those `.eml` files and `index.json` at runtime, so they are part of the application.
+**/test
+**/e2e
+**/__fixtures__
+
+# Not shipped, and not read at runtime.
+docs
+.codex
+.cursor
