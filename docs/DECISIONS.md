@@ -598,6 +598,62 @@ same reason: the SOP reads the Commercial Invoice and the Certificates of Analys
 
 ---
 
+## The compiler derives the decision schema; it does not know one
+
+`compileSpec` used to emit a constant for `outputs.decisionSchema`. The constant named
+`shipmentSummary`, `containerNumber`, `batchNumbers`, and a `scope` enum of invoice, good, batch,
+and shipment. Whatever board anyone drew, it compiled to a pharmaceutical import decision.
+
+It is now derived. The outcome enum is the set of `resultKind`s the board's own terminal Outcome
+cards declare, so a spec cannot permit an outcome no card on the canvas describes. A finding's
+`scope` is a plain string, because what a finding is _about_ is the deployment's vocabulary. The
+summary is an open object: what a run summarises is the deployment's business, and the keys it
+correlates on are already recorded once in `data.correlationKeys`.
+
+`AgentDecision` in `@meridian/core` shrank to match — outcome, business key, reason, summary,
+findings, email response — and `Good`, `Invoice`, `Coa`, and `ShipmentInput` moved into the
+generated agent that has an opinion about them. The platform hashes the summary, stores it, and
+renders it; it never needs to understand it.
+
+---
+
+## Two deployments, because one proves nothing
+
+A single worked example cannot demonstrate that the platform is indifferent to the process it
+carries. It can only fail to contradict it, which is a much weaker claim and the one this repository
+was previously making.
+
+The second example is a vendor insurance certificate renewal. It shares no noun with receiving —
+vendors, policies, coverage limits, expiry dates — and it rejects for a reason the receiving board
+has no concept of. It uses the same four primitives and the same four capabilities, and it went
+through the same path: seed, compile, freeze, create agent, create version, finalize against a
+verified Git commit, approve, activate. The agent registry generator found it without being told.
+
+Making that possible is what forced the release path to stop naming a deployment.
+`releaseDemoAgent` and the snapshot generator now take one, and `deployments.ts` is the whole of
+what distinguishes the two examples: a key, a name, a board, and a code path. If adding a third
+required editing anything else, the claim would be false.
+
+The second deployment deliberately has no eval corpus. Its job is to prove the lifecycle
+generalises, and fifteen more fixture documents would not make that point better than the first
+deployment's sixteen cases already make theirs.
+
+---
+
+## Below the minimum is rejected; expired is asked about
+
+Two failures of the same certificate lead to different outcomes, which reads like an inconsistency
+until you ask who can fix it. Coverage below the contracted minimum is a decision the vendor has
+already made about how much insurance to buy, and no reply will change the document. An expired
+certificate is almost always a stale attachment, and the current one exists.
+
+So the board routes them differently, and `outcomeFor` says only what the two arrows say. This is
+recorded because it is exactly the kind of asymmetry a future reader would "tidy up".
+
+---
+
+---
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:
