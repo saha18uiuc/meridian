@@ -224,6 +224,59 @@ pre {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* The palette reads as the thing being added, with the primitive name underneath as the label the
+   rest of the product uses, so the two vocabularies are learned together rather than one replacing
+   the other. */
+.palette-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  cursor: grab;
+  text-align: left;
+}
+
+.palette-button:active {
+  cursor: grabbing;
+}
+
+.palette-label {
+  font-weight: 600;
+}
+
+.palette-kind {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.primitive-sentence {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+  border-left: 2px solid var(--border-strong);
+  padding-left: 8px;
+}
+
+.plain-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.code-block {
+  margin: 0;
+  font-size: 11px;
 }
 
 .canvas-body {
@@ -347,6 +400,24 @@ pre {
   border-bottom-color: #a855f7;
 }
 
+/* Handles are the only way to draw an arrow, so they are made large enough to aim at and coloured
+   distinctly from the card border they used to disappear into. */
+.card-handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--bg-elevated);
+  background: var(--accent);
+}
+
+.card-handle-out::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+/* The tray holds only what cannot be drawn on the board: findings about the board as a whole, and
+   findings whose anchor has since been deleted. Everything with a place on the canvas is drawn
+   there instead. */
 .comment-pins {
   position: absolute;
   top: 8px;
@@ -357,6 +428,11 @@ pre {
   border-radius: var(--radius);
   padding: 8px;
   font-size: 12px;
+  z-index: 5;
+}
+
+.comment-pins:empty {
+  display: none;
 }
 
 .comment-pins ul {
@@ -365,15 +441,72 @@ pre {
   list-style: none;
 }
 
-.comment-pins .pin {
-  background: transparent;
-  border: none;
-  padding: 2px 0;
-  text-align: left;
+.comment-pins h4 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
 }
 
-.comment-pins .pin.blocking {
+/* Positioned by `ViewportPortal` in graph coordinates: the transform is set inline from the
+   anchored card's own position, and React Flow's viewport transform does the panning and zooming. */
+.comment-bubble-anchor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: all;
+}
+
+.comment-bubble {
+  position: relative;
+}
+
+.pin {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  padding: 3px 8px;
+  font-size: 11px;
+  text-align: left;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.pin.blocking {
+  border-color: var(--blocking);
   color: var(--blocking);
+}
+
+.pin.open {
+  outline: 2px solid var(--accent);
+}
+
+.pin-preview {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A popover, never a modal: review is advisory and must not stop the author drafting. */
+.comment-popover {
+  position: absolute;
+  top: 26px;
+  left: 0;
+  width: 320px;
+  max-height: 340px;
+  overflow: auto;
+  z-index: 10;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 8px;
+  font-size: 12px;
 }
 
 .react-flow__attribution {

@@ -100,7 +100,7 @@ behind the active-session unique index forever. Ordering:
 2. Assemble the canonical snapshot **on the server** and compute `source_canvas_hash`. No request
    schema in the system has a `sourceCanvasJson` or `sourceCanvasHash` field, so there is nothing to
    forge.
-3. Run the 14 deterministic checks against that snapshot, before any network call, so a model outage
+3. Run the 15 deterministic checks against that snapshot, before any network call, so a model outage
    still produces deterministic findings.
 4. Resolve the actual model **before the session row exists** — `model_name` and `reasoning_effort`
    are immutable once a session leaves `queued`, so the session cannot be created before the model is
@@ -115,11 +115,17 @@ behind the active-session unique index forever. Ordering:
 8. Any failure after session creation calls `fail_review_session` in a `finally`, so a session is
    never left `running`.
 
-**The 14 deterministic checks.** Disconnected nodes; unreachable outcomes; missing initial path;
+**The 15 deterministic checks.** Disconnected nodes; unreachable outcomes; missing initial path;
 missing terminal path; unlabeled Rule branches; missing required primitive fields; invalid edge
 references; orphaned exception paths; Actions without an actor; agent/system Actions without required
 system information; Rules with invalid branch configuration; retry Rules without `maxAttempts`; wait
-Rules without `timeoutMinutes`; unknown capabilities.
+Rules without `timeoutMinutes`; unknown capabilities; decision Rules whose branch labels and outgoing
+arrow labels describe different ways forward.
+
+The last of those was not in the original fourteen. It was added once the authoring UI showed both
+halves of a decision at the same time, which made it visible that a board records the ways out of a
+Rule twice — as branch labels and as edge labels — with nothing in the schema keeping them equal.
+It is non-blocking: a board can be mid-edit and still compile. See DECISIONS.md.
 
 **Issue identity.** `issue_key` is stored, never recomputed at read time:
 `det:<checkCode>:<anchorType>:<anchorId ?? 'canvas'>:<fieldPath ?? '-'>` for deterministic findings,

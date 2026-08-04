@@ -1,31 +1,24 @@
 'use client';
 
 import { ActionDataSchema } from '@meridian/core/schemas';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { labelFor } from '@meridian/core/vocabulary';
+import type { NodeProps } from '@xyflow/react';
 import type { MeridianFlowNode } from '@/features/whiteboard/Canvas';
+import { CardFrame } from '@/features/whiteboard/nodes/CardFrame';
 
 /** Action = Task + System + Human Handoff. The actor is the first thing an operator reads. */
 export function ActionCard({ data, selected }: NodeProps<MeridianFlowNode>) {
   const parsed = ActionDataSchema.safeParse(data.node.data);
   const detail = parsed.success ? parsed.data : null;
   return (
-    <article
-      className={`card card-action${selected === true ? ' selected' : ''}`}
-      aria-label={`Action card ${data.node.title}`}
-      data-primitive="action"
-    >
-      <Handle type="target" position={Position.Left} />
-      <header>
-        <span className="card-kind">Action</span>
-        <span className="card-title">{data.node.title}</span>
-      </header>
+    <CardFrame primitiveType="action" title={data.node.title} selected={selected === true}>
       {detail === null ? (
         <p className="card-invalid">Invalid action data</p>
       ) : (
         <dl>
           <div>
-            <dt>Actor</dt>
-            <dd>{detail.actor}</dd>
+            <dt>Done by</dt>
+            <dd>{labelFor('actor', detail.actor)}</dd>
           </div>
           <div>
             <dt>Operation</dt>
@@ -44,7 +37,6 @@ export function ActionCard({ data, selected }: NodeProps<MeridianFlowNode>) {
           </div>
         </dl>
       )}
-      <Handle type="source" position={Position.Right} />
-    </article>
+    </CardFrame>
   );
 }

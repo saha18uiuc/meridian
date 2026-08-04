@@ -9,9 +9,11 @@ import type {
 } from '@meridian/core/schemas';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AssumptionsPanel } from '@/features/review/AssumptionsPanel';
 import { ReviewButton } from '@/features/review/ReviewButton';
 import { ThreadList } from '@/features/review/ThreadList';
 import { UnresolvedCounter } from '@/features/review/UnresolvedCounter';
+import { BoardSpecList } from '@/features/spec/BoardSpecList';
 import { FreezeButton } from '@/features/spec/FreezeButton';
 import { Canvas } from '@/features/whiteboard/Canvas';
 import { RenameBoardField } from '@/features/whiteboard/RenameBoardField';
@@ -36,6 +38,9 @@ export default function BoardPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [lastReviewedRevisionNo, setLastReviewedRevisionNo] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Incremented by anything that may have changed a comment, so the panels that read their own
+  // endpoints refetch without the page holding their state for them.
+  const [refreshToken, setRefreshToken] = useState(0);
 
   const loadBoard = useCallback(async (): Promise<void> => {
     const response = await fetch(`/api/whiteboards/${whiteboardId}`);
@@ -89,6 +94,7 @@ export default function BoardPage() {
 
   const refreshAll = useCallback(async (): Promise<void> => {
     await Promise.all([loadBoard(), loadReviewState()]);
+    setRefreshToken((token) => token + 1);
   }, [loadBoard, loadReviewState]);
 
   if (error !== null) return <p className="banner error">{error}</p>;
@@ -100,6 +106,7 @@ export default function BoardPage() {
       whiteboardId={whiteboardId}
       comments={comments}
       lastReviewedRevisionNo={lastReviewedRevisionNo}
+      refreshToken={refreshToken}
       onRefresh={refreshAll}
     />
   );
@@ -110,12 +117,14 @@ function BoardBody({
   whiteboardId,
   comments,
   lastReviewedRevisionNo,
+  refreshToken,
   onRefresh,
 }: {
   store: GraphStore;
   whiteboardId: string;
   comments: Comment[];
   lastReviewedRevisionNo: number | null;
+  refreshToken: number;
   onRefresh: () => Promise<void>;
 }) {
   const metadata = useGraphStore(store, (s) => s.metadata);
@@ -150,16 +159,28 @@ function BoardBody({
         </div>
       </div>
 
-      <Canvas store={store} whiteboardId={whiteboardId} comments={comments} />
+      <Canvas
+        store={store}
+        whiteboardId={whiteboardId}
+        comments={comments}
+        onCommentsChanged={() => void onRefresh()}
+      />
 
       <section className="stack">
         <h3>Review findings</h3>
+        <p className="muted">
+          Each finding is also a bubble on the board, beside the card it is about. Both open the
+          same thread.
+        </p>
         <ThreadList
           threads={threads}
           revisionNo={metadata.revisionNo}
           onChanged={() => void onRefresh()}
         />
       </section>
+
+      <AssumptionsPanel whiteboardId={whiteboardId} refreshToken={refreshToken} />
+      <BoardSpecList whiteboardId={whiteboardId} refreshToken={refreshToken} />
     </div>
   );
 }

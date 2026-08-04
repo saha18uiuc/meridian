@@ -14,7 +14,16 @@ interface Preview {
   dismissedComments: { commentId: string; body: string }[];
 }
 
-/** Freeze is a separate action from Review, with one checkbox per real condition and no more. */
+/**
+ * Freeze is a separate action from Review, with one checkbox per real condition and no more.
+ *
+ * The product has two names for this one act. The brief and the board's own `submitted` status call
+ * it submitting; the PRD, the compiler, and every column in the database call it freezing, because
+ * what it does is take an immutable snapshot. Both names are load-bearing and neither can be
+ * deleted, so the interface leads with the verb the process owner recognises — they are submitting
+ * their process — and says in the same breath what submitting does. Someone who reads the PRD after
+ * using the product finds the same word waiting for them, rather than a concept they have to map.
+ */
 export function FreezeButton({
   whiteboardId,
   revisionNo,
@@ -71,15 +80,25 @@ export function FreezeButton({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} data-testid="freeze-open">
-        Freeze Spec
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        title="Freeze this process as an immutable specification"
+        data-testid="freeze-open"
+      >
+        Submit Process
       </button>
     );
   }
 
   return (
     <div className="panel stack" data-testid="freeze-dialog">
-      <h3>Freeze specification</h3>
+      <h3>Submit this process</h3>
+      <p className="muted">
+        Submitting freezes the board as an immutable <strong>specification</strong> — the contract
+        an agent is generated from. The board stays editable afterwards; later edits produce a new
+        version rather than changing this one.
+      </p>
       {preview === null ? (
         <p className="muted">Checking the board…</p>
       ) : (
@@ -112,7 +131,7 @@ export function FreezeButton({
           onClick={() => void freeze()}
           data-testid="freeze-confirm"
         >
-          {busy ? 'Freezing…' : 'Freeze'}
+          {busy ? 'Freezing…' : 'Submit and freeze'}
         </button>
         <button type="button" onClick={() => setOpen(false)}>
           Cancel

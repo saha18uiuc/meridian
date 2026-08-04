@@ -103,7 +103,10 @@ describe('the Action card', () => {
       />,
     );
 
-    expect(screen.getByText('agent')).toBeInTheDocument();
+    // The actor reads as a person would say it. The bare enum value is what the database stores
+    // and is deliberately not what the card shows.
+    expect(screen.getByText('The agent')).toBeInTheDocument();
+    expect(screen.queryByText('agent')).not.toBeInTheDocument();
     expect(screen.getByText('document.extract')).toBeInTheDocument();
     expect(screen.getByText(/attachments/)).toHaveTextContent('attachments → goods, weights');
   });
@@ -125,7 +128,7 @@ describe('the Action card', () => {
         })}
       />,
     );
-    expect(screen.getByText('human')).toBeInTheDocument();
+    expect(screen.getByText('A person')).toBeInTheDocument();
   });
 });
 
@@ -194,7 +197,10 @@ describe('the Outcome card', () => {
       />,
     );
 
-    expect(screen.getByText('needs_information')).toBeInTheDocument();
+    // `needs_information` is a database identifier. A receiving manager reading this card should
+    // not have to be told that it means the shipment is held for paperwork.
+    expect(screen.getByText('Waiting on missing information')).toBeInTheDocument();
+    expect(screen.queryByText('needs_information')).not.toBeInTheDocument();
     expect(screen.getByText('no')).toBeInTheDocument();
     expect(screen.getByText('send_email')).toBeInTheDocument();
     // The capability is shown because it is what the outcome will be allowed to do.

@@ -1,4 +1,5 @@
 export * from './schemas.js';
+export * from './vocabulary.js';
 export * from './hashing.js';
 export * from './graph.js';
 export * from './issue-key.js';

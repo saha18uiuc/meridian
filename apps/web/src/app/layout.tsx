@@ -17,6 +17,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <span className="brand">Meridian</span>
             <nav>
               <Link href="/boards">Boards</Link>
+              <Link href="/specs">Specifications</Link>
               <Link href="/agents">Agents</Link>
               <Link href="/executions">Executions</Link>
             </nav>

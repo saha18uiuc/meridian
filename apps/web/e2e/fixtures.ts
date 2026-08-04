@@ -27,6 +27,37 @@ export async function signIn(
   await page.waitForURL('**/boards');
 }
 
+/** Create a board through the form on `/boards` and land on it, returning its ID. */
+export async function createBoard(page: Page, title: string): Promise<string> {
+  await page.goto('/boards');
+  await page.getByTestId('new-board-title').fill(title);
+  await page.getByTestId('new-board-submit').click();
+  await page.waitForURL(/\/boards\/[0-9a-f-]{36}$/);
+  await expect(page.getByTestId('canvas')).toBeVisible();
+  const id = new URL(page.url()).pathname.split('/').pop();
+  if (id === undefined) throw new Error(`could not read a board id from ${page.url()}`);
+  return id;
+}
+
+/**
+ * Draw an arrow between two cards the way a person does, by dragging between their handles.
+ *
+ * The selectors are CSS rather than test ids because React Flow owns the handle elements; the
+ * classes are the ones `CardFrame` puts on them.
+ */
+export async function connectHandles(page: Page, source: string, target: string): Promise<void> {
+  const from = await page.locator(source).first().boundingBox();
+  const to = await page.locator(target).first().boundingBox();
+  if (from === null || to === null) throw new Error('a connection handle had no box to aim at');
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  // React Flow begins a connection on the first move and only then starts looking for a valid
+  // target, so a single jump from source to target can land before the connection line exists.
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 12 });
+  await page.mouse.up();
+}
+
 /** Open the seeded board and return its ID, which the specs use for direct API assertions. */
 export async function openSeededBoard(page: Page): Promise<string> {
   await page.goto('/boards');

@@ -123,11 +123,35 @@ const POSITIVE_FIXTURES: Record<CheckCode, () => CanonicalGraph> = {
     );
     return graphOf([outcome], []);
   },
+  // Both halves are named and they name different things: the card offers "approve" and "reject",
+  // the arrows are drawn for "approve" and "escalate". Whoever renamed one forgot the other.
+  RULE_BRANCH_EDGE_DIVERGENCE: () => {
+    const rule = node(
+      uuid(101),
+      'rule',
+      'Approve or not',
+      ruleData({
+        branches: [
+          { label: 'approve', condition: '', targetNodeId: null },
+          { label: 'reject', condition: '', targetNodeId: null },
+        ],
+      }),
+    );
+    const approved = node(uuid(102), 'outcome', 'Approved', outcomeData());
+    const other = node(uuid(103), 'outcome', 'Escalated', outcomeData());
+    return graphOf(
+      [rule, approved, other],
+      [
+        edge(uuid(104), rule.nodeId, approved.nodeId, 'approve'),
+        edge(uuid(105), rule.nodeId, other.nodeId, 'escalate'),
+      ],
+    );
+  },
 };
 
-describe('the fourteen deterministic checks', () => {
-  it('registers exactly fourteen checks, one per code', () => {
-    expect(DETERMINISTIC_CHECKS).toHaveLength(14);
+describe('the fifteen deterministic checks', () => {
+  it('registers exactly fifteen checks, one per code', () => {
+    expect(DETERMINISTIC_CHECKS).toHaveLength(15);
     expect(DETERMINISTIC_CHECKS.map((c) => c.code).sort()).toEqual([...CHECK_CODES].sort());
   });
 
@@ -150,6 +174,83 @@ describe('the fourteen deterministic checks', () => {
     const first = runDeterministicChecks(graph);
     const second = runDeterministicChecks(graph);
     expect(first).toEqual(second);
+  });
+});
+
+/**
+ * The divergence check is the one that has to distinguish "unfinished" from "contradictory", and
+ * getting that line wrong in either direction makes it useless: too eager and every board in
+ * progress is red, too shy and the rename it exists to catch goes through.
+ */
+describe('RULE_BRANCH_EDGE_DIVERGENCE', () => {
+  function ruleWith(branchLabels: string[], edgeLabels: (string | undefined)[]): CanonicalGraph {
+    const rule = node(
+      uuid(110),
+      'rule',
+      'Fork',
+      ruleData({
+        branches: branchLabels.map((label) => ({ label, condition: '', targetNodeId: null })),
+      }),
+    );
+    const targets = edgeLabels.map((_label, index) =>
+      node(uuid(120 + index), 'outcome', `Target ${String(index)}`, outcomeData()),
+    );
+    return graphOf(
+      [rule, ...targets],
+      edgeLabels.map((label, index) =>
+        edge(uuid(140 + index), rule.nodeId, targets[index]?.nodeId ?? uuid(0), label),
+      ),
+    );
+  }
+
+  it('says nothing when every branch has an arrow with the same name', () => {
+    expect(codes(ruleWith(['approve', 'reject'], ['approve', 'reject']))).not.toContain(
+      'RULE_BRANCH_EDGE_DIVERGENCE',
+    );
+  });
+
+  it('ignores case, because a rename is about the word and not its capitals', () => {
+    expect(codes(ruleWith(['Approve', 'Reject'], ['approve', 'REJECT']))).not.toContain(
+      'RULE_BRANCH_EDGE_DIVERGENCE',
+    );
+  });
+
+  it('stays quiet while a rule has branches but no arrows drawn yet', () => {
+    // Half-finished is the normal state of a board being drafted, and a check that fires on it
+    // trains the operator to ignore this check.
+    expect(codes(ruleWith(['approve', 'reject'], []))).not.toContain('RULE_BRANCH_EDGE_DIVERGENCE');
+  });
+
+  it('stays quiet when the arrows leaving a rule are all unlabelled', () => {
+    expect(codes(ruleWith(['approve', 'reject'], [undefined, undefined]))).not.toContain(
+      'RULE_BRANCH_EDGE_DIVERGENCE',
+    );
+  });
+
+  it('reports the branch that no arrow implements', () => {
+    const findings = runDeterministicChecks(ruleWith(['approve', 'reject'], ['approve']));
+    const finding = findings.find((f) => f.checkCode === 'RULE_BRANCH_EDGE_DIVERGENCE');
+    expect(finding?.body).toContain('"reject"');
+    expect(finding?.severity).toBe('non_blocking');
+    expect(finding?.anchorFieldPath).toBe('branches');
+  });
+
+  it('reports the arrow that no branch describes', () => {
+    const findings = runDeterministicChecks(ruleWith(['approve'], ['approve', 'escalate']));
+    const finding = findings.find((f) => f.checkCode === 'RULE_BRANCH_EDGE_DIVERGENCE');
+    expect(finding?.body).toContain('"escalate"');
+  });
+
+  it('only judges decision rules, since other kinds do not carry branch labels', () => {
+    const rule = node(
+      uuid(150),
+      'rule',
+      'Hold',
+      ruleData({ ruleKind: 'wait', timeoutMinutes: 30, branches: [] }),
+    );
+    const target = node(uuid(151), 'outcome', 'Later', outcomeData());
+    const graph = graphOf([rule, target], [edge(uuid(152), rule.nodeId, target.nodeId, 'timeout')]);
+    expect(codes(graph)).not.toContain('RULE_BRANCH_EDGE_DIVERGENCE');
   });
 });
 

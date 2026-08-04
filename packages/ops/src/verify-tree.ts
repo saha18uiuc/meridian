@@ -544,6 +544,38 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
   'packages/core/test/db/review-reconcile-policy.test.ts':
     'the §5.5.3 reconciliation rules, asserted against the rows `finalize_review_session` writes. The plan put this policy in a TypeScript service beside the review route; that module computed a classification the route then discarded, while the RPC resolved any root the round did not mention — so a model finding nobody addressed was silently marked resolved. The policy now lives in the transaction that owns the rows, and these are its cases.',
   'packages/core/test/db/rpc-rename-whiteboard.test.ts': '§7.0 RPC 2 named test',
+
+  // ------------------------------------------------ making the whiteboard usable by its audience
+  'packages/core/src/vocabulary.ts':
+    "the human names and one-sentence explanations of the four primitives, plus labels for every enumerated value. The brief's test for the primitive set is that each can be explained to a non-engineer in a sentence; those sentences existed only in developer comments on the card components and in a PRD table, so the product itself never met the test. They live in core because the UI, the written deliverable, and the test that keeps them from drifting all quote the same strings.",
+  'apps/web/src/features/whiteboard/nodes/CardFrame.tsx':
+    'the shell the four cards share: kind, title, and the two connection handles. Extracted when the handles gained a visible target and a hint — previously a 6px dot the same colour as the card border, so connecting two cards was possible only for someone who already knew it was — and so the primitive explanation is attached in exactly one place rather than four.',
+  'apps/web/src/features/review/AssumptionsPanel.tsx':
+    'the missing consumer of GET /api/whiteboards/[id]/assumptions. An assumption is what closes an ambiguity and the only evidence that resolves a model finding, and it was carried into the frozen spec without the operator ever being able to see what they had recorded.',
+  'apps/web/src/features/spec/BoardSpecList.tsx':
+    'the specifications a board has produced, shown on the board. Freezing redirected to /specs/{specId} and that was the only route to a frozen spec in the product, so the document an agent is generated from was reachable only by remembering a UUID.',
+  'apps/web/src/app/api/whiteboards/[whiteboardId]/specs/route.ts':
+    "lists one board's frozen specs without their `spec_json`, which the board page needs and no route exposed; `listBoardSpecs` already existed and was reachable only through the agent detail route",
+  'apps/web/src/app/api/specs/route.ts':
+    "the caller's specs across every board, for the index page",
+  'apps/web/src/app/specs/page.tsx':
+    'the spec index, and the third item in the header nav. Without it a specification was addressable but not findable.',
+
+  // ------------------------------------------------------- the human half of a human-in-the-loop
+  'apps/web/src/features/executions/humanDecisions.ts':
+    'derives which questions a run is waiting on from the events it already writes. A parked workflow has no row saying so — it is sitting in a Temporal condition — so "is anyone waiting on me" is the difference between the `human_handoff_requested` evidence and the answers. Pure, and therefore testable without a browser or a worker.',
+  'apps/web/src/features/executions/HumanDecisionPanel.tsx':
+    'the caller `submitHumanDecision` never had. Every part of the answering path was built — idempotency key, signal delivery, graceful handling of a finished run — and nothing in the interface invoked it, so a run that asked a question waited twenty-four hours and timed out.',
+  'apps/web/test/component/comment-pins.test.tsx':
+    'that a finding reaches the reader with its body and its anchor together, and that node and edge anchors resolve to the right graph coordinates',
+  'apps/web/test/component/human-decisions.test.tsx':
+    'the pending-versus-answered derivation, including a replayed request and a twice-pressed button, since both are ordinary and both would otherwise show a question that is not really open',
+  'apps/web/e2e/whiteboard-authoring.spec.ts':
+    'creating a board, dropping a card, drawing an arrow and deleting either — the actions the product is named after, and the only ones no spec covered, because every existing spec starts from the seeded board',
+  'apps/web/e2e/review-resolution.spec.ts':
+    'the one comment transition nobody can perform by hand: a deterministic finding closing because a later round stopped reporting it. The policy is tested against the database directly, but this is the only proof that a person driving the interface can reach it.',
+  'apps/web/e2e/human-decisions.spec.ts':
+    'that the handoff panel finds a real request in events this system actually wrote, rather than in a fixture shaped like one',
   'apps/web/test/service/intake-no-key.test.ts': '§7.0 RPC 23: named explicitly',
   'apps/backend/test/workflow-boundary.test.ts':
     '§10: the workflow sandbox rejects a direct Supabase import',

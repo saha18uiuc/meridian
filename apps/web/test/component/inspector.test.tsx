@@ -196,6 +196,155 @@ describe('array order', () => {
   });
 });
 
+/**
+ * Every field the compiler reads has to be reachable from the interface.
+ *
+ * Five were not: a Rule's fallback target and each branch's target, a field's `required` flag and
+ * its description, and an Outcome's required-action description. All five are named in the PRD's
+ * card-data column and all five are compiled, so a board could not express them and a spec frozen
+ * from it silently under-specified the process.
+ */
+describe('the fields that had no control', () => {
+  it('picks a rule fallback from the board rather than asking for a UUID', async () => {
+    const user = userEvent.setup();
+    const store = storeWith('rule');
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.selectOptions(screen.getByTestId('rule-fallback'), OTHER_NODE_ID);
+
+    expect(store.getState().nodes[0]?.data['fallbackNodeId']).toBe(OTHER_NODE_ID);
+  });
+
+  it('never offers the card itself as its own fallback', () => {
+    const store = storeWith('rule');
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    const options = [...screen.getByTestId('rule-fallback').querySelectorAll('option')];
+    expect(options.map((option) => option.value)).toEqual(['', OTHER_NODE_ID]);
+  });
+
+  it('picks a branch target from the board', async () => {
+    const user = userEvent.setup();
+    const store = storeWith('rule', {
+      branches: [{ label: 'documents complete', condition: '', targetNodeId: null }],
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.selectOptions(screen.getByTestId('rule-branch-target-0'), OTHER_NODE_ID);
+
+    const branches = store.getState().nodes[0]?.data['branches'] as { targetNodeId: string }[];
+    expect(branches[0]?.targetNodeId).toBe(OTHER_NODE_ID);
+  });
+
+  it('lets a field be optional, instead of hardcoding every field as required', async () => {
+    const user = userEvent.setup();
+    const store = storeWith('input', {
+      fields: [{ name: 'registrationNumber', type: 'string', required: true }],
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.click(screen.getByTestId('input-field-required-0'));
+
+    const fields = store.getState().nodes[0]?.data['fields'] as { required: boolean }[];
+    expect(fields[0]?.required).toBe(false);
+  });
+
+  it('describes a field, which is what the extraction prompt is built from', async () => {
+    const user = userEvent.setup();
+    const store = storeWith('input', {
+      fields: [{ name: 'htsCode', type: 'string', required: true }],
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.type(screen.getByTestId('input-field-description-0'), 'Harmonized tariff code.');
+
+    const fields = store.getState().nodes[0]?.data['fields'] as { description?: string }[];
+    expect(fields[0]?.description).toBe('Harmonized tariff code.');
+  });
+
+  it('describes what a required action should do', async () => {
+    const user = userEvent.setup();
+    const store = storeWith('outcome', {
+      requiredAction: { actionType: 'send_email', description: '' },
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.type(screen.getByTestId('outcome-action-description'), 'Ask for the packing list.');
+
+    const action = store.getState().nodes[0]?.data['requiredAction'] as { description: string };
+    expect(action.description).toBe('Ask for the packing list.');
+  });
+
+  it('keeps the description when the capability is set afterwards', async () => {
+    // Both edit one nested object. An earlier version rebuilt it from the action type alone, so
+    // typing in the second field erased the first.
+    const user = userEvent.setup();
+    const store = storeWith('outcome', {
+      requiredAction: { actionType: 'send_email', description: 'Ask for the packing list.' },
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    await user.type(screen.getByTestId('outcome-capability'), 'mail.send');
+
+    const action = store.getState().nodes[0]?.data['requiredAction'] as {
+      description: string;
+      capability: string;
+    };
+    expect(action).toMatchObject({
+      description: 'Ask for the packing list.',
+      capability: 'mail.send',
+    });
+  });
+
+  it('no longer offers the node-level Input "required" flag', () => {
+    // It claimed the process could not run without the input, was read by nothing, and was `true`
+    // even on the certificate of analysis whose absence the board explicitly routes around.
+    renderInspector(storeWith('input'), { kind: 'node', id: NODE_ID });
+    expect(screen.queryByTestId('input-required')).not.toBeInTheDocument();
+  });
+});
+
+describe('teaching the primitives', () => {
+  it('explains the selected primitive in a sentence', () => {
+    renderInspector(storeWith('rule'), { kind: 'node', id: NODE_ID });
+    expect(screen.getByTestId('primitive-sentence')).toHaveTextContent(
+      /a point where the process can go more than one way/i,
+    );
+  });
+
+  it('labels enum choices in words rather than database values', () => {
+    renderInspector(storeWith('outcome'), { kind: 'node', id: NODE_ID });
+    const options = [...screen.getByTestId('outcome-result-kind').querySelectorAll('option')];
+    expect(options.map((option) => option.textContent)).toContain('Waiting on missing information');
+    expect(options.map((option) => option.textContent)).not.toContain('needs_information');
+  });
+});
+
+describe('branches and the arrows that implement them', () => {
+  it('shows the arrows leaving the rule beside its branches', () => {
+    const store = storeWith('rule', {
+      branches: [{ label: 'all fields present', condition: '', targetNodeId: null }],
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    expect(screen.getByTestId('branch-edge-agreement')).toHaveTextContent('all fields present');
+    expect(screen.queryByTestId('branch-edge-divergence')).not.toBeInTheDocument();
+  });
+
+  it('says so the moment a branch and its arrow stop agreeing', () => {
+    // The seeded edge is labelled "all fields present". Renaming only the branch is the exact
+    // mistake this surfaces, and it happens while the author is still on the card.
+    const store = storeWith('rule', {
+      branches: [{ label: 'documents complete', condition: '', targetNodeId: null }],
+    });
+    renderInspector(store, { kind: 'node', id: NODE_ID });
+
+    const warning = screen.getByTestId('branch-edge-divergence');
+    expect(warning).toHaveTextContent('documents complete');
+    expect(warning).toHaveTextContent('all fields present');
+  });
+});
+
 describe('editing a connection', () => {
   it('edits the label and priority in place', async () => {
     const user = userEvent.setup();
@@ -212,27 +361,35 @@ describe('editing a connection', () => {
     expect(store.getState().dirtyEdgeIds.has(EDGE_ID)).toBe(true);
   });
 
-  it('leaves a malformed condition alone rather than storing half of it', async () => {
-    const user = userEvent.setup();
+  it('names both ends, so a connection is identifiable without tracing it on the canvas', () => {
+    const store = storeWith('rule');
+    renderInspector(store, { kind: 'edge', id: EDGE_ID });
+    expect(screen.getByTestId('edge-endpoints')).toBeInTheDocument();
+  });
+
+  it('offers no way to author a raw condition object', () => {
+    // The control this replaces asked a warehouse receiving manager to type JSON. Its absence is
+    // the feature, so it is asserted rather than merely not tested.
     const store = storeWith('rule');
     renderInspector(store, { kind: 'edge', id: EDGE_ID });
 
-    const field = screen.getByTestId('edge-condition');
-    await user.type(field, '{{ not json');
-    await user.tab();
-
-    expect(store.getState().edges[0]?.condition).toBeNull();
+    expect(screen.queryByTestId('edge-condition')).not.toBeInTheDocument();
+    expect(screen.getByTestId('edge-condition-empty')).toBeInTheDocument();
   });
 
-  it('clears the condition when the field is emptied', async () => {
-    const user = userEvent.setup();
+  it('still shows a condition an import left behind, read-only', () => {
+    // Removing the editor must not make stored data invisible: the compiler reads this column, so
+    // an operator looking at why a board behaves oddly has to be able to see it.
     const store = storeWith('rule');
     store.updateEdge(EDGE_ID, { condition: { field: 'weight', op: 'gt', value: 1000 } });
     renderInspector(store, { kind: 'edge', id: EDGE_ID });
 
-    await user.clear(screen.getByTestId('edge-condition'));
-    await user.tab();
-
-    expect(store.getState().edges[0]?.condition).toBeNull();
+    expect(screen.getByTestId('edge-condition-readonly')).toHaveTextContent('"weight"');
+    expect(screen.queryByTestId('edge-condition')).not.toBeInTheDocument();
+    expect(store.getState().edges[0]?.condition).toEqual({
+      field: 'weight',
+      op: 'gt',
+      value: 1000,
+    });
   });
 });

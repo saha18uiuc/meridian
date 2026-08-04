@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 /**
- * The fourteen deterministic checks (§5.5.2). Each is a pure function over a `CanonicalGraph`,
+ * The fifteen deterministic checks (§5.5.2). Each is a pure function over a `CanonicalGraph`,
  * so a model outage still yields a full deterministic finding set.
  */
 export const CHECK_CODES = [
@@ -19,6 +19,7 @@ export const CHECK_CODES = [
   'RETRY_RULE_WITHOUT_MAX_ATTEMPTS',
   'WAIT_RULE_WITHOUT_TIMEOUT',
   'UNKNOWN_CAPABILITY',
+  'RULE_BRANCH_EDGE_DIVERGENCE',
 ] as const;
 export const CheckCodeSchema = z.enum(CHECK_CODES);
 export type CheckCode = z.infer<typeof CheckCodeSchema>;

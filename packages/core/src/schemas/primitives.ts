@@ -38,6 +38,21 @@ export const InputDataSchema = z
   .object({
     inputKind: InputKindSchema,
     sourceSystem: z.string().default(''),
+    /**
+     * Retained so existing boards parse; no longer offered as a control and read by nothing.
+     *
+     * It claims "the process cannot run without this input", and on the reference board it is
+     * `true` on all four inputs — including the certificate of analysis, which the board's own
+     * decision Rule handles the absence of by routing to `needs_information`. So the flag asserts
+     * something the graph beside it disproves, which is worse than an unread field: compiling it
+     * would have written the contradiction into the spec.
+     *
+     * Whether an input is indispensable is already expressed twice, and both times by something
+     * that cannot drift from the process: `fields[].required` per value, and the presence of a
+     * downstream Rule branch that handles its absence. The field is dropped from the schema at the
+     * next spec version, because removing it now would rewrite stored node data and every hash
+     * derived from it for no gain.
+     */
     required: z.boolean().default(true),
     /** Order is author-meaningful and is preserved into the hash. */
     fields: z.array(FieldSpecSchema).default([]),

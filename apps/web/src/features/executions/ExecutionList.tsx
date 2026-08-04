@@ -9,7 +9,14 @@ function statusClass(status: Execution['status']): string {
   return 'badge';
 }
 
-export function ExecutionList({ executions }: { executions: Execution[] }) {
+export function ExecutionList({
+  executions,
+  awaitingDecision,
+}: {
+  executions: Execution[];
+  /** Execution ids with a handoff nobody has answered. Absent when the caller has not looked. */
+  awaitingDecision?: ReadonlySet<string>;
+}) {
   if (executions.length === 0) {
     return (
       <p className="muted" data-testid="executions-empty">
@@ -40,6 +47,18 @@ export function ExecutionList({ executions }: { executions: Execution[] }) {
             </td>
             <td>
               <span className={statusClass(execution.status)}>{execution.status}</span>
+              {/* A run parked on a handoff still reads `running`, because it is: the workflow is
+                  alive and sitting in a condition. The status column is therefore true and useless
+                  for the one thing an operator scanning this table needs to find. */}
+              {awaitingDecision?.has(execution.executionId) === true ? (
+                <span
+                  className="badge blocking"
+                  data-testid={`awaiting-decision-${execution.executionId}`}
+                  title="This run has asked a question and is waiting for an answer"
+                >
+                  waiting on you
+                </span>
+              ) : null}
             </td>
             <td className="muted">
               {execution.startedAt === null

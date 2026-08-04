@@ -1,31 +1,24 @@
 'use client';
 
 import { RuleDataSchema } from '@meridian/core/schemas';
-import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { labelFor } from '@meridian/core/vocabulary';
+import type { NodeProps } from '@xyflow/react';
 import type { MeridianFlowNode } from '@/features/whiteboard/Canvas';
+import { CardFrame } from '@/features/whiteboard/nodes/CardFrame';
 
 /** Rule = Decision + Wait + retry/exception behaviour. Branch order is author-meaningful. */
 export function RuleCard({ data, selected }: NodeProps<MeridianFlowNode>) {
   const parsed = RuleDataSchema.safeParse(data.node.data);
   const detail = parsed.success ? parsed.data : null;
   return (
-    <article
-      className={`card card-rule${selected === true ? ' selected' : ''}`}
-      aria-label={`Rule card ${data.node.title}`}
-      data-primitive="rule"
-    >
-      <Handle type="target" position={Position.Left} />
-      <header>
-        <span className="card-kind">Rule</span>
-        <span className="card-title">{data.node.title}</span>
-      </header>
+    <CardFrame primitiveType="rule" title={data.node.title} selected={selected === true}>
       {detail === null ? (
         <p className="card-invalid">Invalid rule data</p>
       ) : (
         <dl>
           <div>
             <dt>Kind</dt>
-            <dd>{detail.ruleKind}</dd>
+            <dd>{labelFor('ruleKind', detail.ruleKind)}</dd>
           </div>
           <div>
             <dt>Condition</dt>
@@ -43,15 +36,14 @@ export function RuleCard({ data, selected }: NodeProps<MeridianFlowNode>) {
             <dt>Bounds</dt>
             <dd>
               {detail.ruleKind === 'wait'
-                ? `${detail.timeoutMinutes ?? '?'} min`
+                ? `${String(detail.timeoutMinutes ?? '?')} min`
                 : detail.ruleKind === 'retry'
-                  ? `${detail.maxAttempts ?? '?'} attempts`
+                  ? `${String(detail.maxAttempts ?? '?')} attempts`
                   : '—'}
             </dd>
           </div>
         </dl>
       )}
-      <Handle type="source" position={Position.Right} />
-    </article>
+    </CardFrame>
   );
 }

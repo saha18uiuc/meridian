@@ -59,6 +59,53 @@ export async function getSpec(client: Client, specId: string): Promise<FrozenSpe
   return toRecord(data);
 }
 
+export interface SpecIndexEntry {
+  specId: string;
+  whiteboardId: string;
+  boardTitle: string | null;
+  specVersion: number;
+  specHash: string;
+  sourceRevisionNo: number;
+  unresolvedCommentCount: number;
+  frozenAt: string;
+}
+
+/**
+ * Every specification the caller owns, newest first.
+ *
+ * The board title is embedded rather than fetched per row: an index of specs that shows only UUIDs
+ * and version numbers answers "how many" and not "which process". RLS on `frozen_specs` scopes this
+ * to the owner, and the embed follows the same policy on `whiteboards`, so no filter is applied
+ * here and none is needed.
+ *
+ * `spec_json` is excluded. It is the largest column in the database and the one thing a list has no
+ * use for.
+ */
+export async function listSpecs(client: Client, limit = 100): Promise<SpecIndexEntry[]> {
+  const { data, error } = await client
+    .from('frozen_specs')
+    .select(
+      'spec_id, whiteboard_id, spec_version, spec_hash, source_revision_no, unresolved_comment_ids, created_at, whiteboards(title)',
+    )
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error !== null) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    const typed = row as unknown as Row & { whiteboards: { title: string } | null };
+    return {
+      specId: typed.spec_id,
+      whiteboardId: typed.whiteboard_id,
+      boardTitle: typed.whiteboards?.title ?? null,
+      specVersion: typed.spec_version,
+      specHash: typed.spec_hash,
+      sourceRevisionNo: typed.source_revision_no,
+      unresolvedCommentCount: (typed.unresolved_comment_ids ?? []).length,
+      frozenAt: typed.created_at,
+    };
+  });
+}
+
 export async function listBoardSpecs(
   client: Client,
   whiteboardId: string,

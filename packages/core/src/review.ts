@@ -13,11 +13,15 @@ import { isKnownCapability, KNOWN_CAPABILITIES, looksLikeCapability } from './sc
 import type { CheckCode, Finding, ModelFinding, Severity } from './schemas/review.js';
 
 /**
- * The fourteen deterministic checks (§5.5.2).
+ * The fifteen deterministic checks (§5.5.2).
  *
  * Every check is a pure function of the immutable snapshot, and the whole set runs *before* the
  * model call, so an OpenAI outage still produces a complete deterministic finding set rather
  * than an empty review.
+ *
+ * The PRD specified fourteen. The fifteenth, `RULE_BRANCH_EDGE_DIVERGENCE`, was added when the
+ * authoring UI grew a view of both halves of a decision at once and made it obvious that the board
+ * stores the ways out of a Rule twice with nothing keeping them equal. See DECISIONS.md.
  */
 
 type RawData = Record<string, unknown>;
@@ -461,6 +465,77 @@ export function checkUnknownCapabilities(graph: CanonicalGraph): Finding[] {
   return findings;
 }
 
+// 15 ------------------------------------------ rule branches that disagree with their edges
+/**
+ * A decision Rule says the ways out of it twice: once as `branches[].label` on the card, and once
+ * as the label on each outgoing edge. Nothing in the schema ties the two together — the reference
+ * board keeps them equal by hand — so a board can hold two different answers to "what are the ways
+ * out of here" and look completely healthy.
+ *
+ * That is worth a check rather than a schema constraint because the disagreement is not always an
+ * error. A branch may deliberately have no edge while it is being drafted, and an edge may
+ * legitimately be unlabelled. What is never intended is a *named* branch and a *named* edge that
+ * name different things: the compiler follows the edges, the reader follows the card, and a
+ * generated agent then does something other than what the board says.
+ *
+ * Non-blocking, because the board is still compilable and the author may be mid-edit. It is the
+ * kind of finding the operator should answer, not one that should stop a freeze on its own.
+ */
+export function checkRuleBranchEdgeDivergence(graph: CanonicalGraph): Finding[] {
+  const findings: Finding[] = [];
+
+  for (const node of graph.nodes) {
+    if (node.primitiveType !== 'rule') continue;
+    const data = raw(node);
+    if (str(data['ruleKind']) !== 'decision') continue;
+
+    const branches = Array.isArray(data['branches']) ? data['branches'] : [];
+    const branchLabels = new Set<string>();
+    for (const branch of branches) {
+      const record = (typeof branch === 'object' && branch !== null ? branch : {}) as RawData;
+      const label = str(record['label']).toLowerCase();
+      if (label.length > 0) branchLabels.add(label);
+    }
+
+    const edgeLabels = new Set<string>();
+    for (const edge of graph.edges) {
+      if (edge.sourceNodeId !== node.nodeId) continue;
+      const label = str(edge.label).toLowerCase();
+      if (label.length > 0) edgeLabels.add(label);
+    }
+
+    // Only a board that names both sides is making a claim that can conflict.
+    if (branchLabels.size === 0 || edgeLabels.size === 0) continue;
+
+    const branchesWithoutEdge = [...branchLabels].filter((label) => !edgeLabels.has(label)).sort();
+    const edgesWithoutBranch = [...edgeLabels].filter((label) => !branchLabels.has(label)).sort();
+    if (branchesWithoutEdge.length === 0 && edgesWithoutBranch.length === 0) continue;
+
+    const parts: string[] = [];
+    if (branchesWithoutEdge.length > 0) {
+      parts.push(`no arrow leaves it for the branch(es) ${quoteList(branchesWithoutEdge)}`);
+    }
+    if (edgesWithoutBranch.length > 0) {
+      parts.push(`no branch describes the arrow(s) ${quoteList(edgesWithoutBranch)}`);
+    }
+
+    findings.push(
+      nodeFinding(
+        'RULE_BRANCH_EDGE_DIVERGENCE',
+        node,
+        'non_blocking',
+        `Decision Rule "${node.title}" and the arrows leaving it describe different ways forward: ${parts.join(', and ')}.`,
+        'branches',
+      ),
+    );
+  }
+  return findings;
+}
+
+function quoteList(labels: readonly string[]): string {
+  return labels.map((label) => `"${label}"`).join(', ');
+}
+
 export const DETERMINISTIC_CHECKS: ReadonlyArray<{
   code: CheckCode;
   run: (graph: CanonicalGraph) => Finding[];
@@ -479,6 +554,7 @@ export const DETERMINISTIC_CHECKS: ReadonlyArray<{
   { code: 'RETRY_RULE_WITHOUT_MAX_ATTEMPTS', run: checkRetryRulesWithoutMaxAttempts },
   { code: 'WAIT_RULE_WITHOUT_TIMEOUT', run: checkWaitRulesWithoutTimeout },
   { code: 'UNKNOWN_CAPABILITY', run: checkUnknownCapabilities },
+  { code: 'RULE_BRANCH_EDGE_DIVERGENCE', run: checkRuleBranchEdgeDivergence },
 ];
 
 export function runDeterministicChecks(graph: CanonicalGraph): Finding[] {

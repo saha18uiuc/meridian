@@ -1,12 +1,14 @@
 'use client';
 
 import type { Comment, PrimitiveType } from '@meridian/core/schemas';
+import { PRIMITIVE_GUIDE } from '@meridian/core/vocabulary';
 import {
   Background,
   Controls,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
+  useReactFlow,
   type Node,
   type NodeChange,
   type OnConnect,
@@ -42,21 +44,55 @@ const nodeTypes = {
 
 const PRIMITIVES: PrimitiveType[] = ['input', 'action', 'rule', 'outcome'];
 
+/** The MIME type the palette writes and the canvas reads. */
+const DRAG_TYPE = 'application/meridian-primitive';
+
 export type Selection = { kind: 'node' | 'edge'; id: string } | null;
 
 export function Canvas({
   store,
   whiteboardId,
   comments,
+  onCommentsChanged,
 }: {
   store: GraphStore;
   whiteboardId: string;
   comments: Comment[];
+  onCommentsChanged: () => void | Promise<void>;
+}) {
+  return (
+    <ReactFlowProvider>
+      <CanvasBody
+        store={store}
+        whiteboardId={whiteboardId}
+        comments={comments}
+        onCommentsChanged={onCommentsChanged}
+      />
+    </ReactFlowProvider>
+  );
+}
+
+/**
+ * The provider is one level up because `screenToFlowPosition` is what turns a drop into a position,
+ * and `ViewportPortal` is what puts a comment bubble in graph coordinates. Both are hooks, and both
+ * need a provider above the component that calls them.
+ */
+function CanvasBody({
+  store,
+  whiteboardId,
+  comments,
+  onCommentsChanged,
+}: {
+  store: GraphStore;
+  whiteboardId: string;
+  comments: Comment[];
+  onCommentsChanged: () => void | Promise<void>;
 }) {
   const state = useGraphStore(store, (s) => s);
   const [selection, setSelection] = useState<Selection>(null);
   const viewportTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { status, conflict, error, reapply, discard } = useSaveDelta(store, whiteboardId);
+  const { screenToFlowPosition } = useReactFlow();
 
   const flowNodes = useMemo<MeridianFlowNode[]>(
     () =>
@@ -116,35 +152,74 @@ export function Canvas({
     [store],
   );
 
-  const addCard = useCallback(
-    (primitiveType: PrimitiveType) => {
+  const placeCard = useCallback(
+    (primitiveType: PrimitiveType, position: { x: number; y: number }) => {
       const nodeId = crypto.randomUUID();
-      const count = state.nodes.length;
       store.addNode({
         nodeId,
         primitiveType,
-        title: `New ${primitiveType}`,
+        title: `New ${PRIMITIVE_GUIDE[primitiveType].label.toLowerCase()}`,
         data: emptyNodeData(primitiveType),
-        position: { x: 80 + (count % 5) * 260, y: 80 + Math.floor(count / 5) * 200 },
+        position,
       });
       setSelection({ kind: 'node', id: nodeId });
     },
-    [store, state.nodes.length],
+    [store],
+  );
+
+  // Clicking still works, and still lays cards out on a grid. Dragging is the addition, not the
+  // replacement: a button is reachable from a keyboard and a drop target is not.
+  const addCard = useCallback(
+    (primitiveType: PrimitiveType) => {
+      const count = state.nodes.length;
+      placeCard(primitiveType, {
+        x: 80 + (count % 5) * 260,
+        y: 80 + Math.floor(count / 5) * 200,
+      });
+    },
+    [placeCard, state.nodes.length],
+  );
+
+  const onDrop = useCallback(
+    (event: React.DragEvent) => {
+      event.preventDefault();
+      const primitiveType = event.dataTransfer.getData(DRAG_TYPE);
+      if (!PRIMITIVES.includes(primitiveType as PrimitiveType)) return;
+      placeCard(
+        primitiveType as PrimitiveType,
+        // The drop lands where the pointer is, converted out of screen space so it is right at any
+        // zoom and any pan.
+        screenToFlowPosition({ x: event.clientX, y: event.clientY }),
+      );
+    },
+    [placeCard, screenToFlowPosition],
   );
 
   return (
     <div className="canvas-layout">
       <div className="canvas-toolbar">
-        {PRIMITIVES.map((primitiveType) => (
-          <button
-            key={primitiveType}
-            type="button"
-            onClick={() => addCard(primitiveType)}
-            data-testid={`add-${primitiveType}`}
-          >
-            + {primitiveType}
-          </button>
-        ))}
+        <span className="muted">Drag onto the board, or click to add:</span>
+        {PRIMITIVES.map((primitiveType) => {
+          const guide = PRIMITIVE_GUIDE[primitiveType];
+          return (
+            <button
+              key={primitiveType}
+              type="button"
+              className="palette-button"
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData(DRAG_TYPE, primitiveType);
+                event.dataTransfer.effectAllowed = 'move';
+              }}
+              onClick={() => addCard(primitiveType)}
+              title={guide.sentence}
+              data-testid={`add-${primitiveType}`}
+            >
+              <span className="palette-label">{guide.addLabel}</span>
+              <span className="palette-kind">{guide.label}</span>
+            </button>
+          );
+        })}
         <span className="muted" data-testid="save-status">
           {status === 'saving'
             ? 'Saving…'
@@ -167,33 +242,40 @@ export function Canvas({
       )}
 
       <div className="canvas-body">
-        <div className="canvas-flow" data-testid="canvas">
-          <ReactFlowProvider>
-            <ReactFlow<MeridianFlowNode>
-              nodes={flowNodes}
-              edges={flowEdges}
-              nodeTypes={nodeTypes}
-              onNodesChange={onNodesChange}
-              onConnect={onConnect}
-              onViewportChange={onViewportChange}
-              onEdgeClick={(_event, edge) => setSelection({ kind: 'edge', id: edge.id })}
-              onPaneClick={() => setSelection(null)}
-              defaultViewport={state.metadata.viewport}
-              minZoom={0.1}
-              maxZoom={2}
-              proOptions={{ hideAttribution: true }}
-            >
-              <Background />
-              <Controls />
-              <MiniMap pannable zoomable />
-            </ReactFlow>
-          </ReactFlowProvider>
-          <CommentPins
-            comments={comments}
-            nodes={state.nodes}
-            edges={state.edges}
-            onSelect={setSelection}
-          />
+        <div
+          className="canvas-flow"
+          data-testid="canvas"
+          onDrop={onDrop}
+          onDragOver={(event) => {
+            event.preventDefault();
+            event.dataTransfer.dropEffect = 'move';
+          }}
+        >
+          <ReactFlow<MeridianFlowNode>
+            nodes={flowNodes}
+            edges={flowEdges}
+            nodeTypes={nodeTypes}
+            onNodesChange={onNodesChange}
+            onConnect={onConnect}
+            onViewportChange={onViewportChange}
+            onEdgeClick={(_event, edge) => setSelection({ kind: 'edge', id: edge.id })}
+            onPaneClick={() => setSelection(null)}
+            defaultViewport={state.metadata.viewport}
+            minZoom={0.1}
+            maxZoom={2}
+            proOptions={{ hideAttribution: true }}
+          >
+            <Background />
+            <Controls />
+            <MiniMap pannable zoomable />
+            <CommentPins
+              comments={comments}
+              nodes={state.nodes}
+              edges={state.edges}
+              revisionNo={state.metadata.revisionNo}
+              onChanged={onCommentsChanged}
+            />
+          </ReactFlow>
         </div>
         <Inspector store={store} selection={selection} onSelect={setSelection} />
       </div>

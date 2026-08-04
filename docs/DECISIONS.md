@@ -447,6 +447,76 @@ importing it never pulls a model SDK toward a mock run. `workflow-boundary.test.
 every registered activity is called by workflow code, which is the check that would have caught the
 duplicate on the day it was written.
 
+## The whiteboard stopped asking anyone to write JSON
+
+An edge's `condition_json` is now shown and never typed. Selecting a connection used to present a
+raw JSON textarea; it presents the stored condition read-only, or says there is none.
+
+The control was unusable by the person the product is for and unnecessary for anyone else. Nothing
+in the compiler reads an edge condition — routing comes from the rule's branches, and the branch is
+where the operator already expresses "if the paperwork is complete". So the textarea offered a
+second, unvalidated place to say the same thing, in a syntax a receiving specialist has no reason to
+know, which the generated agent would then ignore.
+
+The field itself stays. Conditions written before this change are still in the database and still in
+frozen specs, and hiding them would make old boards silently lose content they can be seen to have.
+Read-only is the honest rendering of a value the system stores, preserves, and does not act on.
+
+---
+
+## `Input.required` lost its control and kept its column
+
+The node-level `required` flag on an Input is no longer editable. `InputDataSchema` still declares
+it, and `packages/core/src/schemas/primitives.ts` says why on the field itself.
+
+Three facts about it did not agree. Nothing compiles it — the generated agent decides whether a
+missing document blocks a shipment from the rules, not from a flag on the card. The example board
+sets it `true` on a card whose absence the process handles by asking for the document rather than by
+failing. And the field an operator actually wants is per-field, not per-card: "the invoice must have
+an HTS code" is a statement about a field, and `fields[].required` is now editable and read.
+
+Deleting the property from the schema was the tempting move and the wrong one this phase. It is
+inside the canonical spec shape, so removing it changes `spec_hash` for every frozen spec and every
+eval baseline pinned to one — a Phase 6 concern, dragged into a UI phase for no gain. Removing the
+control removes the way a person can set a value nothing honours, which is the actual defect.
+
+---
+
+## A finding leaves the canvas when it closes; it does not leave the record
+
+Comment bubbles on the board show live roots only. Resolved and rejected findings stay in the thread
+list underneath, where the history is.
+
+The bubbles exist to answer "what still needs me", and the board is where that question is asked. A
+canvas that accumulates one bubble per finding ever raised answers a different question — "what has
+ever been said" — and answers it badly, since the four open items end up indistinguishable from
+forty closed ones stacked on the same card. The list below is already ordered, filterable by status,
+and never overlaps itself, so it is the right home for the closed ones.
+
+`isUnresolvedRoot` is imported for the test rather than rewritten as `status !== 'resolved'`. The
+negative form counts a deliberately rejected finding as outstanding, which is the exact confusion
+A26 exists to prevent, and it is imported from `@meridian/core/review` — a subpath, so a client
+bundle does not pull the whole package for one predicate.
+
+---
+
+## Branch labels and arrow labels are checked, never synchronised
+
+A rule's branches and the labelled edges leaving its card say the same thing twice. The inspector
+shows both side by side, `RULE_BRANCH_EDGE_DIVERGENCE` reports when they disagree, and nothing
+rewrites one from the other.
+
+Automatic synchronisation was the obvious feature and would have been a guess about intent. Renaming
+a branch would silently relabel an arrow the author drew deliberately, and drawing a second arrow
+would invent a branch with no condition behind it. Both are edits the author did not make, applied
+to the artifact a frozen spec is compiled from.
+
+Reporting it costs one check and no authority. The finding names both sides, the operator changes
+whichever one is wrong, and the next round stops reporting it — the same resolution path as every
+other deterministic check, with the person still deciding which of the two they meant.
+
+---
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:
