@@ -1,5 +1,6 @@
 import 'server-only';
 
+import { temporalTarget } from '@meridian/core';
 import type { Database } from '@meridian/core/database';
 import type { MessageContent, MessageRef, StartLiveRunResponse } from '@meridian/core/schemas';
 import { intakeMessage } from '@meridian/ops/intake';
@@ -21,10 +22,9 @@ let cachedTemporal: Promise<Client> | null = null;
 
 export async function temporalClient(): Promise<Client> {
   cachedTemporal ??= (async () => {
-    const connection = await Connection.connect({
-      address: process.env['TEMPORAL_ADDRESS'] ?? '127.0.0.1:7233',
-    });
-    return new Client({ connection, namespace: process.env['TEMPORAL_NAMESPACE'] ?? 'default' });
+    const target = temporalTarget();
+    const connection = await Connection.connect(target.connection);
+    return new Client({ connection, namespace: target.namespace });
   })();
   return cachedTemporal;
 }

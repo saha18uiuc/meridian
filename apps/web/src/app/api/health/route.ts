@@ -1,3 +1,4 @@
+import { temporalTarget } from '@meridian/core';
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/server/supabase/service-client';
 
@@ -14,13 +15,13 @@ async function checkSupabase(): Promise<boolean> {
 }
 
 async function checkTemporal(): Promise<boolean> {
-  const address = process.env['TEMPORAL_ADDRESS'] ?? '127.0.0.1:7233';
-  const [host, port] = address.split(':');
+  const { connection: options } = temporalTarget();
+  const [host, port] = options.address.split(':');
   if (host === undefined || port === undefined) return false;
   try {
     const { Connection } = await import('@temporalio/client');
     const connection = await Connection.connect({
-      address,
+      ...options,
       connectTimeout: 2000,
     });
     await connection.close();

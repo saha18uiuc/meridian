@@ -79,6 +79,44 @@ export function checkLiveModeCoherence(
   };
 }
 
+/**
+ * The three ways a move to Temporal Cloud lands half-finished.
+ *
+ * All of them share a shape: the connection succeeds, or appears to, and the mistake surfaces
+ * later as workflows that never run. A key set while the address still names loopback is the worst
+ * of them, because the dev server ignores credentials entirely — everything works, against the
+ * wrong server, and the operator has no reason to look. Cloud also insists the namespace carry its
+ * account suffix, which is easy to miss when the namespace name alone is what the dashboard shows
+ * in its heading.
+ */
+export function checkTemporalTarget(
+  address: string | undefined,
+  apiKey: string | undefined,
+  namespace: string | undefined,
+): PreflightResult {
+  const host = (address ?? '127.0.0.1:7233').split(':')[0] ?? '';
+  const local = ['127.0.0.1', 'localhost', '::1'].includes(host);
+  const keyed = (apiKey ?? '').trim() !== '';
+  const ns = (namespace ?? 'default').trim();
+  const detail = `${host} (${local ? 'dev server' : 'remote'}), namespace ${ns}, api key ${keyed ? 'present' : 'absent'}`;
+  const fault =
+    local && keyed
+      ? 'TEMPORAL_API_KEY is set but TEMPORAL_ADDRESS still names this machine; the dev server ignores the key, so runs would stay local'
+      : !local && !keyed
+        ? 'TEMPORAL_ADDRESS is remote but no TEMPORAL_API_KEY is set; a secured Temporal Service will refuse the connection'
+        : !local && host.endsWith('.tmprl.cloud') && !ns.includes('.')
+          ? `Temporal Cloud namespaces are '<namespace>.<account>'; '${ns}' is missing the account suffix`
+          : undefined;
+  return {
+    check: 'temporal target',
+    ok: fault === undefined,
+    detail: fault ?? detail,
+    ...(fault === undefined
+      ? {}
+      : { remedy: 'set TEMPORAL_ADDRESS, TEMPORAL_NAMESPACE and TEMPORAL_API_KEY together' }),
+  };
+}
+
 function checkTool(name: string, args: readonly string[], remedy: string): PreflightResult {
   const result = run(name, args);
   if (result.unavailable || result.code !== 0) {
@@ -121,6 +159,13 @@ export async function runPreflight(): Promise<PreflightResult[]> {
   });
 
   results.push(checkLiveModeCoherence(process.env.GMAIL_LIVE_MODE, process.env.AI_MODE));
+  results.push(
+    checkTemporalTarget(
+      process.env.TEMPORAL_ADDRESS,
+      process.env.TEMPORAL_API_KEY,
+      process.env.TEMPORAL_NAMESPACE,
+    ),
+  );
 
   for (const credential of credentialPresence()) {
     results.push({

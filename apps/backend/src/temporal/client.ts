@@ -1,3 +1,4 @@
+import { temporalTarget } from '@meridian/core';
 import { Client, Connection } from '@temporalio/client';
 
 let cached: Promise<Client> | null = null;
@@ -10,10 +11,13 @@ export async function getTemporalClient(options?: {
   address?: string;
   namespace?: string;
 }): Promise<Client> {
-  const address = options?.address ?? process.env.TEMPORAL_ADDRESS ?? '127.0.0.1:7233';
-  const namespace = options?.namespace ?? process.env.TEMPORAL_NAMESPACE ?? 'default';
+  const target = temporalTarget();
+  const namespace = options?.namespace ?? target.namespace;
   cached ??= (async () => {
-    const connection = await Connection.connect({ address });
+    const connection = await Connection.connect({
+      ...target.connection,
+      ...(options?.address === undefined ? {} : { address: options.address }),
+    });
     return new Client({ connection, namespace });
   })();
   return cached;

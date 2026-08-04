@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
-import { createLogger, forgetEmptyEnvVars, workerEnv } from '@meridian/core';
+import { createLogger, forgetEmptyEnvVars, temporalTarget, workerEnv } from '@meridian/core';
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { activities } from './activities/index.js';
 import { startHealthServer } from './health-server.js';
@@ -50,11 +50,12 @@ function workflowsEntryPoint(): string {
 async function main(): Promise<void> {
   loadDotEnvFile();
   const env = workerEnv();
-  const connection = await NativeConnection.connect({ address: env.TEMPORAL_ADDRESS });
+  const target = temporalTarget();
+  const connection = await NativeConnection.connect(target.connection);
 
   const worker = await Worker.create({
     connection,
-    namespace: env.TEMPORAL_NAMESPACE,
+    namespace: target.namespace,
     taskQueue: TASK_QUEUE,
     workflowsPath: workflowsEntryPoint(),
     activities,
@@ -67,7 +68,15 @@ async function main(): Promise<void> {
 
   const health = startHealthServer(env.WORKER_HEALTH_PORT);
   logger.info(
-    { taskQueue: TASK_QUEUE, address: env.TEMPORAL_ADDRESS, healthPort: env.WORKER_HEALTH_PORT },
+    {
+      taskQueue: TASK_QUEUE,
+      address: target.connection.address,
+      namespace: target.namespace,
+      // Which server the worker actually reached, so a move to Cloud is confirmable from the log
+      // rather than inferred from the absence of errors.
+      tls: target.connection.tls === true,
+      healthPort: env.WORKER_HEALTH_PORT,
+    },
     'worker started',
   );
 

@@ -100,6 +100,17 @@ const aiEnv = {
 const temporalEnv = {
   TEMPORAL_ADDRESS: z.string().min(1).default('127.0.0.1:7233'),
   TEMPORAL_NAMESPACE: z.string().min(1).default('default'),
+  /**
+   * Temporal Cloud API key. Absent means the local dev server, which takes no credential at all.
+   * Supplying one implies TLS, because Cloud refuses an unencrypted connection and a bearer token
+   * sent in the clear is worse than no token.
+   */
+  TEMPORAL_API_KEY: z.string().min(1).optional(),
+  /**
+   * Turns TLS on without an API key, which is what a self-hosted deployment behind TLS needs.
+   * An API key turns TLS on by itself, so this covers only the mTLS and self-hosted cases.
+   */
+  TEMPORAL_TLS: bool(false),
   TEMPORAL_TASK_QUEUE: z.string().min(1).default('meridian-receiving'),
   TEMPORAL_UI_URL: z.url().default('http://127.0.0.1:8233'),
   WORKER_HEALTH_PORT: int(9464),
@@ -220,10 +231,65 @@ export function resetEnvCacheForTests(): void {
   cachedWorkerEnv = undefined;
 }
 
+export interface TemporalTarget {
+  /** Spread into `Connection.connect` or `NativeConnection.connect`; both accept these three. */
+  connection: { address: string; tls?: true; apiKey?: string };
+  namespace: string;
+}
+
+/**
+ * Where the Temporal Service is, and how to prove we may talk to it.
+ *
+ * Five call sites open a connection — the worker, the backend client, the ops CLI, the web intake
+ * path, and the health probe — and all five need the same answer. Deriving it once is what stops a
+ * move to Cloud from landing in four of them and leaving the fifth pointed at localhost, which
+ * would not fail loudly: the health probe would keep reporting a healthy local server that no
+ * longer runs anything.
+ *
+ * TLS follows the API key rather than sitting beside it as a second switch. Temporal Cloud refuses
+ * an unencrypted connection, so a key without TLS is a configuration that cannot work — and a
+ * bearer token sent in the clear is worse than no token. `TEMPORAL_TLS` remains for the case the
+ * key does not cover: a self-hosted deployment behind TLS, authenticating by mTLS or not at all.
+ */
+export function temporalTarget(
+  source: Record<string, string | undefined> = process.env,
+): TemporalTarget {
+  const apiKey = source.TEMPORAL_API_KEY?.trim();
+  const authenticated = apiKey !== undefined && apiKey !== '';
+  const tls = authenticated || ['true', '1'].includes((source.TEMPORAL_TLS ?? '').trim());
+  return {
+    connection: {
+      address: source.TEMPORAL_ADDRESS ?? '127.0.0.1:7233',
+      ...(tls ? { tls: true as const } : {}),
+      ...(authenticated ? { apiKey } : {}),
+    },
+    namespace: source.TEMPORAL_NAMESPACE ?? 'default',
+  };
+}
+
+/**
+ * Whether Temporal is a server this machine runs, rather than one it merely talks to.
+ *
+ * `pnpm dev:infra` uses this to decide whether to spawn the dev server at all. Once the address
+ * points elsewhere, spawning it would bind 7233 locally and then serve nobody — and because the
+ * readiness probe checks loopback, that abandoned server would go on reporting a healthy Temporal
+ * while every workflow ran somewhere else. An API key settles the question by itself, since the
+ * dev server has no credential to check it against.
+ */
+export function ownsLocalTemporal(
+  source: Record<string, string | undefined> = process.env,
+): boolean {
+  const { connection } = temporalTarget(source);
+  if (connection.apiKey !== undefined) return false;
+  const host = connection.address.split(':')[0] ?? '';
+  return ['127.0.0.1', 'localhost', '::1', '0.0.0.0'].includes(host);
+}
+
 /** Every secret name in one place, shared by the env contract and the pino redaction list. */
 export const SECRET_ENV_NAMES = [
   'OPENAI_API_KEY',
   'COMPOSIO_API_KEY',
+  'TEMPORAL_API_KEY',
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_DB_URL',
   'DEMO_USER_PASSWORD',

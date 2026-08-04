@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, openSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { ownsLocalTemporal } from '@meridian/core';
 import { loadOpsEnv, optionalEnv } from './env.js';
 import { commandLineOf, isAlive, run, runAsync, waitFor } from './lib/proc.js';
 import {
@@ -30,7 +31,7 @@ const TEMPORAL_TIMEOUT_MS = 60_000;
 
 export interface InfraReport {
   component: 'supabase' | 'temporal';
-  action: 'already-running' | 'started' | 'reclaimed-stale-pid';
+  action: 'already-running' | 'started' | 'reclaimed-stale-pid' | 'remote';
   detail: string;
 }
 
@@ -190,7 +191,11 @@ export async function devInfra(): Promise<InfraReport[]> {
   const reports: InfraReport[] = [];
   reports.push(await startSupabase(apiPort));
   writeState({ ...readState(), supabase: { managedBy: 'docker', apiPort } });
-  reports.push(await startTemporal(port, uiPort));
+  reports.push(
+    ownsLocalTemporal()
+      ? await startTemporal(port, uiPort)
+      : { component: 'temporal', action: 'remote', detail: `${address}; nothing to start here` },
+  );
   return reports;
 }
 

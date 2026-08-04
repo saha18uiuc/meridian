@@ -1,13 +1,13 @@
-import { workerEnv } from '@meridian/core';
+import { temporalTarget } from '@meridian/core';
 import { Client, Connection } from '@temporalio/client';
 
 let cached: Client | null = null;
 
 export async function opsTemporalClient(): Promise<Client> {
   if (cached !== null) return cached;
-  const env = workerEnv();
-  const connection = await Connection.connect({ address: env.TEMPORAL_ADDRESS });
-  cached = new Client({ connection, namespace: env.TEMPORAL_NAMESPACE });
+  const target = temporalTarget();
+  const connection = await Connection.connect(target.connection);
+  cached = new Client({ connection, namespace: target.namespace });
   return cached;
 }
 

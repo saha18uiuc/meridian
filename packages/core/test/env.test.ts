@@ -3,10 +3,12 @@ import {
   EnvironmentError,
   SECRET_ENV_NAMES,
   forgetEmptyEnvVars,
+  ownsLocalTemporal,
   parseBrowserEnv,
   parseServerEnv,
   parseWorkerEnv,
   serverEnvSchema,
+  temporalTarget,
 } from '../src/env.js';
 import { REDACTED_PATHS } from '../src/logging.js';
 
@@ -110,6 +112,72 @@ describe('worker environment', () => {
       SUPABASE_SERVICE_ROLE_KEY: SECRET_VALUE,
     });
     expect(env.TEMPORAL_ADDRESS).toBe('127.0.0.1:7233');
+  });
+});
+
+describe('the Temporal target', () => {
+  const cloud = {
+    TEMPORAL_ADDRESS: 'meridian.a1b2c.tmprl.cloud:7233',
+    TEMPORAL_NAMESPACE: 'meridian.a1b2c',
+    TEMPORAL_API_KEY: SECRET_VALUE,
+  };
+
+  it('sends no credential and no TLS to the dev server', () => {
+    expect(temporalTarget({})).toEqual({
+      connection: { address: '127.0.0.1:7233' },
+      namespace: 'default',
+    });
+  });
+
+  it('turns TLS on with the API key, since Cloud refuses the connection without it', () => {
+    // The two are never configured separately: a key sent over an unencrypted channel is worse
+    // than no key, so there is no combination where one is wanted and the other is not.
+    expect(temporalTarget(cloud).connection).toEqual({
+      address: cloud.TEMPORAL_ADDRESS,
+      tls: true,
+      apiKey: SECRET_VALUE,
+    });
+  });
+
+  it('still allows TLS alone, which is a self-hosted deployment behind it', () => {
+    const target = temporalTarget({
+      TEMPORAL_ADDRESS: 'temporal.internal:7233',
+      TEMPORAL_TLS: 'true',
+    });
+    expect(target.connection).toEqual({ address: 'temporal.internal:7233', tls: true });
+  });
+
+  it('treats a blank key as no key, so a placeholder line in .env cannot half-enable TLS', () => {
+    expect(temporalTarget({ TEMPORAL_API_KEY: '   ' }).connection).toEqual({
+      address: '127.0.0.1:7233',
+    });
+  });
+
+  it('hands back the same options both connection classes accept', () => {
+    // `Connection` and `NativeConnection` differ in transport but share these three fields, which
+    // is what lets one helper serve the worker, the web app, the ops CLI and the health probe.
+    expect(Object.keys(temporalTarget(cloud).connection).sort()).toEqual([
+      'address',
+      'apiKey',
+      'tls',
+    ]);
+  });
+});
+
+describe('local Temporal ownership', () => {
+  it('is claimed only for a loopback address with no credential', () => {
+    expect(ownsLocalTemporal({})).toBe(true);
+    expect(ownsLocalTemporal({ TEMPORAL_ADDRESS: 'localhost:7233' })).toBe(true);
+  });
+
+  it('is disclaimed once a key is set, even if the address was never changed', () => {
+    // The half-finished migration: the dev server ignores credentials, so without this the run
+    // would succeed locally and the operator would believe they were on Cloud.
+    expect(ownsLocalTemporal({ TEMPORAL_API_KEY: 'k' })).toBe(false);
+  });
+
+  it('is disclaimed for any address that is not this machine', () => {
+    expect(ownsLocalTemporal({ TEMPORAL_ADDRESS: 'meridian.a1b2c.tmprl.cloud:7233' })).toBe(false);
   });
 });
 

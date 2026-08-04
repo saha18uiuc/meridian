@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { checkLiveModeCoherence } from '../src/preflight.js';
+import { checkLiveModeCoherence, checkTemporalTarget } from '../src/preflight.js';
 
 describe('live mode coherence', () => {
   it('rejects a live inbox wired to a mocked model, which can only fail mid-run', () => {
@@ -23,5 +23,42 @@ describe('live mode coherence', () => {
 
   it('reads 1 as true, the other spelling the env schema accepts', () => {
     expect(checkLiveModeCoherence('1', 'mock').ok).toBe(false);
+  });
+});
+
+describe('the Temporal target', () => {
+  const CLOUD = 'meridian.a1b2c.tmprl.cloud:7233';
+
+  it('accepts the untouched dev server', () => {
+    expect(checkTemporalTarget(undefined, undefined, undefined).ok).toBe(true);
+    expect(checkTemporalTarget('127.0.0.1:7233', '', 'default').ok).toBe(true);
+  });
+
+  it('accepts a fully configured Cloud namespace', () => {
+    expect(checkTemporalTarget(CLOUD, 'key', 'meridian.a1b2c').ok).toBe(true);
+  });
+
+  it('rejects a key pointed at the dev server, which would ignore it', () => {
+    const result = checkTemporalTarget('127.0.0.1:7233', 'key', 'default');
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(/still names this machine/);
+  });
+
+  it('rejects a remote address with no key, which a secured service will refuse', () => {
+    expect(checkTemporalTarget(CLOUD, undefined, 'meridian.a1b2c').ok).toBe(false);
+  });
+
+  it('rejects a Cloud namespace missing its account suffix', () => {
+    // The dashboard heading shows the namespace alone, so copying what is on screen produces
+    // exactly this — and the resulting error names neither the namespace nor the account.
+    const result = checkTemporalTarget(CLOUD, 'key', 'meridian');
+    expect(result.ok).toBe(false);
+    expect(result.detail).toMatch(/account suffix/);
+  });
+
+  it('never prints the key itself, only whether there is one', () => {
+    const detail = checkTemporalTarget(CLOUD, 'super-secret', 'meridian.a1b2c').detail;
+    expect(detail).not.toContain('super-secret');
+    expect(detail).toContain('api key present');
   });
 });
