@@ -280,7 +280,7 @@ export function buildAttachmentIndex(): Record<string, FixtureEntry> {
     { batchNumber: 'B77B', units: 240 },
   ]);
 
-  for (const batch of ['B77A', 'B77B', 'B77C', 'B90X', 'D14E', 'E22F']) {
+  for (const batch of ['B77A', 'B77B', 'B77C', 'B90X', 'C31D', 'D14E', 'E22F']) {
     index[`coa-${batch}.pdf`] = coaEntry(batch);
   }
   for (let i = 1; i <= SCALE_GOODS; i += 1) {
@@ -411,6 +411,26 @@ export function buildEmails(): FixtureEmail[] {
         '',
         `Invoice for container ${CONTAINERS.missingCoa} attached. Batch C31D is on the invoice; the`,
         'certificate of analysis is still with the manufacturer.',
+        '',
+        'Regards,',
+        'Global Forwarding Operations',
+      ].join('\n'),
+    },
+    {
+      // The forwarder answers the query. Same thread, so the agent that re-runs sees the invoice it
+      // already held and the certificate that was missing, and has to clear the shipment on the
+      // strength of both rather than re-asking for what has now arrived.
+      file: 'missing-coa-reply.eml',
+      messageId: '<missing-coa-reply@forwarder.example>',
+      threadId: 'thread-missing-coa',
+      date: '2026-02-06T11:05:00.000Z',
+      from: 'ops@forwarder.example',
+      subject: `RE: Pre-Alert Documents - container ${CONTAINERS.missingCoa} - invoice attached`,
+      attachments: ['coa-C31D.pdf'],
+      body: [
+        'Hello,',
+        '',
+        'The manufacturer has released the certificate of analysis for batch C31D. It is attached.',
         '',
         'Regards,',
         'Global Forwarding Operations',

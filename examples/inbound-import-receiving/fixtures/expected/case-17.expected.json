@@ -1,0 +1,19 @@
+{
+  "caseKey": "case-17",
+  "decision": {
+    "outcome": "ready",
+    "businessKey": "CMAU9988771",
+    "reason": "",
+    "summary": {
+      "containerNumber": "CMAU9988771",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1026"],
+      "batchNumbers": ["C31D"],
+      "goodsCount": 1,
+      "validGoodsCount": 1,
+      "missingInformation": []
+    },
+    "findings": [],
+    "emailResponse": null
+  }
+}

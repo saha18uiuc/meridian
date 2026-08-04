@@ -42,7 +42,7 @@ describe('parseEml', () => {
 describe('mock mailbox', () => {
   it('loads every fixture and exposes the business key in the subject or body', async () => {
     const messages = await mailbox().searchMessages('');
-    expect(messages.length).toBe(14);
+    expect(messages.length).toBe(15);
     expect(messages.some((message) => message.subject.includes('MSKU1234565'))).toBe(true);
   });
 

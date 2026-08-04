@@ -92,9 +92,9 @@ files, and `pnpm agent:verify-manifest` re-derives both rather than trusting the
 
 ### Write an eval suite
 
-Twenty-one cases across two deployments, each tracing to a statement on the board it came from.
+Twenty-two cases across two deployments, each tracing to a statement on the board it came from.
 
-- Cases: `examples/inbound-import-receiving/evals` (16), `examples/vendor-coi-renewal/evals` (5)
+- Cases: `examples/inbound-import-receiving/evals` (17), `examples/vendor-coi-renewal/evals` (5)
 - Harness: `packages/evals`
 - Run: `pnpm evals`, or `pnpm exec tsx scripts/run-evals.ts --agent vendor-coi-renewal`
 

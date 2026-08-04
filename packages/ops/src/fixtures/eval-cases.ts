@@ -663,6 +663,53 @@ export function drafts(): Draft[] {
         emailResponse: null,
       },
     },
+
+    {
+      caseKey: 'case-17',
+      description:
+        'The forwarder answers a query with the missing certificate and the shipment then receives.',
+      specTrace:
+        'Rule "Wait for the forwarder\'s reply" branch "reply received with the missing information" leads back to Action "Extract the fields from every document".',
+      // Case 05 is the first half of this story: the same container, the same invoice, and a
+      // certificate that had not arrived. Here the reply lands on the same thread and the agent
+      // re-runs over the whole of it. Every other multi-message case in this suite ends in a
+      // conflict or a duplicate; this is the only one where the loop actually closes, which is the
+      // outcome the SOP cares about most and the one nothing else was checking.
+      emails: ['missing-coa.eml', 'missing-coa-reply.eml'],
+      attachments: ['invoice-1026.pdf', 'coa-C31D.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.missingCoa,
+        missingFields: [],
+        // The absence of a second request is the assertion that matters. The gap that produced the
+        // first one has been filled, and an agent that asks again has not understood the reply.
+        externalActions: [],
+        stepInstanceKeys: [
+          `extract:${CONTAINERS.missingCoa}`,
+          'validate-good:INV-1026:LINE-1',
+          `decide:${CONTAINERS.missingCoa}`,
+        ],
+        evidenceKeys: [`assessment:${CONTAINERS.missingCoa}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.missingCoa,
+        reason: '',
+        summary: {
+          ...summary({
+            container: CONTAINERS.missingCoa,
+            invoices: ['INV-1026'],
+            batches: ['C31D'],
+            goods: 1,
+            validGoods: 1,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
+        emailResponse: null,
+      },
+    },
   ];
 }
 
@@ -671,7 +718,7 @@ export async function main(_argv: readonly string[] = []): Promise<void> {
   mkdirSync(repoPath(EXPECTED_DIR), { recursive: true });
 
   const all = drafts();
-  if (all.length !== 16) throw new Error(`expected 16 eval cases, built ${String(all.length)}`);
+  if (all.length !== 17) throw new Error(`expected 17 eval cases, built ${String(all.length)}`);
 
   for (const draft of all) {
     const evalCase: EvalCase = {

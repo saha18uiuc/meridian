@@ -1,0 +1,28 @@
+{
+  "caseKey": "case-17",
+  "description": "The forwarder answers a query with the missing certificate and the shipment then receives.",
+  "specTrace": "Rule \"Wait for the forwarder's reply\" branch \"reply received with the missing information\" leads back to Action \"Extract the fields from every document\".",
+  "inputRefs": {
+    "emailPaths": [
+      "examples/inbound-import-receiving/fixtures/emails/missing-coa.eml",
+      "examples/inbound-import-receiving/fixtures/emails/missing-coa-reply.eml"
+    ],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-1026.pdf",
+      "examples/inbound-import-receiving/fixtures/attachments/coa-C31D.pdf"
+    ],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-17.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "CMAU9988771",
+    "missingFields": [],
+    "externalActions": [],
+    "stepInstanceKeys": [
+      "extract:CMAU9988771",
+      "validate-good:INV-1026:LINE-1",
+      "decide:CMAU9988771"
+    ],
+    "evidenceKeys": ["assessment:CMAU9988771"]
+  }
+}

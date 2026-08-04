@@ -211,7 +211,7 @@ packages/agent-kit  The contract surface generated agents see, plus tools and re
 packages/evals      The eval harness: cases, assertions, classification, reports
 packages/ops        Every operator command; `scripts/` holds three-line aliases only
 generated-agents    Committed generated agent versions and the static registry
-examples            Two seeded boards, their mail and document fixtures, and 21 eval cases
+examples            Two seeded boards, their mail and document fixtures, and 22 eval cases
 supabase            14 migrations, seed, storage policies
 docs                PRD, architecture, decisions, deliverables index, demo walkthrough
 ```
