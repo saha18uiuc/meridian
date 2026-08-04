@@ -79,8 +79,6 @@ function missingList(failures: readonly Failure[]): string[] {
   return [...new Set(failures.map((f) => `${f.scope}:${f.key}:${f.field}`))].sort();
 }
 
-const EMPTY_SUMMARY = summary({});
-
 function scaleBatches(): string[] {
   return Array.from({ length: SCALE_GOODS }, (_, i) => `SCL${String(i + 1).padStart(2, '0')}`);
 }
@@ -403,7 +401,10 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: null,
         reason: '',
-        summary: { ...EMPTY_SUMMARY, missingInformation: [] },
+        // Intake terminates this case before any agent runs, so there is no deployment summary
+        // to report. An empty object is the honest expectation; the previous shipment-shaped one
+        // was the harness inventing a shipment nobody looked at.
+        summary: {},
 
         findings: [],
         emailResponse: null,
@@ -426,7 +427,10 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: null,
         reason: '',
-        summary: { ...EMPTY_SUMMARY, missingInformation: [] },
+        // Intake terminates this case before any agent runs, so there is no deployment summary
+        // to report. An empty object is the honest expectation; the previous shipment-shaped one
+        // was the harness inventing a shipment nobody looked at.
+        summary: {},
 
         findings: [],
         emailResponse: null,

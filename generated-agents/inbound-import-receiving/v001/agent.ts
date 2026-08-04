@@ -313,7 +313,9 @@ async function escalate(
     outcome: 'manual_review',
     businessKey,
     reason,
-    summary,
+    // The key is always present, even when nothing was found to be missing: a report whose shape
+    // depends on the outcome is a report every reader has to special-case.
+    summary: { ...summary, missingInformation: [] },
     findings: [],
     emailResponse: null,
   };
