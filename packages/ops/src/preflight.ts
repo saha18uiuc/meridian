@@ -80,14 +80,18 @@ export function checkLiveModeCoherence(
 }
 
 /**
- * The three ways a move to Temporal Cloud lands half-finished.
+ * The three ways a move off the dev server lands half-finished.
  *
- * All of them share a shape: the connection succeeds, or appears to, and the mistake surfaces
- * later as workflows that never run. A key set while the address still names loopback is the worst
- * of them, because the dev server ignores credentials entirely — everything works, against the
- * wrong server, and the operator has no reason to look. Cloud also insists the namespace carry its
- * account suffix, which is easy to miss when the namespace name alone is what the dashboard shows
- * in its heading.
+ * All three share a shape: the connection succeeds, or appears to, and the mistake surfaces later
+ * as workflows that never run. A key set while the address still names loopback is the worst of
+ * them, because the dev server ignores credentials entirely — everything works, against the wrong
+ * server, and nothing gives the operator a reason to look. Temporal Cloud contributes the other
+ * two: it refuses an unauthenticated connection, and it insists the namespace carry its account
+ * suffix, which is easy to miss because the dashboard heading shows the bare name.
+ *
+ * A remote address with no key is deliberately *not* a fault. That is self-hosted Temporal on a
+ * trusted network, which is a supported production deployment and needs no credential from us —
+ * the dividing line that matters is the dev server against a real one, not local against Cloud.
  */
 export function checkTemporalTarget(
   address: string | undefined,
@@ -96,21 +100,22 @@ export function checkTemporalTarget(
 ): PreflightResult {
   const host = (address ?? '127.0.0.1:7233').split(':')[0] ?? '';
   const local = ['127.0.0.1', 'localhost', '::1'].includes(host);
+  const cloud = host.endsWith('.tmprl.cloud');
   const keyed = (apiKey ?? '').trim() !== '';
   const ns = (namespace ?? 'default').trim();
-  const detail = `${host} (${local ? 'dev server' : 'remote'}), namespace ${ns}, api key ${keyed ? 'present' : 'absent'}`;
+  const kind = local ? 'dev server' : cloud ? 'cloud' : 'self-hosted';
   const fault =
     local && keyed
       ? 'TEMPORAL_API_KEY is set but TEMPORAL_ADDRESS still names this machine; the dev server ignores the key, so runs would stay local'
-      : !local && !keyed
-        ? 'TEMPORAL_ADDRESS is remote but no TEMPORAL_API_KEY is set; a secured Temporal Service will refuse the connection'
-        : !local && host.endsWith('.tmprl.cloud') && !ns.includes('.')
+      : cloud && !keyed
+        ? 'TEMPORAL_ADDRESS is a Temporal Cloud endpoint but TEMPORAL_API_KEY is empty; Cloud refuses an unauthenticated connection'
+        : cloud && !ns.includes('.')
           ? `Temporal Cloud namespaces are '<namespace>.<account>'; '${ns}' is missing the account suffix`
           : undefined;
   return {
     check: 'temporal target',
     ok: fault === undefined,
-    detail: fault ?? detail,
+    detail: fault ?? `${host} (${kind}), namespace ${ns}, api key ${keyed ? 'present' : 'absent'}`,
     ...(fault === undefined
       ? {}
       : { remedy: 'set TEMPORAL_ADDRESS, TEMPORAL_NAMESPACE and TEMPORAL_API_KEY together' }),

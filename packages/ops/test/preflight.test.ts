@@ -44,8 +44,16 @@ describe('the Temporal target', () => {
     expect(result.detail).toMatch(/still names this machine/);
   });
 
-  it('rejects a remote address with no key, which a secured service will refuse', () => {
+  it('rejects a Cloud endpoint with no key, which Cloud will refuse', () => {
     expect(checkTemporalTarget(CLOUD, undefined, 'meridian.a1b2c').ok).toBe(false);
+  });
+
+  it('accepts self-hosted Temporal with no key, which needs none on a trusted network', () => {
+    // Open-source Temporal on Postgres is a production deployment, not a lesser Cloud. Faulting
+    // every remote address that lacks a key would make preflight fail the supported setup.
+    const result = checkTemporalTarget('temporal.internal:7233', undefined, 'default');
+    expect(result.ok).toBe(true);
+    expect(result.detail).toContain('self-hosted');
   });
 
   it('rejects a Cloud namespace missing its account suffix', () => {
