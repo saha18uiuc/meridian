@@ -733,8 +733,10 @@ export function verifyTree(): TreeReport {
     '.pnpm-store',
     '.temporal',
   ]);
-  // The approved PRD document is checked in under whatever name the reviewer gave it and must not
-  // be renamed, so it is matched by extension rather than by an exact filename.
+  // The assignment brief sits at the root under whatever name the reviewer gave it, so it is matched
+  // by extension rather than by name. It is untracked — it is Meridian's document, not this
+  // repository's — but it is still allowed to be present, because `docs/PRD.md` cites it as the
+  // baseline and a developer who has a copy should not be told their tree is dirty for keeping it.
   const topExtras = topLevel.filter(
     (name) => !allowedTopLevel.has(name) && !name.endsWith('.docx'),
   );

@@ -16,3 +16,8 @@ coverage/
 supabase/.temp/
 supabase/.branches/
 .DS_Store
+
+# The assignment brief and the customer SOP it references are Meridian's material, not this
+# repository's, and this repository is public. They stay on disk — `docs/PRD.md` cites the brief as
+# its baseline and `verify-tree` still allows it to sit at the root — but they are not published.
+*.docx

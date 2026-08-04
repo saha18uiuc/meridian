@@ -3,10 +3,13 @@
 This is the contract the system is built against. Where it differs from the baseline PRD, **this
 document governs** and the difference is recorded in `docs/DECISIONS.md`.
 
-**Baseline.** The original brief is `Meridian Take Home Feedback Revised PRD.docx` at the repository
-root, preserved byte-for-byte and never edited. It is traceability material, not a specification:
-several of its statements were not implementable against the schema it also specified, and each such
-conflict is resolved below.
+**Baseline.** The original brief is `Meridian Take Home Feedback Revised PRD.docx`, kept at the
+repository root, preserved byte-for-byte and never edited — but deliberately untracked, along with
+the customer SOP it references. Both are Meridian's material rather than this repository's, and this
+repository is public; publishing a company's own assignment is not this author's call to make.
+
+The brief is traceability material, not a specification: several of its statements were not
+implementable against the schema it also specified, and each such conflict is resolved below.
 
 ---
 
