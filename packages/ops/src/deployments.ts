@@ -1,3 +1,10 @@
+import {
+  extractBusinessKey,
+  type BusinessKeyResult,
+  type ExtractionSource,
+} from './intake/extract-business-key.js';
+import { extractVendorAccount } from './intake/extract-vendor-key.js';
+
 /**
  * The deployments this repository ships as worked examples.
  *
@@ -13,12 +20,22 @@
  */
 
 export interface DeploymentFixture {
+  /**
+   * How this deployment recognises the unit of work a message belongs to. A per-deployment function
+   * because correlation is the process's own question: one example asks "which shipment?" and the
+   * other asks "which vendor?", and there is no answer the platform could supply for both.
+   */
+  extractBusinessKey: (source: ExtractionSource) => BusinessKeyResult;
   /** The stable key intake correlates against and `agents.deployment_key` stores. */
   deploymentKey: string;
   /** The agent's display name, and the board title the seed matches on. */
   name: string;
   boardPath: string;
   codePath: string;
+  /** Null when the deployment ships no eval suite. */
+  evalCaseDir: string | null;
+  /** The mail and attachments its eval cases read. */
+  fixturesRoot: string;
 }
 
 export const DEPLOYMENTS: readonly DeploymentFixture[] = [
@@ -27,12 +44,18 @@ export const DEPLOYMENTS: readonly DeploymentFixture[] = [
     name: 'Inbound Import Receiving',
     boardPath: 'examples/inbound-import-receiving/board.seed.json',
     codePath: 'generated-agents/inbound-import-receiving/v001',
+    evalCaseDir: 'examples/inbound-import-receiving/evals',
+    fixturesRoot: 'examples/inbound-import-receiving/fixtures',
+    extractBusinessKey,
   },
   {
     deploymentKey: 'vendor-coi-renewal',
     name: 'Vendor Insurance Certificate Renewal',
     boardPath: 'examples/vendor-coi-renewal/board.seed.json',
     codePath: 'generated-agents/vendor-coi-renewal/v001',
+    evalCaseDir: 'examples/vendor-coi-renewal/evals',
+    fixturesRoot: 'examples/vendor-coi-renewal/fixtures',
+    extractBusinessKey: extractVendorAccount,
   },
 ];
 
@@ -44,6 +67,10 @@ export function deploymentForBoardPath(boardPath: string): DeploymentFixture {
     );
   }
   return found;
+}
+
+export function deploymentForKey(deploymentKey: string): DeploymentFixture | undefined {
+  return DEPLOYMENTS.find((entry) => entry.deploymentKey === deploymentKey);
 }
 
 export function deploymentForTitle(title: string): DeploymentFixture {

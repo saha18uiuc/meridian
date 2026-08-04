@@ -19,6 +19,7 @@ import {
   summarize,
   type EvalReport,
 } from '@meridian/evals';
+import { deploymentForKey } from './deployments.js';
 import { loadOpsEnv } from './env.js';
 import { extractBusinessKey } from './intake/extract-business-key.js';
 import { flag, optionalArg, parseArgs } from './lib/args.js';
@@ -216,6 +217,12 @@ export async function runEvals(options: {
   const manifest = version.build_manifest_json as BuildManifest | null;
   const definition = resolveAgent(AGENT_REGISTRY, agent.deployment_key, version.version_no);
 
+  // Which corpus and which mailbox. Taken from the deployment rather than defaulted, so pointing
+  // the harness at the second example runs the second example's mail instead of silently replaying
+  // the first one's against it.
+  const deployment = deploymentForKey(agent.deployment_key);
+  const caseDir = options.caseDir ?? deployment?.evalCaseDir ?? undefined;
+
   const report = await runSuite({
     supabase: opsClient(),
     repoRoot: repoPath(),
@@ -238,10 +245,11 @@ export async function runEvals(options: {
     toolkitVersion: env.COMPOSIO_GMAIL_TOOLKIT_VERSION,
     operatorEmail: env.OPERATOR_EMAIL,
     maxConcurrency: env.AGENT_MAX_CONCURRENCY,
-    ...(options.caseDir === undefined ? {} : { caseDir: options.caseDir }),
+    ...(caseDir === undefined ? {} : { caseDir }),
+    ...(deployment === undefined ? {} : { fixturesRoot: deployment.fixturesRoot }),
     ...(options.only === undefined ? {} : { only: options.only }),
     extractBusinessKey: (source) => {
-      const result = extractBusinessKey(source);
+      const result = (deployment?.extractBusinessKey ?? extractBusinessKey)(source);
       return result.kind === 'ok'
         ? { kind: 'ok' as const, businessKey: result.businessKey }
         : { kind: result.kind };

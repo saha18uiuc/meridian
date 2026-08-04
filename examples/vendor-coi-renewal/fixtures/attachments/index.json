@@ -1,0 +1,54 @@
+{
+  "coi-compliant.pdf": {
+    "text": "CERTIFICATE OF INSURANCE\nPolicy Number: GL-88231\nInsurer: Northbridge Casualty\nGeneral Liability Limit (USD): 2000000\nExpiry Date: 2027-01-31\nAdditional Insured: Importer Receiving Inc.",
+    "fields": {
+      "certificateOfInsurance": {
+        "policyNumber": "GL-88231",
+        "insurerName": "Northbridge Casualty",
+        "coverageAmount": 2000000,
+        "expiryDate": "2027-01-31",
+        "additionalInsured": "Importer Receiving Inc."
+      }
+    }
+  },
+  "coi-incomplete.pdf": {
+    "text": "CERTIFICATE OF INSURANCE\nPolicy Number: GL-88233\nInsurer: Cascade Indemnity\nGeneral Liability Limit (USD): NOT STATED\nExpiry Date: NOT STATED\nAdditional Insured: NOT STATED",
+    "fields": {
+      "certificateOfInsurance": {
+        "policyNumber": "GL-88233",
+        "insurerName": "Cascade Indemnity",
+        "coverageAmount": null,
+        "expiryDate": null,
+        "additionalInsured": null
+      }
+    }
+  },
+  "coi-lapsed.pdf": {
+    "text": "CERTIFICATE OF INSURANCE\nPolicy Number: GL-88234\nInsurer: Northbridge Casualty\nGeneral Liability Limit (USD): 2000000\nExpiry Date: 2026-01-15\nAdditional Insured: Importer Receiving Inc.",
+    "fields": {
+      "certificateOfInsurance": {
+        "policyNumber": "GL-88234",
+        "insurerName": "Northbridge Casualty",
+        "coverageAmount": 2000000,
+        "expiryDate": "2026-01-15",
+        "additionalInsured": "Importer Receiving Inc."
+      }
+    }
+  },
+  "coi-scanned.pdf": {
+    "text": "[scan]",
+    "fields": {}
+  },
+  "coi-underinsured.pdf": {
+    "text": "CERTIFICATE OF INSURANCE\nPolicy Number: GL-88232\nInsurer: Harborline Mutual\nGeneral Liability Limit (USD): 500000\nExpiry Date: 2027-01-31\nAdditional Insured: Importer Receiving Inc.",
+    "fields": {
+      "certificateOfInsurance": {
+        "policyNumber": "GL-88232",
+        "insurerName": "Harborline Mutual",
+        "coverageAmount": 500000,
+        "expiryDate": "2027-01-31",
+        "additionalInsured": "Importer Receiving Inc."
+      }
+    }
+  }
+}

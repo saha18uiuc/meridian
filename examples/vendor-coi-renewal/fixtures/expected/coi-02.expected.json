@@ -1,0 +1,25 @@
+{
+  "caseKey": "coi-02",
+  "decision": {
+    "outcome": "rejected",
+    "businessKey": "VEND-40119",
+    "reason": "",
+    "summary": {
+      "vendorId": "VEND-40119",
+      "renewalDate": "2026-03-02",
+      "policyNumbers": ["GL-88232"],
+      "coverageAmount": 500000,
+      "expiryDate": "2027-01-31",
+      "missingInformation": ["policy:GL-88232:coverageAmount"]
+    },
+    "findings": [
+      {
+        "scope": "policy",
+        "key": "GL-88232",
+        "field": "coverageAmount",
+        "message": "Policy GL-88232 carries USD 500000 of general liability cover, below the contracted minimum of USD 1000000."
+      }
+    ],
+    "emailResponse": null
+  }
+}

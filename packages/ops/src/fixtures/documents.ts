@@ -76,7 +76,7 @@ interface FixtureGood {
   ndcNumber: string | null;
 }
 
-interface FixtureEntry {
+export interface FixtureEntry {
   text: string;
   fields: Record<string, unknown>;
 }
@@ -300,7 +300,7 @@ export function buildAttachmentIndex(): Record<string, FixtureEntry> {
 
 // ------------------------------------------------------------------------------ email fixtures
 
-interface FixtureEmail {
+export interface FixtureEmail {
   file: string;
   messageId: string;
   threadId: string;
@@ -576,7 +576,7 @@ export function buildEmails(): FixtureEmail[] {
   ];
 }
 
-function renderEmail(email: FixtureEmail): string {
+export function renderEmail(email: FixtureEmail): string {
   return [
     `Message-ID: ${email.messageId}`,
     `X-Meridian-Thread: ${email.threadId}`,

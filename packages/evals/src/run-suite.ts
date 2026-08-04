@@ -22,7 +22,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { runAssertions, type AssertionFailure, type RunObservation } from './assertions.js';
 import { loadEvalCases } from './case-schema.js';
 import { classify } from './classify-failure.js';
-import { createCaseMailbox } from './fixture-mailbox.js';
+import { createCaseMailbox, DEFAULT_FIXTURES_ROOT } from './fixture-mailbox.js';
 import type { CaseResult, EvalReport } from './report.js';
 
 /**
@@ -61,6 +61,8 @@ export interface RunSuiteOptions {
   operatorEmail: string;
   maxConcurrency: number;
   caseDir?: string;
+  /** The deployment's fixture mail and attachments. Defaults to the first worked example. */
+  fixturesRoot?: string;
   /** Restrict the run to these case keys. Used by the generation skill's smoke check. */
   only?: readonly string[];
   /**
@@ -287,6 +289,7 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
     const { mailbox, messages, messageRefs } = createCaseMailbox(
       options.repoRoot,
       evalCase.inputRefs.emailPaths,
+      options.fixturesRoot ?? DEFAULT_FIXTURES_ROOT,
     );
 
     // Correlation happens before any execution exists, exactly as it does in production.
@@ -332,7 +335,8 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
     if (extraction.kind === 'ok') {
       const attachmentDir = join(
         options.repoRoot,
-        'examples/inbound-import-receiving/fixtures/attachments',
+        options.fixturesRoot ?? DEFAULT_FIXTURES_ROOT,
+        'attachments',
       );
       const recorder = createExecutionRecorder(options.supabase, { executionId });
 

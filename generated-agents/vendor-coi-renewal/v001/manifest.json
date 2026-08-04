@@ -20,6 +20,6 @@
   },
   "validation": {
     "commands": ["pnpm lint", "pnpm typecheck", "pnpm test:unit", "pnpm evals"],
-    "evalCaseKeys": []
+    "evalCaseKeys": ["coi-01", "coi-02", "coi-03", "coi-04", "coi-05"]
   }
 }

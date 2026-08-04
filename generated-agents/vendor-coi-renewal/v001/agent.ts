@@ -144,6 +144,7 @@ function renewalDateOf(input: RenewalInput): string {
 async function escalate(
   context: AgentContext,
   vendorId: string,
+  renewalDate: string,
   reason: string,
   evidence: Record<string, unknown>,
 ): Promise<AgentDecision> {
@@ -176,7 +177,16 @@ async function escalate(
     outcome: 'manual_review',
     businessKey: vendorId,
     reason,
-    summary: { vendorId, policyNumbers: [], coverageAmount: null, expiryDate: null },
+    // Every key the deployment ever reports, even when the run stopped before it could fill them
+    // in. A summary whose shape depends on the outcome is one every reader has to special-case.
+    summary: {
+      vendorId,
+      renewalDate,
+      policyNumbers: [],
+      coverageAmount: null,
+      expiryDate: null,
+      missingInformation: [],
+    },
     findings: [],
     emailResponse: null,
   };
@@ -236,6 +246,7 @@ export const agent = defineAgent<RenewalInput, AgentDecision>({
 
   async run(input, context) {
     const vendorId = input.businessKey;
+    const renewalDate = renewalDateOf(input);
     assertCapability(context, 'mail.read');
     assertCapability(context, 'document.extract');
 
@@ -281,6 +292,7 @@ export const agent = defineAgent<RenewalInput, AgentDecision>({
       return escalate(
         context,
         vendorId,
+        renewalDate,
         `${String(collected.unreadable.length)} attachment(s) could not be read: ${collected.unreadable.join(', ')}`,
         { unreadable: collected.unreadable },
       );
@@ -289,7 +301,7 @@ export const agent = defineAgent<RenewalInput, AgentDecision>({
     // The Certificate of insurance Input card is `required: true`. Without one there is nothing to
     // assess, and treating a renewal request with no certificate as a lapse would be invention.
     if (collected.certificates.length === 0) {
-      return escalate(context, vendorId, 'no certificate of insurance was attached', {
+      return escalate(context, vendorId, renewalDate, 'no certificate of insurance was attached', {
         filenames: attachments.map((attachment) => attachment.filename).sort(),
       });
     }
@@ -297,7 +309,6 @@ export const agent = defineAgent<RenewalInput, AgentDecision>({
     // A vendor may send several certificates on one thread — a renewal plus an endorsement. All of
     // them are assessed and the strictest outcome wins, because accepting a renewal on the strength
     // of the most favourable document in the pile is exactly the mistake this check exists to stop.
-    const renewalDate = renewalDateOf(input);
     const assessments = collected.certificates.map((certificate) => ({
       certificate,
       assessment: assessCertificate(certificate, renewalDate),

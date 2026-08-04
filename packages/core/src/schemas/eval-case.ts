@@ -49,7 +49,17 @@ export type EvalExpectation = z.infer<typeof EvalExpectationSchema>;
 
 export const EvalCaseSchema = z
   .object({
-    caseKey: z.string().regex(/^case-\d{2}$/),
+    /**
+     * A short, stable, filename-safe key. The pattern was `case-\d{2}` while one deployment
+     * existed, which quietly made "how many worked examples are there" a schema-level decision:
+     * a second suite could not name its cases at all without failing validation. What the platform
+     * actually needs is that the key is stable and matches its filename, which the loader checks.
+     */
+    caseKey: z
+      .string()
+      .min(3)
+      .max(48)
+      .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/),
     description: z.string().min(1),
     /**
      * Every expectation must trace to a statement in the frozen spec. A case that encodes policy

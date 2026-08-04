@@ -11,7 +11,11 @@
  * review.
  */
 
-export type BusinessKeyKind = 'container' | 'mawb' | 'invoice';
+/**
+ * What kind of identifier a business key is. Deployments contribute their own: `vendor` belongs to
+ * the renewal example, not to the importer's, and neither belongs to the platform.
+ */
+export type BusinessKeyKind = 'container' | 'mawb' | 'invoice' | 'vendor';
 
 export interface BusinessKeyCandidate {
   kind: BusinessKeyKind;

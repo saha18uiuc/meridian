@@ -1,0 +1,17 @@
+{
+  "caseKey": "coi-05",
+  "description": "A scan with no text layer goes to a risk reviewer, not to a guess.",
+  "specTrace": "Rule \"Escalate an unexpected failure\" routes a document the process cannot read to Outcome \"Risk review required\".",
+  "inputRefs": {
+    "emailPaths": ["examples/vendor-coi-renewal/fixtures/emails/coi-scanned.eml"],
+    "attachmentPaths": ["examples/vendor-coi-renewal/fixtures/attachments/coi-scanned.pdf"],
+    "expectedPath": "examples/vendor-coi-renewal/fixtures/expected/coi-05.expected.json"
+  },
+  "expected": {
+    "outcome": "manual_review",
+    "businessKey": "VEND-40122",
+    "externalActions": [],
+    "stepInstanceKeys": ["escalate:VEND-40122"],
+    "evidenceKeys": ["escalation:VEND-40122"]
+  }
+}

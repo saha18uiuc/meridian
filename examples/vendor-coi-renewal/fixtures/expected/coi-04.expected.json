@@ -1,0 +1,25 @@
+{
+  "caseKey": "coi-04",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "VEND-40121",
+    "reason": "",
+    "summary": {
+      "vendorId": "VEND-40121",
+      "renewalDate": "2026-03-02",
+      "policyNumbers": ["GL-88234"],
+      "coverageAmount": 2000000,
+      "expiryDate": "2026-01-15",
+      "missingInformation": ["policy:GL-88234:expiryDate"]
+    },
+    "findings": [
+      {
+        "scope": "policy",
+        "key": "GL-88234",
+        "field": "expiryDate",
+        "message": "Policy GL-88234 expired on 2026-01-15, before the renewal date 2026-03-02."
+      }
+    ],
+    "emailResponse": null
+  }
+}

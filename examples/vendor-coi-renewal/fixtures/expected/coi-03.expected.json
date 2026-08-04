@@ -1,0 +1,34 @@
+{
+  "caseKey": "coi-03",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "VEND-40120",
+    "reason": "",
+    "summary": {
+      "vendorId": "VEND-40120",
+      "renewalDate": "2026-03-02",
+      "policyNumbers": ["GL-88233"],
+      "coverageAmount": null,
+      "expiryDate": null,
+      "missingInformation": [
+        "certificate:GL-88233:coverageAmount",
+        "certificate:GL-88233:expiryDate"
+      ]
+    },
+    "findings": [
+      {
+        "scope": "certificate",
+        "key": "GL-88233",
+        "field": "coverageAmount",
+        "message": "Certificate GL-88233 does not state a coverage amount."
+      },
+      {
+        "scope": "certificate",
+        "key": "GL-88233",
+        "field": "expiryDate",
+        "message": "Certificate GL-88233 does not state a expiry date."
+      }
+    ],
+    "emailResponse": null
+  }
+}

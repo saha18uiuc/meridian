@@ -1,0 +1,23 @@
+{
+  "caseKey": "coi-04",
+  "description": "A well-formed certificate that expired before the renewal date is queried.",
+  "specTrace": "Rule \"Is the policy still in force?\" branch \"policy already lapsed\" leads to Action \"Ask the vendor for a corrected certificate\".",
+  "inputRefs": {
+    "emailPaths": ["examples/vendor-coi-renewal/fixtures/emails/coi-lapsed.eml"],
+    "attachmentPaths": ["examples/vendor-coi-renewal/fixtures/attachments/coi-lapsed.pdf"],
+    "expectedPath": "examples/vendor-coi-renewal/fixtures/expected/coi-04.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "VEND-40121",
+    "missingFields": ["policy:GL-88234:expiryDate"],
+    "externalActions": [
+      {
+        "actionType": "mail.reply",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "evidenceKeys": ["assessment:VEND-40121"]
+  }
+}

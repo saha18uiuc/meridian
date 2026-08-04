@@ -1,0 +1,18 @@
+{
+  "caseKey": "coi-01",
+  "decision": {
+    "outcome": "ready",
+    "businessKey": "VEND-40118",
+    "reason": "",
+    "summary": {
+      "vendorId": "VEND-40118",
+      "renewalDate": "2026-03-02",
+      "policyNumbers": ["GL-88231"],
+      "coverageAmount": 2000000,
+      "expiryDate": "2027-01-31",
+      "missingInformation": []
+    },
+    "findings": [],
+    "emailResponse": null
+  }
+}

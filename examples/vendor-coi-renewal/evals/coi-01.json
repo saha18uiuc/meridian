@@ -1,0 +1,18 @@
+{
+  "caseKey": "coi-01",
+  "description": "A complete certificate, adequately covered and in force, is accepted.",
+  "specTrace": "Rule \"Is the policy still in force?\" branch \"policy in force\" leads to Outcome \"Certificate accepted\".",
+  "inputRefs": {
+    "emailPaths": ["examples/vendor-coi-renewal/fixtures/emails/coi-compliant.eml"],
+    "attachmentPaths": ["examples/vendor-coi-renewal/fixtures/attachments/coi-compliant.pdf"],
+    "expectedPath": "examples/vendor-coi-renewal/fixtures/expected/coi-01.expected.json"
+  },
+  "expected": {
+    "outcome": "ready",
+    "businessKey": "VEND-40118",
+    "missingFields": [],
+    "externalActions": [],
+    "stepInstanceKeys": ["correlate:VEND-40118", "extract:VEND-40118", "assess:VEND-40118"],
+    "evidenceKeys": ["assessment:VEND-40118"]
+  }
+}

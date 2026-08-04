@@ -1,0 +1,15 @@
+Message-ID: <coi-compliant@vendor.example>
+X-Meridian-Thread: thread-coi-compliant
+Date: 2026-03-02T09:00:00.000Z
+From: insurance@vendor.example
+To: receiving@importer.example
+Subject: Certificate of Insurance renewal — VEND-40118
+X-Meridian-Attachments: coi-compliant.pdf
+
+Hello,
+
+Attached is the certificate of insurance for vendor account VEND-40118.
+Cover runs to the end of January next year.
+
+Regards,
+Vendor Compliance

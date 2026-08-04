@@ -55,7 +55,7 @@ export const SNAPSHOT_TARGETS: readonly SnapshotTarget[] = [
     deploymentKey: 'vendor-coi-renewal',
     codePath: 'generated-agents/vendor-coi-renewal/v001',
     seedPath: 'examples/vendor-coi-renewal/board.seed.json',
-    evalCaseDir: null,
+    evalCaseDir: 'examples/vendor-coi-renewal/evals',
     specIdSlug: 'spec-vendor-coi-renewal-v1',
   },
 ];

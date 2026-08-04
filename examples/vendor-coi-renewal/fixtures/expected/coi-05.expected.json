@@ -1,0 +1,18 @@
+{
+  "caseKey": "coi-05",
+  "decision": {
+    "outcome": "manual_review",
+    "businessKey": "VEND-40122",
+    "reason": "",
+    "summary": {
+      "vendorId": "VEND-40122",
+      "renewalDate": "2026-03-02",
+      "policyNumbers": [],
+      "coverageAmount": null,
+      "expiryDate": null,
+      "missingInformation": []
+    },
+    "findings": [],
+    "emailResponse": null
+  }
+}

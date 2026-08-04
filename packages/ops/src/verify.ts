@@ -1,14 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { sha256Hex } from '@meridian/core';
 import { loadOpsEnv } from './env.js';
-import { buildSnapshot, SNAPSHOT_TARGETS, type SnapshotTarget } from './fixtures/spec-snapshot.js';
+import { buildSnapshot, SNAPSHOT_TARGETS } from './fixtures/spec-snapshot.js';
 import { formatGates, gates } from './gates.js';
 import { flag, parseArgs } from './lib/args.js';
 import { runAsync } from './lib/proc.js';
 import { repoPath } from './lib/state.js';
 import { formatTreeReport, verifyTree } from './verify-tree.js';
 
-const SEED_BOARD_PATH = 'examples/inbound-import-receiving/board.seed.json';
 const SNAPSHOT_CODE_PATH = 'generated-agents/inbound-import-receiving/v001';
 
 /**
@@ -204,34 +203,51 @@ export function checkExactlyOnceWording(): { ok: boolean; detail: string } {
       };
 }
 
+/**
+ * Every deployment, not the first one.
+ *
+ * This check briefly regressed to `SNAPSHOT_TARGETS[0]` when the generator was parameterised, which
+ * meant the second worked example could drift from its board indefinitely without any gate
+ * noticing. A reproducibility check that covers one of two artifacts is not a reproducibility
+ * check.
+ */
 export function checkCommittedSnapshot(): { ok: boolean; detail: string } {
-  const seed = JSON.parse(readFileSync(repoPath(SEED_BOARD_PATH), 'utf8')) as Parameters<
-    typeof buildSnapshot
-  >[0];
-  const rebuilt = buildSnapshot(seed, SNAPSHOT_TARGETS[0] as SnapshotTarget);
-
-  const snapshotPath = repoPath(SNAPSHOT_CODE_PATH, 'spec.snapshot.json');
-  const committedSpec = JSON.parse(readFileSync(snapshotPath, 'utf8')) as Record<string, unknown>;
-  const manifest = JSON.parse(
-    readFileSync(repoPath(SNAPSHOT_CODE_PATH, 'manifest.json'), 'utf8'),
-  ) as { specHash: string };
-  const agentSource = readFileSync(repoPath(SNAPSHOT_CODE_PATH, 'agent.ts'), 'utf8');
-
-  // Both sides are re-canonicalized before comparing, per the snapshot-file contract: the committed
-  // file is compared by hash, never by bytes, because `jsonb` round trips do not preserve bytes.
   const problems: string[] = [];
-  if (sha256Hex(committedSpec) !== sha256Hex(rebuilt.specJson)) {
-    problems.push('spec.snapshot.json does not re-canonicalize to the board it names');
-  }
-  if (manifest.specHash !== rebuilt.specHash) {
-    problems.push(`manifest.specHash is ${manifest.specHash}, board yields ${rebuilt.specHash}`);
-  }
-  if (!agentSource.includes(`const SPEC_HASH = '${rebuilt.specHash}'`)) {
-    problems.push('agent.ts pins a different spec hash than the board yields');
+  const hashes: string[] = [];
+
+  for (const target of SNAPSHOT_TARGETS) {
+    const seed = JSON.parse(readFileSync(repoPath(target.seedPath), 'utf8')) as Parameters<
+      typeof buildSnapshot
+    >[0];
+    const rebuilt = buildSnapshot(seed, target);
+
+    const committedSpec = JSON.parse(
+      readFileSync(repoPath(target.codePath, 'spec.snapshot.json'), 'utf8'),
+    ) as Record<string, unknown>;
+    const manifest = JSON.parse(
+      readFileSync(repoPath(target.codePath, 'manifest.json'), 'utf8'),
+    ) as { specHash: string };
+    const agentSource = readFileSync(repoPath(target.codePath, 'agent.ts'), 'utf8');
+
+    // Both sides are re-canonicalized before comparing, per the snapshot-file contract: the
+    // committed file is compared by hash, never by bytes, because `jsonb` round trips do not
+    // preserve bytes.
+    if (sha256Hex(committedSpec) !== sha256Hex(rebuilt.specJson)) {
+      problems.push(`${target.deploymentKey}: spec.snapshot.json does not re-canonicalize`);
+    }
+    if (manifest.specHash !== rebuilt.specHash) {
+      problems.push(
+        `${target.deploymentKey}: manifest.specHash is ${manifest.specHash}, board yields ${rebuilt.specHash}`,
+      );
+    }
+    if (!agentSource.includes(`const SPEC_HASH = '${rebuilt.specHash}'`)) {
+      problems.push(`${target.deploymentKey}: agent.ts pins a different spec hash`);
+    }
+    hashes.push(`${target.deploymentKey} ${rebuilt.specHash.slice(0, 12)}`);
   }
 
   return problems.length === 0
-    ? { ok: true, detail: `spec_hash ${rebuilt.specHash}` }
+    ? { ok: true, detail: hashes.join(', ') }
     : { ok: false, detail: `${problems.join('; ')} — re-run the fixture generators` };
 }
 

@@ -17,7 +17,18 @@ export interface CaseMailbox {
   messageRefs: MessageRef[];
 }
 
-export function readCaseMessages(repoRoot: string, emailPaths: readonly string[]): MailMessage[] {
+/**
+ * Where a deployment's fixture mail and attachments live. A parameter rather than a constant: the
+ * harness runs whichever deployment it is pointed at, and a hard-coded path here would mean the
+ * second example could compile and release but never execute a single run.
+ */
+export const DEFAULT_FIXTURES_ROOT = 'examples/inbound-import-receiving/fixtures';
+
+export function readCaseMessages(
+  repoRoot: string,
+  emailPaths: readonly string[],
+  fixturesRoot: string = DEFAULT_FIXTURES_ROOT,
+): MailMessage[] {
   return emailPaths.map((relative) => {
     const absolute = join(repoRoot, relative);
     const parsed = parseEml(readFileSync(absolute, 'utf8'), basename(relative));
@@ -34,21 +45,21 @@ export function readCaseMessages(repoRoot: string, emailPaths: readonly string[]
         filename,
         mimeType: filename.endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream',
         sizeBytes: 0,
-        storagePath: join(
-          repoRoot,
-          'examples/inbound-import-receiving/fixtures/attachments',
-          filename,
-        ),
+        storagePath: join(repoRoot, fixturesRoot, 'attachments', filename),
       })),
     };
   });
 }
 
-export function createCaseMailbox(repoRoot: string, emailPaths: readonly string[]): CaseMailbox {
-  const messages = readCaseMessages(repoRoot, emailPaths);
+export function createCaseMailbox(
+  repoRoot: string,
+  emailPaths: readonly string[],
+  fixturesRoot: string = DEFAULT_FIXTURES_ROOT,
+): CaseMailbox {
+  const messages = readCaseMessages(repoRoot, emailPaths, fixturesRoot);
   const mailbox = createMockMailbox({
-    emailDir: join(repoRoot, 'examples/inbound-import-receiving/fixtures/emails'),
-    attachmentDir: join(repoRoot, 'examples/inbound-import-receiving/fixtures/attachments'),
+    emailDir: join(repoRoot, fixturesRoot, 'emails'),
+    attachmentDir: join(repoRoot, fixturesRoot, 'attachments'),
     only: messages.map((message) => message.messageId),
   });
 

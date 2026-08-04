@@ -1,0 +1,24 @@
+{
+  "caseKey": "coi-03",
+  "description": "A certificate missing its limit and expiry is queried, not inferred.",
+  "specTrace": "Rule \"Does the certificate carry every required field?\" branch \"certificate incomplete\" leads to Action \"Ask the vendor for a corrected certificate\".",
+  "inputRefs": {
+    "emailPaths": ["examples/vendor-coi-renewal/fixtures/emails/coi-incomplete.eml"],
+    "attachmentPaths": ["examples/vendor-coi-renewal/fixtures/attachments/coi-incomplete.pdf"],
+    "expectedPath": "examples/vendor-coi-renewal/fixtures/expected/coi-03.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "VEND-40120",
+    "missingFields": ["certificate:GL-88233:coverageAmount", "certificate:GL-88233:expiryDate"],
+    "externalActions": [
+      {
+        "actionType": "mail.reply",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "stepInstanceKeys": ["respond:VEND-40120"],
+    "evidenceKeys": ["assessment:VEND-40120"]
+  }
+}

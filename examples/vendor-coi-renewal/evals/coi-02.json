@@ -1,0 +1,17 @@
+{
+  "caseKey": "coi-02",
+  "description": "Coverage below the contracted minimum is rejected rather than queried.",
+  "specTrace": "Rule \"Does coverage meet the contracted minimum?\" branch \"coverage below minimum\" leads to Outcome \"Certificate rejected\".",
+  "inputRefs": {
+    "emailPaths": ["examples/vendor-coi-renewal/fixtures/emails/coi-underinsured.eml"],
+    "attachmentPaths": ["examples/vendor-coi-renewal/fixtures/attachments/coi-underinsured.pdf"],
+    "expectedPath": "examples/vendor-coi-renewal/fixtures/expected/coi-02.expected.json"
+  },
+  "expected": {
+    "outcome": "rejected",
+    "businessKey": "VEND-40119",
+    "missingFields": ["policy:GL-88232:coverageAmount"],
+    "externalActions": [],
+    "evidenceKeys": ["assessment:VEND-40119"]
+  }
+}
