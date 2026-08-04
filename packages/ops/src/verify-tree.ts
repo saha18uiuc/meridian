@@ -528,6 +528,12 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'a time-skipping Temporal environment with recording activity stubs, which all six workflow tests start from',
   'apps/web/test/stubs/server-only.ts':
     "an empty module the service tests alias 'server-only' to; the real one throws outside a Next build, which would make every service module unimportable under Vitest",
+  'apps/backend/test/model-schemas.test.ts':
+    'pins the shape sent to the model against the schemas in @meridian/core. A schema name is not a contract: asked only for "invoice", the model answers accurately under names of its own choosing and the agent files a legible document as unreadable. No other test can catch a rename here, because the mock extractor answers in the agent shape by construction.',
+  'packages/ops/test/preflight.test.ts':
+    'the live-mode coherence check — the one preflight result that asserts a relationship between two settings rather than the presence of a tool. GMAIL_LIVE_MODE also sends documents down the live path, so pairing it with a mocked model is unsatisfiable in a way that only surfaces mid-run.',
+  'packages/ops/test/connect-gmail.test.ts':
+    'covers the consent flow being re-runnable: a second run must find the existing connection rather than throw, which is the difference between a setup step an operator can repeat and one that works exactly once.',
   // Named in §16 or §7.0 but absent from the §11 tree listing, which enumerates source exhaustively
   // and tests only representatively.
   'packages/core/test/db/delta-empty-arrays.test.ts': '§16: empty and NULL delta arrays',
