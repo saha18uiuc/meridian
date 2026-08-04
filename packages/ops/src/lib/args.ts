@@ -13,6 +13,16 @@ export function parseArgs(argv: readonly string[]): Args {
   for (let i = 0; i < argv.length; i += 1) {
     const token = argv[i];
     if (token === undefined || !token.startsWith('--')) continue;
+
+    // `--name=value` as well as `--name value`. Accepting only the second was worse than not
+    // accepting the first: the equals form parsed as a flag named `board=examples/...`, so the
+    // script ignored the argument and seeded the default board without saying anything.
+    const equals = token.indexOf('=');
+    if (equals > 2) {
+      args[token.slice(2, equals)] = token.slice(equals + 1);
+      continue;
+    }
+
     const name = token.slice(2);
     const next = argv[i + 1];
     if (next === undefined || next.startsWith('--')) {
