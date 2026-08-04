@@ -114,6 +114,13 @@ const temporalEnv = {
   TEMPORAL_TASK_QUEUE: z.string().min(1).default('meridian-receiving'),
   TEMPORAL_UI_URL: z.url().default('http://127.0.0.1:8233'),
   WORKER_HEALTH_PORT: int(9464),
+  /**
+   * Where something *other than the worker* can reach the worker's health endpoint.
+   *
+   * Only meaningful once the two are not on the same machine. Locally the port is enough; deployed,
+   * the web app and the worker are separate services and a port number describes nothing.
+   */
+  WORKER_HEALTH_URL: z.url().optional(),
   WORKER_MAX_CONCURRENT_ACTIVITIES: int(20),
   WORKER_MAX_CONCURRENT_WORKFLOWS: int(10),
   /** Fan-out width inside a single agent run; bounded so one execution cannot starve the queue. */
@@ -265,6 +272,23 @@ export function temporalTarget(
     },
     namespace: source.TEMPORAL_NAMESPACE ?? 'default',
   };
+}
+
+/**
+ * The worker's health endpoint as seen from somewhere else.
+ *
+ * Derived here rather than composed at each call site for the same reason as `temporalTarget`: the
+ * path is the worker's to choose, and a caller that hardcodes it goes stale silently. This one did
+ * — the web health route asked for `/health` while the worker has always served `/healthz`, so the
+ * probe reported a dead worker for every deployment including the ones where it was running.
+ *
+ * The default stays loopback because locally the two share a host. Deployed, they do not, and
+ * `WORKER_HEALTH_URL` is how the web app is told where the worker actually is.
+ */
+export function workerHealthUrl(source: Record<string, string | undefined> = process.env): string {
+  const configured = source.WORKER_HEALTH_URL?.trim();
+  if (configured !== undefined && configured !== '') return configured;
+  return `http://127.0.0.1:${source.WORKER_HEALTH_PORT ?? '9464'}/healthz`;
 }
 
 /**

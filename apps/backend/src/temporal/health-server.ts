@@ -13,10 +13,14 @@ import { TASK_QUEUE } from './task-queue.js';
 export function startHealthServer(port: number): Server {
   const server = createServer((request, response) => {
     if (request.url === '/healthz') {
+      // `registeredVersions`, not `registeredAgents`: they are versions, and the name has to match
+      // what `pnpm health` reads. It did not, so the registry-consistency check silently compared
+      // against `undefined` and reported a healthy worker as having nothing registered — which is
+      // precisely the condition this endpoint exists to make visible.
       const body = JSON.stringify({
         status: 'ok',
         taskQueue: TASK_QUEUE,
-        registeredAgents: registeredVersions(AGENT_REGISTRY),
+        registeredVersions: registeredVersions(AGENT_REGISTRY),
       });
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(body);

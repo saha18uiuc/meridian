@@ -1,4 +1,4 @@
-import { temporalTarget } from '@meridian/core';
+import { temporalTarget, workerHealthUrl } from '@meridian/core';
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/server/supabase/service-client';
 
@@ -32,9 +32,8 @@ async function checkTemporal(): Promise<boolean> {
 }
 
 async function checkWorker(): Promise<boolean> {
-  const port = process.env['WORKER_HEALTH_PORT'] ?? '9464';
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/health`, {
+    const response = await fetch(workerHealthUrl(), {
       signal: AbortSignal.timeout(2000),
     });
     return response.ok;

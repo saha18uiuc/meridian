@@ -1,3 +1,4 @@
+import { workerHealthUrl } from '@meridian/core';
 import { loadOpsEnv, optionalEnv } from './env.js';
 import { reconcileQueuedExecutions } from './intake/reconcile-queued-executions.js';
 import { opsClient } from './lib/supabase.js';
@@ -120,10 +121,10 @@ interface WorkerHealthBody {
 }
 
 async function workerHealth(
-  port: number,
+  url: string,
 ): Promise<{ entry: HealthEntry; body: WorkerHealthBody | null }> {
   try {
-    const response = await fetch(`http://127.0.0.1:${port}/healthz`, {
+    const response = await fetch(url, {
       signal: AbortSignal.timeout(2500),
     });
     if (!response.ok) {
@@ -143,7 +144,7 @@ async function workerHealth(
       entry: {
         component: 'worker',
         status: 'not-started',
-        detail: `http://127.0.0.1:${port}/healthz`,
+        detail: url,
       },
       body: null,
     };
@@ -167,7 +168,12 @@ export async function registryConsistency(
   const { data, error } = await client
     .from('agents')
     .select(
-      'deployment_key, active_agent_version_id, agent_versions!agents_active_agent_version_id_fkey(version_no)',
+      // The hint has to name the real constraint. It named an invented one —
+      // `agents_active_agent_version_id_fkey`, the name PostgREST would generate for a simple
+      // single-column key — but the release pointer is a composite foreign key on
+      // `(active_agent_version_id, agent_id)` called `fk_agents_active_version`, so PostgREST could
+      // find no such relationship and this check only ever returned its error branch.
+      'deployment_key, active_agent_version_id, agent_versions!fk_agents_active_version(version_no)',
     )
     .not('active_agent_version_id', 'is', null);
   if (error !== null) {
@@ -227,7 +233,7 @@ export async function healthCheck(): Promise<HealthEntry[]> {
   const namespace = optionalEnv('TEMPORAL_NAMESPACE', 'default');
   const uiUrl = optionalEnv('TEMPORAL_UI_URL', 'http://127.0.0.1:8233');
   const appUrl = optionalEnv('APP_BASE_URL', 'http://localhost:3000');
-  const workerPort = Number.parseInt(optionalEnv('WORKER_HEALTH_PORT', '9464'), 10);
+  const workerUrl = workerHealthUrl();
   const reviewTimeout = Number.parseInt(optionalEnv('AI_REVIEW_TIMEOUT_MS', '120000'), 10);
 
   const entries: HealthEntry[] = [];
@@ -235,7 +241,7 @@ export async function healthCheck(): Promise<HealthEntry[]> {
   entries.push(supabase);
   entries.push(await temporalHealth(address, namespace, uiUrl));
   entries.push(await webHealth(appUrl));
-  const worker = await workerHealth(workerPort);
+  const worker = await workerHealth(workerUrl);
   entries.push(worker.entry);
 
   if (supabase.status !== 'ok') return entries;
