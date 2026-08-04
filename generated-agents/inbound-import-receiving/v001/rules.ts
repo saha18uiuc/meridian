@@ -1,4 +1,4 @@
-import { REQUIRED_GOOD_FIELDS, type Coa, type Good, type Invoice } from '@meridian/core/schemas';
+import type { Coa, Good, Invoice } from '@meridian/core/schemas';
 
 /**
  * The policy the frozen specification states, expressed as pure functions.
@@ -19,30 +19,84 @@ export interface ValidationFailure {
   message: string;
 }
 
-const REQUIRED_FIELD_LABELS: Record<(typeof REQUIRED_GOOD_FIELDS)[number], string> = {
+/**
+ * The customer's field policy, which lives here rather than in the shared skeleton.
+ *
+ * The SOP names four identifiers as the ones a good must carry before it can be received. It also
+ * asks the reader to capture the FDA registration number, but never makes receiving contingent on
+ * it. Those are two different obligations, so they are two different lists: the first decides an
+ * outcome, the second only decides what gets written down. Collapsing them into one list is what
+ * made an earlier version refuse shipments the SOP would have accepted.
+ */
+export const BLOCKING_GOOD_FIELDS = [
+  'htsCode',
+  'fdaProductCode',
+  'andaNumber',
+  'ndcNumber',
+] as const satisfies readonly (keyof Good)[];
+
+/** Extracted and reported, never a reason to stop. */
+export const CAPTURED_GOOD_FIELDS = [
+  'registrationNumber',
+] as const satisfies readonly (keyof Good)[];
+
+const FIELD_LABELS: Record<
+  (typeof BLOCKING_GOOD_FIELDS)[number] | (typeof CAPTURED_GOOD_FIELDS)[number],
+  string
+> = {
   htsCode: 'HTS code',
   fdaProductCode: 'FDA product code',
   andaNumber: 'ANDA number',
-  registrationNumber: 'FDA registration number',
   ndcNumber: 'NDC number',
+  registrationNumber: 'FDA registration number',
 };
 
 function present(value: string | null | undefined): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-/** The five regulatory identifiers, checked per good. Missing fields are reported, never defaulted. */
-export function missingRequiredFields(good: Good): ValidationFailure[] {
-  return REQUIRED_GOOD_FIELDS.filter((field) => !present(good[field])).map((field) => ({
+/**
+ * The three things the SOP requires an error to name: "log an error mentioning the Invoice Number
+ * (top-right corner), Drug Description, and Missing Information Type."
+ *
+ * A line key is what the system uses to tell two goods apart; it is not what a receiving clerk
+ * reads. The message is written for the clerk, and the line key stays in `key` for the machine.
+ */
+function reportLine(invoiceNumber: string, good: Good, missing: string): string {
+  const description = present(good.description) ? good.description : good.lineKey;
+  return `Invoice ${invoiceNumber}, ${description}: ${missing}.`;
+}
+
+/** The four blocking identifiers, checked per good. Missing fields are reported, never defaulted. */
+export function missingRequiredFields(good: Good, invoiceNumber: string): ValidationFailure[] {
+  return BLOCKING_GOOD_FIELDS.filter((field) => !present(good[field])).map((field) => ({
     scope: 'good' as const,
     key: good.lineKey,
     field,
-    message: `Good ${good.lineKey} is missing its ${REQUIRED_FIELD_LABELS[field]}.`,
+    message: reportLine(invoiceNumber, good, `missing ${FIELD_LABELS[field]}`),
+  }));
+}
+
+/**
+ * Gaps in the captured-only fields. Shaped like a failure so it can be recorded and read the same
+ * way, but kept out of `failures` so it can never reach `outcomeFor`.
+ */
+export function capturedFieldGaps(good: Good, invoiceNumber: string): ValidationFailure[] {
+  return CAPTURED_GOOD_FIELDS.filter((field) => !present(good[field])).map((field) => ({
+    scope: 'good' as const,
+    key: good.lineKey,
+    field,
+    message: reportLine(
+      invoiceNumber,
+      good,
+      `no ${FIELD_LABELS[field]} on file, which does not hold receiving`,
+    ),
   }));
 }
 
 export function goodIsComplete(good: Good): boolean {
-  return missingRequiredFields(good).length === 0;
+  // The invoice number only shapes the wording, so completeness does not need a real one.
+  return missingRequiredFields(good, '').length === 0;
 }
 
 /**
@@ -108,25 +162,48 @@ export function matchCoas(invoices: readonly Invoice[], coas: readonly Coa[]): C
   };
 }
 
-export function coaFailures(match: CoaMatch): ValidationFailure[] {
+/**
+ * Which invoice named each batch.
+ *
+ * The SOP reports a certificate discrepancy by Batch Number *and* Invoice Number, so the batch
+ * alone is not a sufficient report. The first invoice in sorted order wins, which only matters for
+ * a batch on two invoices — and that case is already a `rejected` duplicate before any certificate
+ * is considered.
+ */
+export function invoiceForBatch(invoices: readonly Invoice[]): Map<string, string> {
+  const owner = new Map<string, string>();
+  for (const invoice of [...invoices].sort((a, b) =>
+    a.invoiceNumber.localeCompare(b.invoiceNumber),
+  )) {
+    for (const good of invoice.goods) {
+      if (!present(good.batchNumber)) continue;
+      if (!owner.has(good.batchNumber)) owner.set(good.batchNumber, invoice.invoiceNumber);
+    }
+  }
+  return owner;
+}
+
+export function coaFailures(match: CoaMatch, owner: Map<string, string>): ValidationFailure[] {
+  const named = (batch: string): string =>
+    `Invoice ${owner.get(batch) ?? 'unknown'}, batch ${batch}`;
   return [
     ...match.missing.map((key) => ({
       scope: 'batch' as const,
       key,
       field: 'certificateOfAnalysis',
-      message: `Batch ${key} has no certificate of analysis.`,
+      message: `${named(key)}: no Certificate of Analysis was attached.`,
     })),
     ...match.ambiguous.map((key) => ({
       scope: 'batch' as const,
       key,
       field: 'certificateOfAnalysis',
-      message: `Batch ${key} is covered by more than one certificate of analysis.`,
+      message: `${named(key)}: more than one Certificate of Analysis was attached.`,
     })),
     ...match.unexpected.map((key) => ({
       scope: 'batch' as const,
       key,
       field: 'certificateOfAnalysis',
-      message: `A certificate of analysis names batch ${key}, which appears on no invoice in this shipment.`,
+      message: `Batch ${key}: a Certificate of Analysis was attached for a batch that appears on no invoice in this shipment.`,
     })),
   ];
 }
@@ -145,6 +222,8 @@ export function missingInformationList(failures: readonly ValidationFailure[]): 
 
 export interface ShipmentAssessment {
   failures: ValidationFailure[];
+  /** Recorded and surfaced, but never an input to `outcomeFor`. */
+  notes: ValidationFailure[];
   duplicateInvoices: string[];
   duplicateBatches: string[];
   coa: CoaMatch;
@@ -161,7 +240,7 @@ export function assessShipment(
     .flatMap((invoice) =>
       [...invoice.goods]
         .sort((a, b) => a.lineKey.localeCompare(b.lineKey))
-        .flatMap((good) => missingRequiredFields(good)),
+        .flatMap((good) => missingRequiredFields(good, invoice.invoiceNumber)),
     )
     .sort((a, b) => `${a.key}:${a.field}`.localeCompare(`${b.key}:${b.field}`));
 
@@ -183,11 +262,20 @@ export function assessShipment(
       message: `Batch ${key} appears on more than one good in this shipment.`,
     })),
     ...fieldFailures,
-    ...coaFailures(coa),
+    ...coaFailures(coa, invoiceForBatch(invoices)),
   ];
+
+  const notes = invoices
+    .flatMap((invoice) =>
+      [...invoice.goods]
+        .sort((a, b) => a.lineKey.localeCompare(b.lineKey))
+        .flatMap((good) => capturedFieldGaps(good, invoice.invoiceNumber)),
+    )
+    .sort((a, b) => `${a.key}:${a.field}`.localeCompare(`${b.key}:${b.field}`));
 
   return {
     failures,
+    notes,
     duplicateInvoices,
     duplicateBatches,
     coa,

@@ -4,7 +4,7 @@ import { CONTAINERS, MAWB_AIR, SCALE_GOODS } from './documents.js';
 import { repoPath } from '../lib/state.js';
 
 /**
- * Author the fifteen eval cases and their expected decision documents.
+ * Author the sixteen eval cases and their expected decision documents.
  *
  * Every expectation below traces to a statement on the frozen board, and the trace is recorded in
  * the case file itself rather than in a document someone has to remember to update. An expectation
@@ -50,12 +50,24 @@ function summary(input: {
   };
 }
 
-function missingFieldFailure(lineKey: string, field: string, label: string): Failure {
+/**
+ * The SOP requires an error to name the Invoice Number, the Drug Description, and the Missing
+ * Information Type, so the expectation is written the same way the agent writes it. Rebuilding the
+ * sentence here rather than importing it from the agent is deliberate: an expectation that calls
+ * the code it is checking cannot catch the code changing its mind.
+ */
+function missingFieldFailure(
+  invoiceNumber: string,
+  lineKey: string,
+  description: string,
+  field: string,
+  label: string,
+): Failure {
   return {
     scope: 'good',
     key: lineKey,
     field,
-    message: `Good ${lineKey} is missing its ${label}.`,
+    message: `Invoice ${invoiceNumber}, ${description}: missing ${label}.`,
   };
 }
 
@@ -82,19 +94,31 @@ function scaleStepKeys(): string[] {
 
 export function drafts(): Draft[] {
   const case02Failures: Failure[] = [
-    missingFieldFailure('LINE-1', 'andaNumber', 'ANDA number'),
-    missingFieldFailure('LINE-1', 'ndcNumber', 'NDC number'),
+    missingFieldFailure(
+      'INV-1025',
+      'LINE-1',
+      'Metformin HCl Tablets 850mg',
+      'andaNumber',
+      'ANDA number',
+    ),
+    missingFieldFailure(
+      'INV-1025',
+      'LINE-1',
+      'Metformin HCl Tablets 850mg',
+      'ndcNumber',
+      'NDC number',
+    ),
   ];
 
   const case05Failures: Failure[] = [
-    batchFailure('C31D', 'Batch C31D has no certificate of analysis.'),
+    batchFailure('C31D', 'Invoice INV-1026, batch C31D: no Certificate of Analysis was attached.'),
   ];
 
   const case06Failures: Failure[] = [
-    batchFailure('B77B', 'Batch B77B has no certificate of analysis.'),
+    batchFailure('B77B', 'Invoice INV-1024, batch B77B: no Certificate of Analysis was attached.'),
     batchFailure(
       'B77C',
-      'A certificate of analysis names batch B77C, which appears on no invoice in this shipment.',
+      'Batch B77C: a Certificate of Analysis was attached for a batch that appears on no invoice in this shipment.',
     ),
   ];
 
@@ -139,9 +163,9 @@ export function drafts(): Draft[] {
 
     {
       caseKey: 'case-02',
-      description: 'A good missing two of the five required regulatory identifiers.',
+      description: 'A good missing two of the four required regulatory identifiers.',
       specTrace:
-        'Rule "Does every good carry the five required fields?" branch "required product fields missing" leads to Action "Ask the forwarder for the missing information".',
+        'Rule "Does every good carry the four required fields?" branch "required product fields missing" leads to Action "Ask the forwarder for the missing information".',
       emails: ['missing-fields.eml'],
       attachments: ['invoice-1025.pdf', 'coa-B90X.pdf'],
       expected: {
@@ -504,7 +528,7 @@ export function drafts(): Draft[] {
       caseKey: 'case-14',
       description: `A shipment with ${String(SCALE_GOODS)} goods validated in bounded parallel batches.`,
       specTrace:
-        'Rule "Does every good carry the five required fields?" applies per good; step identity is step_instance_key, never sequence_no.',
+        'Rule "Does every good carry the four required fields?" applies per good; step identity is step_instance_key, never sequence_no.',
       emails: ['scale-shipment.eml'],
       attachments: ['invoice-scale.pdf'],
       expected: {
@@ -560,6 +584,45 @@ export function drafts(): Draft[] {
         emailResponse: null,
       },
     },
+
+    {
+      caseKey: 'case-16',
+      description:
+        'An invoice carrying all four required identifiers but no Registration Number still receives.',
+      specTrace:
+        'Input "Commercial invoice" marks registrationNumber not required; Rule "Does every good carry the four required fields?" names HTS, FDA product code, NDC, and ANDA only.',
+      emails: ['registration-gap.eml'],
+      attachments: ['invoice-1031.pdf', 'coa-E22F.pdf'],
+      expected: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.registrationGap,
+        missingFields: [],
+        // The absent field is reported, and reporting it is all that happens: no request goes out,
+        // because the SOP does not make receiving contingent on the Registration Number.
+        externalActions: [],
+        stepInstanceKeys: [
+          `extract:${CONTAINERS.registrationGap}`,
+          'validate-good:INV-1031:LINE-1',
+          `decide:${CONTAINERS.registrationGap}`,
+        ],
+        evidenceKeys: [`assessment:${CONTAINERS.registrationGap}`],
+      },
+      decision: {
+        outcome: 'ready',
+        businessKey: CONTAINERS.registrationGap,
+        reason: '',
+        shipmentSummary: summary({
+          container: CONTAINERS.registrationGap,
+          invoices: ['INV-1031'],
+          batches: ['E22F'],
+          goods: 1,
+          validGoods: 1,
+        }),
+        missingInformation: [],
+        validationFailures: [],
+        emailResponse: null,
+      },
+    },
   ];
 }
 
@@ -568,7 +631,7 @@ export async function main(_argv: readonly string[] = []): Promise<void> {
   mkdirSync(repoPath(EXPECTED_DIR), { recursive: true });
 
   const all = drafts();
-  if (all.length !== 15) throw new Error(`expected 15 eval cases, built ${String(all.length)}`);
+  if (all.length !== 16) throw new Error(`expected 16 eval cases, built ${String(all.length)}`);
 
   for (const draft of all) {
     const evalCase: EvalCase = {

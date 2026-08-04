@@ -3,7 +3,7 @@ X-Meridian-Thread: thread-happy-path
 Date: 2026-02-03T09:12:00.000Z
 From: ops@forwarder.example
 To: receiving@importer.example
-Subject: Arrival notice - container MSKU1234565 - PO 88213
+Subject: Pre-Alert Documents - container MSKU1234565 - PO 88213
 X-Meridian-Attachments: invoice-1024.pdf, packing-list-1024.pdf, coa-B77A.pdf, coa-B77B.pdf
 
 Good morning,

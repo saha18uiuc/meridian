@@ -11,7 +11,7 @@
  * review.
  */
 
-export type BusinessKeyKind = 'container' | 'mawb';
+export type BusinessKeyKind = 'container' | 'mawb' | 'invoice';
 
 export interface BusinessKeyCandidate {
   kind: BusinessKeyKind;
@@ -44,6 +44,12 @@ const CONTAINER_PATTERN = /\b([A-Z]{3}[UJZ])[\s-]?(\d{6})[\s-]?(\d)\b/g;
 // IATA air waybills are a three-digit airline prefix and an eight-digit serial whose last digit is
 // the check digit: `020-12345675`, `020 1234567 5`, or unseparated.
 const MAWB_PATTERN = /\b(\d{3})[\s-]?(\d{7})[\s-]?(\d)\b/g;
+
+// The fallback. The SOP never names a container or a waybill: it identifies everything it reports
+// by the invoice number in the top-right corner of the commercial invoice. So a pre-alert that
+// carries no transport key is not necessarily uncorrelatable, and there is no check digit to lean
+// on — the prefix is doing all the work, which is why this is only ever consulted second.
+const INVOICE_PATTERN = /\bINV[\s-]?(\d{3,8})\b/g;
 
 const OWNER_CODE_WEIGHTS = new Map<string, number>();
 {
@@ -91,6 +97,10 @@ export function normalizeMawb(candidate: string): string {
   return `${digits.slice(0, 3)}-${digits.slice(3)}`;
 }
 
+export function normalizeInvoiceNumber(candidate: string): string {
+  return `INV-${candidate.replace(/[^0-9]/g, '')}`;
+}
+
 function scan(text: string, source: BusinessKeyCandidate['source']): BusinessKeyCandidate[] {
   const found: BusinessKeyCandidate[] = [];
   const upper = text.toUpperCase();
@@ -112,6 +122,17 @@ function scan(text: string, source: BusinessKeyCandidate['source']): BusinessKey
   return found;
 }
 
+function scanInvoices(
+  text: string,
+  source: BusinessKeyCandidate['source'],
+): BusinessKeyCandidate[] {
+  return [...text.toUpperCase().matchAll(INVOICE_PATTERN)].map((match) => ({
+    kind: 'invoice' as const,
+    value: normalizeInvoiceNumber(match[1] ?? ''),
+    source,
+  }));
+}
+
 function flattenFields(fields: Record<string, unknown>): string {
   return Object.keys(fields)
     .sort()
@@ -124,11 +145,19 @@ function flattenFields(fields: Record<string, unknown>): string {
 }
 
 export function extractBusinessKey(source: ExtractionSource): BusinessKeyResult {
-  const candidates = [
-    ...scan(source.subject ?? '', 'subject'),
-    ...scan(source.body ?? '', 'body'),
-    ...scan(flattenFields(source.attachmentFields ?? {}), 'attachment'),
+  const texts: [string, BusinessKeyCandidate['source']][] = [
+    [source.subject ?? '', 'subject'],
+    [source.body ?? '', 'body'],
+    [flattenFields(source.attachmentFields ?? {}), 'attachment'],
   ];
+
+  const transport = texts.flatMap(([text, where]) => scan(text, where));
+
+  // Strictly a fallback, never a tie-breaker. A pre-alert that names both a container and an
+  // invoice is a container shipment; consulting the invoice as well would manufacture a conflict
+  // out of two identifiers that agree about which shipment this is.
+  const candidates =
+    transport.length > 0 ? transport : texts.flatMap(([text, where]) => scanInvoices(text, where));
 
   if (candidates.length === 0) return { kind: 'none', candidates: [] };
 

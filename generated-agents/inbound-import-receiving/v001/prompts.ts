@@ -18,13 +18,21 @@ function describe(failure: ValidationFailure): string {
   return `- ${failure.message}`;
 }
 
+/**
+ * The discrepancy report the SOP asks for: "Any missing information or documentation must be
+ * reported via email with the Invoice Number, Batch Number(s) and description of discrepancy."
+ *
+ * The three required details are already carried by each failure's message, which is why this
+ * function only orders and frames them. Re-deriving them here would give the report a second
+ * opinion about what is wrong with the shipment.
+ */
 export function missingInformationBody(
   businessKey: string,
   failures: readonly ValidationFailure[],
 ): string {
   const lines = [...failures].map(describe).sort();
   return [
-    `We cannot complete receiving for ${businessKey} until the following is resolved:`,
+    `Pre-alert validation for ${businessKey} found the following discrepancies:`,
     '',
     ...lines,
     '',
@@ -41,6 +49,10 @@ export function handoffQuestion(businessKey: string, reason: string): string {
   return `Receiving for ${businessKey} stopped because ${reason}. How should this shipment be handled?`;
 }
 
+/**
+ * The two schemas this version extracts against. There is deliberately no packing-list schema: the
+ * SOP validates the Commercial Invoice and the Certificates of Analysis and never reads a packing
+ * list, so a schema for one would be a capability nothing on the board asked for.
+ */
 export const EXTRACTION_SCHEMA_INVOICE = 'invoice';
-export const EXTRACTION_SCHEMA_PACKING_LIST = 'packingList';
 export const EXTRACTION_SCHEMA_COA = 'coa';

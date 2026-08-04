@@ -39,6 +39,14 @@
       }
     }
   },
+  "coa-E22F.pdf": {
+    "text": "CERTIFICATE OF ANALYSIS\nBatch Number: E22F\nManufacturer: Meridian Pharma Exports Ltd.\nAssay: 99.4% (specification 98.0-102.0%)\nResult: PASS",
+    "fields": {
+      "coa": {
+        "batchNumber": "E22F"
+      }
+    }
+  },
   "coa-SCL01.pdf": {
     "text": "CERTIFICATE OF ANALYSIS\nBatch Number: SCL01\nManufacturer: Meridian Pharma Exports Ltd.\nAssay: 99.4% (specification 98.0-102.0%)\nResult: PASS",
     "fields": {
@@ -356,6 +364,26 @@
             "andaNumber": "ANDA065123",
             "registrationNumber": "3006521049",
             "ndcNumber": "0093-4155-73"
+          }
+        ]
+      }
+    }
+  },
+  "invoice-1031.pdf": {
+    "text": "COMMERCIAL INVOICE INV-1031\nSeller: Meridian Pharma Exports Ltd.\nBuyer: Importer Receiving Inc.\n\nLine LINE-1: Lisinopril Tablets 10mg\n  Batch: E22F\n  HTS Code: 3004.90.9260\n  FDA Product Code: 62L\n  ANDA Number: ANDA076543\n  Registration Number: NOT PROVIDED\n  NDC Number: 0093-1029-56",
+    "fields": {
+      "invoice": {
+        "invoiceNumber": "INV-1031",
+        "goods": [
+          {
+            "lineKey": "LINE-1",
+            "description": "Lisinopril Tablets 10mg",
+            "batchNumber": "E22F",
+            "htsCode": "3004.90.9260",
+            "fdaProductCode": "62L",
+            "andaNumber": "ANDA076543",
+            "registrationNumber": null,
+            "ndcNumber": "0093-1029-56"
           }
         ]
       }

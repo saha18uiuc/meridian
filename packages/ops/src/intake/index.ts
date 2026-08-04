@@ -10,6 +10,7 @@ import { type ExtractionSource, extractBusinessKey } from './extract-business-ke
 import { signalWithStartReceiving } from './signal-with-start.js';
 
 export * from './extract-business-key.js';
+export * from './pre-alert-trigger.js';
 export * from './reconcile-queued-executions.js';
 export * from './signal-with-start.js';
 

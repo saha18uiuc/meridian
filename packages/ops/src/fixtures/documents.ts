@@ -90,6 +90,7 @@ function good(
   htsCode: string,
   andaNumber: string | null,
   ndcNumber: string | null,
+  registrationNumber: string | null = REGISTRATION,
 ): FixtureGood {
   return {
     lineKey,
@@ -98,7 +99,7 @@ function good(
     htsCode,
     fdaProductCode: '62L',
     andaNumber,
-    registrationNumber: REGISTRATION,
+    registrationNumber,
     ndcNumber,
   };
 }
@@ -163,6 +164,7 @@ export const CONTAINERS = {
   missingCoa: 'CMAU9988771',
   scanned: 'HLXU1234561',
   scale: 'OOLU1234567',
+  registrationGap: 'MEDU2000002',
 } as const;
 
 export const MAWB_AIR = '020-12345675';
@@ -257,6 +259,20 @@ export function buildAttachmentIndex(): Record<string, FixtureEntry> {
     ),
   ]);
 
+  // Every field the SOP gates on is present; only the Registration Number the PRD adds is absent.
+  // The shipment must still reach `ready`, which is the whole point of the two-list policy.
+  index['invoice-1031.pdf'] = invoiceEntry('INV-1031', [
+    good(
+      'LINE-1',
+      'Lisinopril Tablets 10mg',
+      'E22F',
+      '3004.90.9260',
+      'ANDA076543',
+      '0093-1029-56',
+      null,
+    ),
+  ]);
+
   index['invoice-scale.pdf'] = invoiceEntry('INV-1040', scaleGoods());
 
   index['packing-list-1024.pdf'] = packingListEntry('INV-1024', CONTAINERS.happyPath, [
@@ -264,7 +280,7 @@ export function buildAttachmentIndex(): Record<string, FixtureEntry> {
     { batchNumber: 'B77B', units: 240 },
   ]);
 
-  for (const batch of ['B77A', 'B77B', 'B77C', 'B90X', 'D14E']) {
+  for (const batch of ['B77A', 'B77B', 'B77C', 'B90X', 'D14E', 'E22F']) {
     index[`coa-${batch}.pdf`] = coaEntry(batch);
   }
   for (let i = 1; i <= SCALE_GOODS; i += 1) {
@@ -313,7 +329,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-happy-path',
       date: '2026-02-03T09:12:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Arrival notice - container ${CONTAINERS.happyPath} - PO 88213`,
+      subject: `Pre-Alert Documents - container ${CONTAINERS.happyPath} - PO 88213`,
       attachments: ['invoice-1024.pdf', 'packing-list-1024.pdf', 'coa-B77A.pdf', 'coa-B77B.pdf'],
       body: [
         'Good morning,',
@@ -334,7 +350,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-missing-fields',
       date: '2026-02-04T08:05:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Documents for container ${CONTAINERS.missingFields}`,
+      subject: `Pre-Alert Documents for container ${CONTAINERS.missingFields}`,
       attachments: ['invoice-1025.pdf', 'coa-B90X.pdf'],
       body: [
         'Hello,',
@@ -352,7 +368,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-happy-path',
       date: '2026-02-03T15:20:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `RE: Arrival notice - container ${CONTAINERS.happyPath} - PO 88213`,
+      subject: `RE: Pre-Alert Documents - container ${CONTAINERS.happyPath} - PO 88213`,
       attachments: ['invoice-1024-revised.pdf'],
       body: [
         'Hello,',
@@ -370,7 +386,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-happy-path',
       date: '2026-02-03T13:05:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `RE: Arrival notice - container ${CONTAINERS.happyPath} - additional invoice`,
+      subject: `RE: Pre-Alert Documents - container ${CONTAINERS.happyPath} - additional invoice`,
       attachments: ['invoice-1028.pdf'],
       body: [
         'Hello,',
@@ -388,7 +404,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-missing-coa',
       date: '2026-02-05T14:22:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Container ${CONTAINERS.missingCoa} - invoice attached`,
+      subject: `Pre-Alert Documents - container ${CONTAINERS.missingCoa} - invoice attached`,
       attachments: ['invoice-1026.pdf'],
       body: [
         'Hello,',
@@ -406,7 +422,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-coa-mismatch',
       date: '2026-02-05T09:40:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Container ${CONTAINERS.happyPath} - certificates`,
+      subject: `Pre-Alert Documents - container ${CONTAINERS.happyPath} - certificates`,
       attachments: ['invoice-1024.pdf', 'coa-B77A.pdf', 'coa-B77C.pdf'],
       body: [
         'Hello,',
@@ -423,7 +439,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-mawb-only',
       date: '2026-02-06T06:30:00.000Z',
       from: 'airfreight@forwarder.example',
-      subject: `Air shipment MAWB ${MAWB_AIR} pre-alert`,
+      subject: `APL USA // PRE-ALERT DOCUMENTATION - MAWB ${MAWB_AIR}`,
       attachments: ['invoice-1027.pdf', 'coa-D14E.pdf'],
       body: [
         `Pre-alert for air waybill ${MAWB_AIR}, three cartons, arriving JFK on`,
@@ -439,7 +455,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-no-business-key',
       date: '2026-02-06T10:15:00.000Z',
       from: 'ops@forwarder.example',
-      subject: "Documents for next week's arrival",
+      subject: "Pre-Alert Documents for next week's arrival",
       attachments: ['scanned-invoice.pdf'],
       body: [
         'Hi,',
@@ -457,7 +473,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-conflicting-keys',
       date: '2026-02-06T12:45:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Combined update - ${CONTAINERS.happyPath} and ${CONTAINERS.missingFields}`,
+      subject: `Pre-Alert Documents - combined update - ${CONTAINERS.happyPath} and ${CONTAINERS.missingFields}`,
       attachments: [],
       body: [
         'Hello,',
@@ -476,7 +492,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-happy-path',
       date: '2026-02-03T11:40:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `RE: Arrival notice - container ${CONTAINERS.happyPath} - PO 88213`,
+      subject: `RE: Pre-Alert Documents - container ${CONTAINERS.happyPath} - PO 88213`,
       attachments: ['invoice-1024.pdf'],
       body: [
         `Resending the invoice for container ${CONTAINERS.happyPath} in case the first message was`,
@@ -492,7 +508,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-late-followup',
       date: '2026-02-10T16:02:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `RE: Arrival notice - container ${CONTAINERS.happyPath} - certificate`,
+      subject: `RE: Pre-Alert Documents - container ${CONTAINERS.happyPath} - certificate`,
       attachments: ['coa-B77C.pdf'],
       body: [
         `Following up on container ${CONTAINERS.happyPath}. The revised certificate of analysis for`,
@@ -508,7 +524,7 @@ export function buildEmails(): FixtureEmail[] {
       threadId: 'thread-scanned-document',
       date: '2026-02-07T07:55:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Container ${CONTAINERS.scanned} - scanned paperwork`,
+      subject: `Pre-Alert Documents - container ${CONTAINERS.scanned} - scanned paperwork`,
       attachments: ['scanned-invoice.pdf'],
       body: [
         'Hello,',
@@ -521,12 +537,31 @@ export function buildEmails(): FixtureEmail[] {
       ].join('\n'),
     },
     {
+      file: 'registration-gap.eml',
+      messageId: '<registration-gap@forwarder.example>',
+      threadId: 'thread-registration-gap',
+      date: '2026-02-09T08:20:00.000Z',
+      from: 'ops@forwarder.example',
+      subject: `Pre-Alert Documents - container ${CONTAINERS.registrationGap}`,
+      attachments: ['invoice-1031.pdf', 'coa-E22F.pdf'],
+      body: [
+        'Hello,',
+        '',
+        `Invoice INV-1031 and the certificate of analysis for batch E22F, container`,
+        `${CONTAINERS.registrationGap}. The manufacturer has not returned the establishment`,
+        'registration number yet; everything else is on the invoice.',
+        '',
+        'Regards,',
+        'Global Forwarding Operations',
+      ].join('\n'),
+    },
+    {
       file: 'scale-shipment.eml',
       messageId: '<scale-shipment@forwarder.example>',
       threadId: 'thread-scale-shipment',
       date: '2026-02-08T05:15:00.000Z',
       from: 'ops@forwarder.example',
-      subject: `Container ${CONTAINERS.scale} - consolidated shipment`,
+      subject: `Pre-Alert Documents - container ${CONTAINERS.scale} - consolidated shipment`,
       attachments: scaleAttachments(),
       body: [
         'Hello,',

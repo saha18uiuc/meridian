@@ -7,24 +7,31 @@
     "shipmentSummary": {
       "containerNumber": "TGHU7654320",
       "mawb": null,
-      "invoiceNumbers": ["INV-1025"],
-      "batchNumbers": ["B90X"],
+      "invoiceNumbers": [
+        "INV-1025"
+      ],
+      "batchNumbers": [
+        "B90X"
+      ],
       "goodsCount": 1,
       "validGoodsCount": 0
     },
-    "missingInformation": ["good:LINE-1:andaNumber", "good:LINE-1:ndcNumber"],
+    "missingInformation": [
+      "good:LINE-1:andaNumber",
+      "good:LINE-1:ndcNumber"
+    ],
     "validationFailures": [
       {
         "scope": "good",
         "key": "LINE-1",
         "field": "andaNumber",
-        "message": "Good LINE-1 is missing its ANDA number."
+        "message": "Invoice INV-1025, Metformin HCl Tablets 850mg: missing ANDA number."
       },
       {
         "scope": "good",
         "key": "LINE-1",
         "field": "ndcNumber",
-        "message": "Good LINE-1 is missing its NDC number."
+        "message": "Invoice INV-1025, Metformin HCl Tablets 850mg: missing NDC number."
       }
     ],
     "emailResponse": null

@@ -1,10 +1,14 @@
 {
   "caseKey": "case-14",
   "description": "A shipment with 24 goods validated in bounded parallel batches.",
-  "specTrace": "Rule \"Does every good carry the five required fields?\" applies per good; step identity is step_instance_key, never sequence_no.",
+  "specTrace": "Rule \"Does every good carry the four required fields?\" applies per good; step identity is step_instance_key, never sequence_no.",
   "inputRefs": {
-    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/scale-shipment.eml"],
-    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-scale.pdf"],
+    "emailPaths": [
+      "examples/inbound-import-receiving/fixtures/emails/scale-shipment.eml"
+    ],
+    "attachmentPaths": [
+      "examples/inbound-import-receiving/fixtures/attachments/invoice-scale.pdf"
+    ],
     "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-14.expected.json"
   },
   "expected": {
@@ -37,6 +41,8 @@
       "validate-good:INV-1040:LINE-23",
       "validate-good:INV-1040:LINE-24"
     ],
-    "evidenceKeys": ["assessment:OOLU1234567"]
+    "evidenceKeys": [
+      "assessment:OOLU1234567"
+    ]
   }
 }

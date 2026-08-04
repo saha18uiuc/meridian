@@ -3,7 +3,7 @@ X-Meridian-Thread: thread-coa-mismatch
 Date: 2026-02-05T09:40:00.000Z
 From: ops@forwarder.example
 To: receiving@importer.example
-Subject: Container MSKU1234565 - certificates
+Subject: Pre-Alert Documents - container MSKU1234565 - certificates
 X-Meridian-Attachments: invoice-1024.pdf, coa-B77A.pdf, coa-B77C.pdf
 
 Hello,

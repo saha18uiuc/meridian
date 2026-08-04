@@ -1,21 +1,20 @@
 {
-  "caseKey": "case-01",
+  "caseKey": "case-16",
   "decision": {
     "outcome": "ready",
-    "businessKey": "MSKU1234565",
+    "businessKey": "MEDU2000002",
     "reason": "",
     "shipmentSummary": {
-      "containerNumber": "MSKU1234565",
+      "containerNumber": "MEDU2000002",
       "mawb": null,
       "invoiceNumbers": [
-        "INV-1024"
+        "INV-1031"
       ],
       "batchNumbers": [
-        "B77A",
-        "B77B"
+        "E22F"
       ],
-      "goodsCount": 2,
-      "validGoodsCount": 2
+      "goodsCount": 1,
+      "validGoodsCount": 1
     },
     "missingInformation": [],
     "validationFailures": [],

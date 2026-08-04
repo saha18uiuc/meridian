@@ -1,7 +1,7 @@
 import { createTools } from '@meridian/agent-kit';
 import { createLogger, workerEnv } from '@meridian/core';
 import { loadOpsEnv } from './env.js';
-import { intakeMessage, type IntakeResult } from './intake/index.js';
+import { intakeMessage, isPreAlertSubject, type IntakeResult } from './intake/index.js';
 import { reconcileQueuedExecutions } from './intake/reconcile-queued-executions.js';
 import { optionalArg, parseArgs, positional } from './lib/args.js';
 import { opsClient } from './lib/supabase.js';
@@ -30,6 +30,8 @@ export interface ProcessInboxOptions {
 export interface ProcessInboxReport {
   reconciled: number;
   considered: number;
+  /** Messages the SOP's subject-line trigger did not select, named so the skip is auditable. */
+  outOfScope: string[];
   results: (IntakeResult & { providerMessageId: string })[];
 }
 
@@ -63,10 +65,23 @@ export async function processInbox(options: ProcessInboxOptions): Promise<Proces
   );
 
   const results: (IntakeResult & { providerMessageId: string })[] = [];
+  const outOfScope: string[] = [];
   // Sequential on purpose: two messages carrying the same business key must be allowed to
   // converge through Temporal, and processing them concurrently only adds contention to prove a
   // property the database already guarantees.
   for (const message of messages) {
+    // Scope before correlation. The search query narrows the mailbox, but the query is
+    // configuration and the trigger is policy, so the phrase the SOP names is checked here where
+    // it cannot be widened by an environment variable.
+    if (!isPreAlertSubject(message.subject)) {
+      outOfScope.push(message.messageId);
+      logger.info(
+        { providerMessageId: message.messageId, subject: message.subject },
+        'subject does not carry the pre-alert trigger; message left alone',
+      );
+      continue;
+    }
+
     const result = await intakeMessage({ supabase, temporal, logger }, agent.agent_id, {
       messageRef: {
         provider: env.GMAIL_LIVE_MODE ? 'gmail' : 'mock',
@@ -91,7 +106,7 @@ export async function processInbox(options: ProcessInboxOptions): Promise<Proces
     );
   }
 
-  return { reconciled: reconciled.length, considered: messages.length, results };
+  return { reconciled: reconciled.length, considered: messages.length, outOfScope, results };
 }
 
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<void> {

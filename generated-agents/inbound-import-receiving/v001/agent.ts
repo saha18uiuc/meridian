@@ -53,7 +53,7 @@ const InputSchema = z
 
 type ReceivingInput = z.infer<typeof InputSchema>;
 
-const SPEC_HASH = 'fe51ae2b2d493bf18ec01b17f96152218b182f7a5fcc1c95274835f30d6eb44b';
+const SPEC_HASH = 'dd74e8e74530998dcce9795a53212a8b8f3037da72b87bf3c3c2c80e58be2912';
 
 /** Below this, a PDF has no usable text layer and needs OCR the process has not enabled. */
 const MIN_READABLE_CHARS = 32;
@@ -529,12 +529,18 @@ export const agent = defineAgent<ReceivingInput, AgentDecision>({
       reason = 'every good carries the required fields and every batch has exactly one certificate';
     }
 
+    // Captured-only gaps ride along on whatever outcome was reached; they never change it.
+    if (assessment.notes.length > 0) {
+      reason = `${reason} (${assessment.notes.map((note) => note.message).join(' ')})`;
+    }
+
     await context.recorder.appendEvidence(
       decideStep.stepExecutionId,
       {
         phase: 'assessment',
         outcome,
         failures: assessment.failures,
+        notes: assessment.notes,
         redelivered: documents.redelivered,
         conflicting,
       },

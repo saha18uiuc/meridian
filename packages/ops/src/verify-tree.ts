@@ -426,6 +426,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'examples/inbound-import-receiving/evals/case-13.json',
   'examples/inbound-import-receiving/evals/case-14.json',
   'examples/inbound-import-receiving/evals/case-15.json',
+  'examples/inbound-import-receiving/evals/case-16.json',
   'examples/inbound-import-receiving/fixtures/emails/happy-path.eml',
   'examples/inbound-import-receiving/fixtures/emails/missing-fields.eml',
   'examples/inbound-import-receiving/fixtures/emails/duplicate-invoice.eml',
@@ -455,6 +456,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'examples/inbound-import-receiving/fixtures/expected/case-13.expected.json',
   'examples/inbound-import-receiving/fixtures/expected/case-14.expected.json',
   'examples/inbound-import-receiving/fixtures/expected/case-15.expected.json',
+  'examples/inbound-import-receiving/fixtures/expected/case-16.expected.json',
   'tsconfig.scripts.json',
   'scripts/preflight.ts',
   'scripts/check-ports.ts',
@@ -485,7 +487,7 @@ export const REQUIRED_PATHS: readonly string[] = [
 ];
 
 export const REQUIRED_MIGRATIONS = 14;
-export const REQUIRED_EVAL_CASES = 15;
+export const REQUIRED_EVAL_CASES = 16;
 
 /**
  * Files present in the tree that the plan's listing does not name, each with the reason it exists.
@@ -493,6 +495,10 @@ export const REQUIRED_EVAL_CASES = 15;
  */
 export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
   'packages/ops/src/index.ts': 'barrel so apps/web and apps/backend can import the intake path',
+  'packages/ops/src/intake/pre-alert-trigger.ts':
+    "the SOP's subject-line trigger, kept beside correlation but separate from it: deciding whether a message is in scope is a different question from deciding which shipment it belongs to, and folding the phrase into the Gmail search query would let an environment variable widen a policy the SOP fixed",
+  'scripts/regen-fixtures.ts':
+    'runs the four fixture generators in dependency order — boards, documents, eval cases, spec snapshot — so the checked-in examples and the committed spec hash can be reproduced with one command rather than four remembered in the right sequence',
   'packages/ops/src/lib/args.ts': 'shared CLI argument parser, extracted from six scripts',
   'packages/ops/src/lib/temporal.ts':
     'Temporal client singleton, the counterpart of lib/supabase.ts',

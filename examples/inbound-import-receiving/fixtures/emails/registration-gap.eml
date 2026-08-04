@@ -1,0 +1,16 @@
+Message-ID: <registration-gap@forwarder.example>
+X-Meridian-Thread: thread-registration-gap
+Date: 2026-02-09T08:20:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Pre-Alert Documents - container MEDU2000002
+X-Meridian-Attachments: invoice-1031.pdf, coa-E22F.pdf
+
+Hello,
+
+Invoice INV-1031 and the certificate of analysis for batch E22F, container
+MEDU2000002. The manufacturer has not returned the establishment
+registration number yet; everything else is on the invoice.
+
+Regards,
+Global Forwarding Operations

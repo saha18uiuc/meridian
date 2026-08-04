@@ -66,7 +66,6 @@ const n = stableUuid;
 const ID = {
   arrival: n('input-arrival-notice'),
   invoice: n('input-commercial-invoice'),
-  packing: n('input-packing-list'),
   coa: n('input-certificate-of-analysis'),
   fetch: n('action-fetch-thread'),
   extract: n('action-extract-documents'),
@@ -79,7 +78,6 @@ const ID = {
   wait: n('rule-wait-for-reply'),
   failure: n('rule-unexpected-failure'),
   escalate: n('action-escalate-to-specialist'),
-  post: n('action-post-receipt'),
   ready: n('outcome-ready'),
   needsInfo: n('outcome-needs-information'),
   manual: n('outcome-manual-review'),
@@ -109,7 +107,7 @@ export function receivingBoard(): SeedBoard {
     {
       nodeId: ID.arrival,
       primitiveType: 'input',
-      title: 'Arrival notice email',
+      title: 'Pre-alert documentation email',
       data: {
         inputKind: 'event',
         sourceSystem: 'Gmail',
@@ -119,7 +117,8 @@ export function receivingBoard(): SeedBoard {
             name: 'subject',
             type: 'string',
             required: true,
-            description: 'Forwarder subject line.',
+            description:
+              'Forwarder subject line. The process only looks at a message whose subject contains "Pre-Alert Documents" or "APL USA // PRE-ALERT DOCUMENTATION".',
           },
           { name: 'body', type: 'string', required: true, description: 'Plain-text body.' },
           {
@@ -169,8 +168,9 @@ export function receivingBoard(): SeedBoard {
           {
             name: 'registrationNumber',
             type: 'string',
-            required: true,
-            description: 'FDA establishment registration number per good.',
+            required: false,
+            description:
+              'FDA establishment registration number per good. Captured and reported; receiving is never held for it.',
           },
           {
             name: 'ndcNumber',
@@ -188,34 +188,6 @@ export function receivingBoard(): SeedBoard {
         correlationKeys: ['invoiceNumber'],
       },
       position: { x: 0, y: 160 },
-    },
-    {
-      nodeId: ID.packing,
-      primitiveType: 'input',
-      title: 'Packing list',
-      data: {
-        inputKind: 'document',
-        sourceSystem: 'Email attachment',
-        required: true,
-        fields: [
-          {
-            name: 'containerNumber',
-            type: 'string',
-            required: true,
-            description: 'ISO 6346 container number.',
-          },
-          {
-            name: 'invoiceNumber',
-            type: 'string',
-            required: true,
-            description: 'Invoice this list packs.',
-          },
-          { name: 'batchNumber', type: 'string', required: true, description: 'Batch per carton.' },
-          { name: 'units', type: 'number', required: true, description: 'Units per carton.' },
-        ],
-        correlationKeys: ['containerNumber'],
-      },
-      position: { x: 0, y: 320 },
     },
     {
       nodeId: ID.coa,
@@ -260,10 +232,10 @@ export function receivingBoard(): SeedBoard {
         actor: 'agent',
         operation: 'document.extract',
         instructions:
-          'Extract the invoice, packing list, and certificate fields. Record the extracted values as evidence against the document they came from.',
+          'Extract the commercial invoice and certificate of analysis fields. Record the extracted values as evidence against the document they came from.',
         system: 'Document extraction service',
         inputs: ['Stored attachments'],
-        outputs: ['Invoice fields', 'Packing list fields', 'Certificate fields'],
+        outputs: ['Invoice fields', 'Certificate fields'],
       },
       position: { x: 560, y: 240 },
     },
@@ -287,16 +259,23 @@ export function receivingBoard(): SeedBoard {
       data: {
         ruleKind: 'decision',
         condition:
-          'A valid ISO 6346 container number or a valid IATA master air waybill appears in the subject, the body, or an attachment.',
+          'A valid ISO 6346 container number or a valid IATA master air waybill appears in the subject, the body, or an attachment. Where neither does, the invoice number the SOP reports against is used instead.',
         branches: [
           {
-            label: 'business key found',
-            condition: 'Exactly one valid key was found.',
+            label: 'transport key found',
+            condition: 'Exactly one valid container number or master air waybill was found.',
+            targetNodeId: ID.extract,
+          },
+          {
+            label: 'invoice number used instead',
+            condition:
+              'No container number or master air waybill was found, and exactly one invoice number was.',
             targetNodeId: ID.extract,
           },
           {
             label: 'no usable business key',
-            condition: 'No valid key was found, or two different keys conflict.',
+            condition:
+              'Nothing identified the shipment, or two different keys of the same kind conflict.',
             targetNodeId: ID.manual,
           },
         ],
@@ -336,20 +315,20 @@ export function receivingBoard(): SeedBoard {
     {
       nodeId: ID.fields,
       primitiveType: 'rule',
-      title: 'Does every good carry the five required fields?',
+      title: 'Does every good carry the four required fields?',
       data: {
         ruleKind: 'decision',
         condition:
-          'Each good must carry an HTS code, an FDA product code, an ANDA number, an FDA registration number, and an NDC number.',
+          'Each line item in the Description of Goods must carry an HTS number, an FDA product code, an NDC number, and an ANDA number.',
         branches: [
           {
             label: 'all required product fields present',
-            condition: 'Every good on every invoice carries all five fields.',
+            condition: 'Every good on every invoice carries all four fields.',
             targetNodeId: ID.coaMatch,
           },
           {
             label: 'required product fields missing',
-            condition: 'At least one good is missing at least one of the five fields.',
+            condition: 'At least one good is missing at least one of the four fields.',
             targetNodeId: ID.request,
           },
         ],
@@ -369,7 +348,7 @@ export function receivingBoard(): SeedBoard {
           {
             label: 'exactly one certificate per batch',
             condition: 'The batch set and the certificate set match one to one.',
-            targetNodeId: ID.post,
+            targetNodeId: ID.ready,
           },
           {
             label: 'certificate missing or ambiguous',
@@ -439,21 +418,6 @@ export function receivingBoard(): SeedBoard {
       position: { x: 840, y: 640 },
     },
     {
-      nodeId: ID.post,
-      primitiveType: 'action',
-      title: 'Post the receipt to the warehouse system',
-      data: {
-        actor: 'system',
-        operation: 'post receipt',
-        instructions:
-          'Record the validated shipment against the business key so the goods can be booked in.',
-        system: 'Warehouse management system',
-        inputs: ['Validated shipment summary'],
-        outputs: ['Receipt reference'],
-      },
-      position: { x: 1960, y: 160 },
-    },
-    {
       nodeId: ID.ready,
       primitiveType: 'outcome',
       title: 'Ready to receive',
@@ -509,11 +473,11 @@ export function receivingBoard(): SeedBoard {
   const edges: SeedEdge[] = [
     edge('arrival-fetch', ID.arrival, ID.fetch, 'arrival notice received'),
     edge('invoice-extract', ID.invoice, ID.extract, 'invoice attached'),
-    edge('packing-extract', ID.packing, ID.extract, 'packing list attached'),
     edge('coa-extract', ID.coa, ID.extract, 'certificate attached'),
     edge('fetch-key', ID.fetch, ID.key, 'thread downloaded'),
-    edge('key-extract', ID.key, ID.extract, 'business key found', 0),
-    edge('key-manual', ID.key, ID.manual, 'no usable business key', 1),
+    edge('key-extract', ID.key, ID.extract, 'transport key found', 0),
+    edge('key-invoice-extract', ID.key, ID.extract, 'invoice number used instead', 1),
+    edge('key-manual', ID.key, ID.manual, 'no usable business key', 2),
     edge('extract-retry', ID.extract, ID.retry, 'extraction attempted'),
     edge('retry-duplicate', ID.retry, ID.duplicate, 'extraction succeeded', 0),
     edge(
@@ -540,14 +504,13 @@ export function receivingBoard(): SeedBoard {
     ),
     edge('fields-coa', ID.fields, ID.coaMatch, 'all required product fields present', 0),
     edge('fields-request', ID.fields, ID.request, 'required product fields missing', 1),
-    edge('coa-post', ID.coaMatch, ID.post, 'exactly one certificate per batch', 0),
+    edge('coa-ready', ID.coaMatch, ID.ready, 'exactly one certificate per batch', 0),
     edge('coa-request', ID.coaMatch, ID.request, 'certificate missing or ambiguous', 1),
     edge('request-wait', ID.request, ID.wait, 'request sent'),
     edge('wait-extract', ID.wait, ID.extract, 'reply received with the missing information', 0),
     edge('wait-needs-info', ID.wait, ID.needsInfo, 'no reply before the deadline', 1),
     edge('failure-escalate', ID.failure, ID.escalate, 'unexpected failure raised'),
     edge('escalate-manual', ID.escalate, ID.manual, 'specialist takes over'),
-    edge('post-ready', ID.post, ID.ready, 'receipt posted'),
   ];
 
   return {

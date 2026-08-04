@@ -5,6 +5,7 @@ import {
   isValidMawb,
   normalizeMawb,
 } from '../src/intake/extract-business-key.js';
+import { isPreAlertSubject } from '../src/intake/pre-alert-trigger.js';
 
 describe('ISO 6346 container validation', () => {
   it('accepts real container numbers', () => {
@@ -86,5 +87,48 @@ describe('extractBusinessKey', () => {
 
   it('does not accept a check-digit failure that merely looks like a container number', () => {
     expect(extractBusinessKey({ subject: 'MSKU1234567' }).kind).toBe('none');
+  });
+});
+
+describe('the invoice-number fallback', () => {
+  it('correlates on the invoice number when no transport key is present', () => {
+    const result = extractBusinessKey({
+      subject: 'Pre-Alert Documents',
+      body: 'Please find invoice INV-1030 attached.',
+    });
+    expect(result.kind).toBe('ok');
+    if (result.kind !== 'ok') return;
+    expect(result.businessKey).toBe('INV-1030');
+    expect(result.keyKind).toBe('invoice');
+  });
+
+  it('prefers the container number and does not treat the invoice as a rival key', () => {
+    const result = extractBusinessKey({
+      subject: 'Pre-Alert Documents - container MSKU1234565',
+      body: 'Invoice INV-1024 covers two line items.',
+    });
+    expect(result.kind).toBe('ok');
+    if (result.kind !== 'ok') return;
+    expect(result.businessKey).toBe('MSKU1234565');
+    expect(result.keyKind).toBe('container');
+  });
+
+  it('still reports a conflict when two invoice numbers disagree', () => {
+    expect(extractBusinessKey({ subject: 'INV-1024 and INV-1025' }).kind).toBe('conflict');
+  });
+});
+
+describe("the SOP's subject-line trigger", () => {
+  it('accepts both phrases the SOP names, whatever the surrounding subject does', () => {
+    expect(isPreAlertSubject('RE: Pre-Alert Documents - container MSKU1234565')).toBe(true);
+    expect(isPreAlertSubject('FW: apl usa // pre-alert documentation - MAWB 020-12345675')).toBe(
+      true,
+    );
+  });
+
+  it('leaves alone a message that only talks about pre-alerts', () => {
+    expect(isPreAlertSubject('Question about the pre-alert process')).toBe(false);
+    expect(isPreAlertSubject('Arrival notice - container MSKU1234565')).toBe(false);
+    expect(isPreAlertSubject(null)).toBe(false);
   });
 });

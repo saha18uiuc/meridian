@@ -36,16 +36,6 @@ export const AgentDecisionSchema = z
   .strict();
 export type AgentDecision = z.infer<typeof AgentDecisionSchema>;
 
-/** The five regulatory identifiers every good must carry (PRD §4 COMPILER RULES). */
-export const REQUIRED_GOOD_FIELDS = [
-  'htsCode',
-  'fdaProductCode',
-  'andaNumber',
-  'registrationNumber',
-  'ndcNumber',
-] as const;
-export type RequiredGoodField = (typeof REQUIRED_GOOD_FIELDS)[number];
-
 export const GoodSchema = z
   .object({
     lineKey: z.string().min(1),

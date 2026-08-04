@@ -517,6 +517,87 @@ other deterministic check, with the person still deciding which of the two they 
 
 ---
 
+## The SOP decides the process; the PRD decides the platform
+
+The two source documents disagree about the Description of Goods. The SOP lists four identifiers —
+HTS Number, FDA Product Code, NDC Number, ANDA Number — and never mentions a Registration Number.
+The PRD's COMPILER RULES paragraph lists five, adding Registration Number, and mentions it nowhere
+else.
+
+The disagreement is settled by asking which document is describing which thing. The PRD is
+describing the platform: primitives, the compiler, lineage, the review loop, what a frozen spec is.
+The SOP is the customer's own procedure, and what a receiving clerk must check before a shipment is
+received is a fact about the customer's process, not about Meridian. So the SOP governs the board
+and the generated agent, and the PRD governs everything the board is compiled by.
+
+In this case nothing had to be discarded to honour both. The gate is the SOP's four fields; the
+Registration Number the PRD names is still extracted, still recorded against the good, and still
+reported — it simply never holds a shipment. `BLOCKING_GOOD_FIELDS` and `CAPTURED_GOOD_FIELDS` in
+`rules.ts` are those two obligations written as two lists, because collapsing them into one is
+exactly what made the previous version refuse shipments the SOP would have accepted.
+
+---
+
+## Customer field policy left `packages/core`
+
+`REQUIRED_GOOD_FIELDS` lived in `packages/core`, which is the skeleton every deployment shares. A
+second customer would have inherited one importer's regulatory checklist as a platform constant.
+
+It now lives in the generated agent's `rules.ts`, which is where the generation contract has always
+said domain policy belongs. The move is the reason the four-versus-five question above could be
+answered by editing one deployment rather than by editing the platform, and it is the first of the
+domain types to leave core rather than the last.
+
+---
+
+## A message out of scope is not a message that failed
+
+The SOP starts with a subject-line test: pre-alerts carry "Pre-Alert Documents" or "APL USA //
+PRE-ALERT DOCUMENTATION". Intake now applies that test before it tries to correlate anything, and a
+message that fails it is skipped and named in the report.
+
+It is deliberately not routed to manual review. Manual review means the process met something it
+could not decide; the rest of a mailbox is not that. Routing it there would bury genuine
+manual-review items under ordinary correspondence within a day.
+
+The phrase is checked in code rather than folded into `GMAIL_SEARCH_QUERY`, because the search query
+is configuration and the trigger is policy. A query is free to narrow the mailbox further; it is not
+free to widen what the process considers in scope.
+
+---
+
+## The invoice number is a business key of last resort
+
+The SOP never names a container or a waybill. It identifies everything it reports — missing fields,
+mismatched certificates — by the Invoice Number in the top-right corner of the commercial invoice.
+So a pre-alert with no transport key is not necessarily uncorrelatable, and refusing it was stricter
+than the procedure it implements.
+
+Correlation now falls back to the invoice number when no container number and no master air waybill
+are present. Strictly a fallback, never a tie-breaker: a message naming both a container and an
+invoice is a container shipment, and consulting both would manufacture a conflict out of two
+identifiers that agree. The fallback is also weaker evidence — there is no check digit behind
+`INV-1031`, only a prefix — which is the second reason it is never allowed to outvote a key that has
+one.
+
+---
+
+## The warehouse posting step was removed
+
+The board ended with an Action posting a receipt to a warehouse management system, and the SOP
+contains no such step. Its objective is "to validate attachments received in pre-alert documentation
+emails and identify any missing documents or critical information prior to shipment receipt" — the
+work stops at reporting, and receiving happens elsewhere.
+
+A card describing a system integration nobody asked for is worse than a missing feature. It appears
+in the compiled spec, it appears in the capability list a run is checked against, and it invites the
+next reader to build it. The packing-list Input card and its unused extraction schema went for the
+same reason: the SOP reads the Commercial Invoice and the Certificates of Analysis, and nothing else.
+
+---
+
+---
+
 ## Cold-start success contract
 
 A clean checkout is verified when, running only the commands in `README.md` in order:

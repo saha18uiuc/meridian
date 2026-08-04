@@ -10,7 +10,7 @@
     {
       "nodeId": "219d714e-2108-549f-adf4-618eea8d3580",
       "primitiveType": "input",
-      "title": "Arrival notice email",
+      "title": "Pre-alert documentation email",
       "data": {
         "inputKind": "event",
         "sourceSystem": "Gmail",
@@ -20,7 +20,7 @@
             "name": "subject",
             "type": "string",
             "required": true,
-            "description": "Forwarder subject line."
+            "description": "Forwarder subject line. The process only looks at a message whose subject contains \"Pre-Alert Documents\" or \"APL USA // PRE-ALERT DOCUMENTATION\"."
           },
           {
             "name": "body",
@@ -35,7 +35,10 @@
             "description": "Provider receipt timestamp."
           }
         ],
-        "correlationKeys": ["containerNumber", "mawb"]
+        "correlationKeys": [
+          "containerNumber",
+          "mawb"
+        ]
       },
       "position": {
         "x": 0,
@@ -78,8 +81,8 @@
           {
             "name": "registrationNumber",
             "type": "string",
-            "required": true,
-            "description": "FDA establishment registration number per good."
+            "required": false,
+            "description": "FDA establishment registration number per good. Captured and reported; receiving is never held for it."
           },
           {
             "name": "ndcNumber",
@@ -94,52 +97,13 @@
             "description": "Batch identifier per good."
           }
         ],
-        "correlationKeys": ["invoiceNumber"]
+        "correlationKeys": [
+          "invoiceNumber"
+        ]
       },
       "position": {
         "x": 0,
         "y": 160
-      }
-    },
-    {
-      "nodeId": "14cfcca2-fac3-5acd-972e-15e76031e7c3",
-      "primitiveType": "input",
-      "title": "Packing list",
-      "data": {
-        "inputKind": "document",
-        "sourceSystem": "Email attachment",
-        "required": true,
-        "fields": [
-          {
-            "name": "containerNumber",
-            "type": "string",
-            "required": true,
-            "description": "ISO 6346 container number."
-          },
-          {
-            "name": "invoiceNumber",
-            "type": "string",
-            "required": true,
-            "description": "Invoice this list packs."
-          },
-          {
-            "name": "batchNumber",
-            "type": "string",
-            "required": true,
-            "description": "Batch per carton."
-          },
-          {
-            "name": "units",
-            "type": "number",
-            "required": true,
-            "description": "Units per carton."
-          }
-        ],
-        "correlationKeys": ["containerNumber"]
-      },
-      "position": {
-        "x": 0,
-        "y": 320
       }
     },
     {
@@ -158,7 +122,9 @@
             "description": "Batch the certificate covers."
           }
         ],
-        "correlationKeys": ["batchNumber"]
+        "correlationKeys": [
+          "batchNumber"
+        ]
       },
       "position": {
         "x": 0,
@@ -174,8 +140,13 @@
         "operation": "mail.read",
         "instructions": "Read every message on the thread and download each attachment to durable storage before extracting anything.",
         "system": "Gmail",
-        "inputs": ["Arrival notice email"],
-        "outputs": ["Thread messages", "Stored attachments"]
+        "inputs": [
+          "Arrival notice email"
+        ],
+        "outputs": [
+          "Thread messages",
+          "Stored attachments"
+        ]
       },
       "position": {
         "x": 280,
@@ -189,10 +160,15 @@
       "data": {
         "actor": "agent",
         "operation": "document.extract",
-        "instructions": "Extract the invoice, packing list, and certificate fields. Record the extracted values as evidence against the document they came from.",
+        "instructions": "Extract the commercial invoice and certificate of analysis fields. Record the extracted values as evidence against the document they came from.",
         "system": "Document extraction service",
-        "inputs": ["Stored attachments"],
-        "outputs": ["Invoice fields", "Packing list fields", "Certificate fields"]
+        "inputs": [
+          "Stored attachments"
+        ],
+        "outputs": [
+          "Invoice fields",
+          "Certificate fields"
+        ]
       },
       "position": {
         "x": 560,
@@ -221,16 +197,21 @@
       "title": "Is a shipment business key present?",
       "data": {
         "ruleKind": "decision",
-        "condition": "A valid ISO 6346 container number or a valid IATA master air waybill appears in the subject, the body, or an attachment.",
+        "condition": "A valid ISO 6346 container number or a valid IATA master air waybill appears in the subject, the body, or an attachment. Where neither does, the invoice number the SOP reports against is used instead.",
         "branches": [
           {
-            "label": "business key found",
-            "condition": "Exactly one valid key was found.",
+            "label": "transport key found",
+            "condition": "Exactly one valid container number or master air waybill was found.",
+            "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937"
+          },
+          {
+            "label": "invoice number used instead",
+            "condition": "No container number or master air waybill was found, and exactly one invoice number was.",
             "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937"
           },
           {
             "label": "no usable business key",
-            "condition": "No valid key was found, or two different keys conflict.",
+            "condition": "Nothing identified the shipment, or two different keys of the same kind conflict.",
             "targetNodeId": "8e196d88-9cf2-5a44-a160-938450de4f80"
           }
         ],
@@ -275,19 +256,19 @@
     {
       "nodeId": "e2d17122-2f85-58af-8536-75447db230a7",
       "primitiveType": "rule",
-      "title": "Does every good carry the five required fields?",
+      "title": "Does every good carry the four required fields?",
       "data": {
         "ruleKind": "decision",
-        "condition": "Each good must carry an HTS code, an FDA product code, an ANDA number, an FDA registration number, and an NDC number.",
+        "condition": "Each line item in the Description of Goods must carry an HTS number, an FDA product code, an NDC number, and an ANDA number.",
         "branches": [
           {
             "label": "all required product fields present",
-            "condition": "Every good on every invoice carries all five fields.",
+            "condition": "Every good on every invoice carries all four fields.",
             "targetNodeId": "544ec771-637a-5916-8161-caa6d484881b"
           },
           {
             "label": "required product fields missing",
-            "condition": "At least one good is missing at least one of the five fields.",
+            "condition": "At least one good is missing at least one of the four fields.",
             "targetNodeId": "7917ed77-8e45-5f6e-86dd-974fee3ac815"
           }
         ],
@@ -309,7 +290,7 @@
           {
             "label": "exactly one certificate per batch",
             "condition": "The batch set and the certificate set match one to one.",
-            "targetNodeId": "335c3fc3-a665-5118-bf55-1a131c179261"
+            "targetNodeId": "c93aa87a-dc71-5c3b-a5c4-41a8f76bdab0"
           },
           {
             "label": "certificate missing or ambiguous",
@@ -333,8 +314,13 @@
         "operation": "mail.send",
         "instructions": "Reply on the original thread naming every missing field and every batch without a certificate. Send exactly one request per shipment per round.",
         "system": "Gmail",
-        "inputs": ["Missing field list", "Unmatched batch list"],
-        "outputs": ["Sent request"]
+        "inputs": [
+          "Missing field list",
+          "Unmatched batch list"
+        ],
+        "outputs": [
+          "Sent request"
+        ]
       },
       "position": {
         "x": 1400,
@@ -381,29 +367,18 @@
         "operation": "human.handoff",
         "instructions": "Give the specialist the thread, the stored attachments, and the reason the automated path stopped.",
         "system": "",
-        "inputs": ["Thread", "Stored attachments", "Stop reason"],
-        "outputs": ["Specialist decision"]
+        "inputs": [
+          "Thread",
+          "Stored attachments",
+          "Stop reason"
+        ],
+        "outputs": [
+          "Specialist decision"
+        ]
       },
       "position": {
         "x": 840,
         "y": 640
-      }
-    },
-    {
-      "nodeId": "335c3fc3-a665-5118-bf55-1a131c179261",
-      "primitiveType": "action",
-      "title": "Post the receipt to the warehouse system",
-      "data": {
-        "actor": "system",
-        "operation": "post receipt",
-        "instructions": "Record the validated shipment against the business key so the goods can be booked in.",
-        "system": "Warehouse management system",
-        "inputs": ["Validated shipment summary"],
-        "outputs": ["Receipt reference"]
-      },
-      "position": {
-        "x": 1960,
-        "y": 160
       }
     },
     {
@@ -500,14 +475,6 @@
       "priority": 0
     },
     {
-      "edgeId": "7ae93149-e5fe-5a49-a2d1-7c4f20e253bd",
-      "sourceNodeId": "14cfcca2-fac3-5acd-972e-15e76031e7c3",
-      "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937",
-      "label": "packing list attached",
-      "condition": null,
-      "priority": 0
-    },
-    {
       "edgeId": "3c4fc996-c228-516d-ad79-af4a483a5038",
       "sourceNodeId": "3d770470-9f68-5771-8843-5dde253de228",
       "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937",
@@ -527,9 +494,17 @@
       "edgeId": "b2ae3525-ffa0-5491-9f0c-b8be72faa1db",
       "sourceNodeId": "bb8eba58-c903-51b2-bc0e-bb2097ece606",
       "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937",
-      "label": "business key found",
+      "label": "transport key found",
       "condition": null,
       "priority": 0
+    },
+    {
+      "edgeId": "2e5b45a9-4156-54e1-81c2-3a4441a2e550",
+      "sourceNodeId": "bb8eba58-c903-51b2-bc0e-bb2097ece606",
+      "targetNodeId": "c746a586-b6d0-5fc6-8e7d-cfee274f2937",
+      "label": "invoice number used instead",
+      "condition": null,
+      "priority": 1
     },
     {
       "edgeId": "ad4db0b6-967c-52da-93c8-26fe14ae9aea",
@@ -537,7 +512,7 @@
       "targetNodeId": "8e196d88-9cf2-5a44-a160-938450de4f80",
       "label": "no usable business key",
       "condition": null,
-      "priority": 1
+      "priority": 2
     },
     {
       "edgeId": "4a82305c-cf03-5749-adfd-589956407cbb",
@@ -604,9 +579,9 @@
       "priority": 1
     },
     {
-      "edgeId": "69fbdb38-d942-5416-b9a7-2fef9077f55f",
+      "edgeId": "d38f7f47-f06b-51a0-b5cf-ea1622723c0e",
       "sourceNodeId": "544ec771-637a-5916-8161-caa6d484881b",
-      "targetNodeId": "335c3fc3-a665-5118-bf55-1a131c179261",
+      "targetNodeId": "c93aa87a-dc71-5c3b-a5c4-41a8f76bdab0",
       "label": "exactly one certificate per batch",
       "condition": null,
       "priority": 0
@@ -656,14 +631,6 @@
       "sourceNodeId": "e3a21643-d9d1-5442-b977-76ae1261e0f4",
       "targetNodeId": "8e196d88-9cf2-5a44-a160-938450de4f80",
       "label": "specialist takes over",
-      "condition": null,
-      "priority": 0
-    },
-    {
-      "edgeId": "58782980-f42d-5d69-ba0d-5211349788d8",
-      "sourceNodeId": "335c3fc3-a665-5118-bf55-1a131c179261",
-      "targetNodeId": "c93aa87a-dc71-5c3b-a5c4-41a8f76bdab0",
-      "label": "receipt posted",
       "condition": null,
       "priority": 0
     }

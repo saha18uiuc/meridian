@@ -7,24 +7,32 @@
     "shipmentSummary": {
       "containerNumber": "MSKU1234565",
       "mawb": null,
-      "invoiceNumbers": ["INV-1024"],
-      "batchNumbers": ["B77A", "B77B"],
+      "invoiceNumbers": [
+        "INV-1024"
+      ],
+      "batchNumbers": [
+        "B77A",
+        "B77B"
+      ],
       "goodsCount": 2,
       "validGoodsCount": 2
     },
-    "missingInformation": ["batch:B77B:certificateOfAnalysis", "batch:B77C:certificateOfAnalysis"],
+    "missingInformation": [
+      "batch:B77B:certificateOfAnalysis",
+      "batch:B77C:certificateOfAnalysis"
+    ],
     "validationFailures": [
       {
         "scope": "batch",
         "key": "B77B",
         "field": "certificateOfAnalysis",
-        "message": "Batch B77B has no certificate of analysis."
+        "message": "Invoice INV-1024, batch B77B: no Certificate of Analysis was attached."
       },
       {
         "scope": "batch",
         "key": "B77C",
         "field": "certificateOfAnalysis",
-        "message": "A certificate of analysis names batch B77C, which appears on no invoice in this shipment."
+        "message": "Batch B77C: a Certificate of Analysis was attached for a batch that appears on no invoice in this shipment."
       }
     ],
     "emailResponse": null
