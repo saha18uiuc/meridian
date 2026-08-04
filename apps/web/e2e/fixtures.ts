@@ -84,6 +84,46 @@ export async function expectRevision(page: Page, revisionNo: number): Promise<vo
   );
 }
 
+/**
+ * The revision the toolbar is reporting, or nothing while it is reporting something else.
+ *
+ * Between an edit and its save the status reads "Unsaved changes" and then "Saving…", neither of
+ * which carries a number. That is a normal moment to look, not a failure.
+ */
+async function shownRevision(page: Page): Promise<number | null> {
+  const text = (await page.getByTestId('save-status').textContent()) ?? '';
+  const match = /revision (\d+)/i.exec(text);
+  return match === null ? null : Number.parseInt(match[1] as string, 10);
+}
+
+export async function currentRevision(page: Page): Promise<number> {
+  const shown = await shownRevision(page);
+  if (shown === null) throw new Error('the board is mid-save; there is no revision to read yet');
+  return shown;
+}
+
+/**
+ * Wait for an edit to land, without saying which number it lands on.
+ *
+ * Saves are debounced, so two quick edits can arrive as one delta and one revision. A spec that
+ * names the number therefore encodes how fast the machine running it happens to be. What every
+ * caller needs is "the write I triggered has been accepted", which is the revision having moved.
+ *
+ * The highest number seen is remembered rather than re-read at the end, because the next edit can
+ * begin before the assertion returns and put the status back into a state with no number in it.
+ */
+export async function savedAbove(page: Page, previous: number): Promise<number> {
+  let latest = previous;
+  await expect
+    .poll(async () => {
+      const shown = await shownRevision(page);
+      if (shown !== null && shown > latest) latest = shown;
+      return latest;
+    })
+    .toBeGreaterThan(previous);
+  return latest;
+}
+
 /** Read a board through the API using the browser's own session, so RLS applies exactly as it does to the UI. */
 export async function readBoard(
   page: Page,

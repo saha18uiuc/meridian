@@ -1,5 +1,12 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectHandles, createBoard, expectRevision, readBoard, signIn } from './fixtures';
+import {
+  connectHandles,
+  createBoard,
+  currentRevision,
+  readBoard,
+  savedAbove,
+  signIn,
+} from './fixtures';
 
 /**
  * Authoring a process from nothing, which is the first thing anyone tries and was untested.
@@ -29,8 +36,10 @@ test.describe('authoring a board from nothing', () => {
   test('a new board starts empty and says what to do about it', async ({ page }) => {
     const whiteboardId = await createBoard(page, `Blank board ${String(Date.now())}`);
 
+    // A board is created at revision 1 and has never been edited, so nothing has moved it.
     const board = await readBoard(page, whiteboardId);
-    expect(board.revisionNo).toBe(0);
+    expect(board.revisionNo).toBe(1);
+    expect(board.lastReviewedRevisionNo).toBeNull();
     await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(0);
     await expect(page.getByTestId('board-specs-empty')).toBeVisible();
     await expect(page.getByTestId('assumptions-empty')).toBeVisible();
@@ -50,17 +59,18 @@ test.describe('authoring a board from nothing', () => {
 
   test('adding cards, connecting them, and deleting both', async ({ page }) => {
     const whiteboardId = await createBoard(page, `Authoring ${String(Date.now())}`);
+    let revision = await currentRevision(page);
 
     await page.getByTestId('add-input').click();
     await expect(page.getByTestId('primitive-sentence')).toContainText(/something that arrives/i);
-    await expectRevision(page, 1);
+    revision = await savedAbove(page, revision);
 
     await page.getByTestId('add-outcome').click();
-    await expectRevision(page, 2);
+    revision = await savedAbove(page, revision);
     await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(2);
 
     await connect(page, 'input', 'outcome');
-    await expectRevision(page, 3);
+    revision = await savedAbove(page, revision);
     await expect(page.locator('.react-flow__edge')).toHaveCount(1);
 
     // The connection is a real row, not a line drawn on a canvas.
@@ -72,32 +82,33 @@ test.describe('authoring a board from nothing', () => {
     await page.locator('.react-flow__edge').first().click();
     await expect(page.getByTestId('edge-endpoints')).toBeVisible();
     await page.getByTestId('edge-delete').click();
-    await expectRevision(page, 4);
+    revision = await savedAbove(page, revision);
     await expect(page.locator('.react-flow__edge')).toHaveCount(0);
 
     await page.getByTestId('canvas').locator('.card').first().click();
     await page.getByTestId('node-delete').click();
-    await expectRevision(page, 5);
+    await savedAbove(page, revision);
     await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(1);
   });
 
   test('a rule points at a card by name, never by identifier', async ({ page }) => {
     await createBoard(page, `Pickers ${String(Date.now())}`);
+    let revision = await currentRevision(page);
 
     await page.getByTestId('add-outcome').click();
     await page.getByTestId('node-title').fill('Held for paperwork');
     await page.getByTestId('node-title').blur();
-    await expectRevision(page, 1);
+    revision = await savedAbove(page, revision);
 
     await page.getByTestId('add-rule').click();
-    await expectRevision(page, 2);
+    revision = await savedAbove(page, revision);
 
     // The fallback used to be unreachable: the field is compiled into `policies.exceptions` and the
     // interface offered no way to set it.
     const fallback = page.getByTestId('rule-fallback');
     await expect(fallback).toContainText('Held for paperwork');
     await fallback.selectOption({ label: 'Held for paperwork (Outcome)' });
-    await expectRevision(page, 3);
+    await savedAbove(page, revision);
 
     await page.getByTestId('rule-branches-add').click();
     await page.getByTestId('rule-branch-target-0').selectOption({
@@ -108,8 +119,9 @@ test.describe('authoring a board from nothing', () => {
 
   test('an input field can be optional and can say what it is', async ({ page }) => {
     await createBoard(page, `Fields ${String(Date.now())}`);
+    const revision = await currentRevision(page);
     await page.getByTestId('add-input').click();
-    await expectRevision(page, 1);
+    await savedAbove(page, revision);
 
     await page.getByTestId('input-fields-add').click();
     await page.getByTestId('input-field-description-0').fill('FDA establishment registration.');
@@ -127,17 +139,19 @@ test.describe('authoring a board from nothing', () => {
     page,
   }) => {
     await createBoard(page, `Branches ${String(Date.now())}`);
+    let revision = await currentRevision(page);
     await page.getByTestId('add-rule').click();
     await page.getByTestId('add-outcome').click();
-    await expectRevision(page, 2);
+    revision = await savedAbove(page, revision);
+    await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(2);
 
     await connect(page, 'rule', 'outcome');
-    await expectRevision(page, 3);
+    revision = await savedAbove(page, revision);
 
     await page.locator('.react-flow__edge').first().click();
     await page.getByTestId('edge-label').fill('documents complete');
     await page.getByTestId('edge-label').blur();
-    await expectRevision(page, 4);
+    await savedAbove(page, revision);
 
     await page.getByTestId('canvas').locator('[data-primitive="rule"]').first().click();
     await page.getByTestId('rule-branches-add').click();
@@ -151,10 +165,12 @@ test.describe('authoring a board from nothing', () => {
 
   test('a connection offers no JSON to write', async ({ page }) => {
     await createBoard(page, `Conditions ${String(Date.now())}`);
+    const revision = await currentRevision(page);
     await page.getByTestId('add-rule').click();
     await page.getByTestId('add-outcome').click();
+    await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(2);
     await connect(page, 'rule', 'outcome');
-    await expectRevision(page, 3);
+    await savedAbove(page, revision);
 
     await page.locator('.react-flow__edge').first().click();
     await expect(page.getByTestId('edge-condition')).toHaveCount(0);

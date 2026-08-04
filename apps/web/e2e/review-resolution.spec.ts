@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { connectHandles, createBoard, expectRevision, signIn } from './fixtures';
+import { connectHandles, createBoard, currentRevision, savedAbove, signIn } from './fixtures';
 
 /**
  * A finding that goes away because the thing it complained about went away.
@@ -33,12 +33,13 @@ test.describe('a thread resolving after a later round', () => {
 
   test('a deterministic finding closes once the board stops triggering it', async ({ page }) => {
     await createBoard(page, `Resolution ${String(Date.now())}`);
+    let revision = await currentRevision(page);
 
     // Two cards and no arrow between them: check one of fifteen, twice over.
     await page.getByTestId('add-input').click();
-    await expectRevision(page, 1);
     await page.getByTestId('add-outcome').click();
-    await expectRevision(page, 2);
+    revision = await savedAbove(page, revision);
+    await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(2);
 
     await review(page);
 
@@ -57,7 +58,7 @@ test.describe('a thread resolving after a later round', () => {
 
     // Do exactly what the finding asked for.
     await connectHandles(page, '.card-input .card-handle-out', '.card-outcome .card-handle-in');
-    await expectRevision(page, 3);
+    await savedAbove(page, revision);
 
     await review(page);
 

@@ -150,6 +150,57 @@ describe('save_whiteboard_delta shape validation', () => {
     );
   });
 
+  /**
+   * Every arrow anyone draws on the board arrives this way.
+   *
+   * `EdgeUpsertSchema` defaults `condition` to `null`, so the delta carries `"condition": null` —
+   * jsonb `null`, which is not SQL NULL, and which `ck_whiteboard_edges_condition_object` refuses.
+   * Connecting two cards therefore failed with `INTERNAL_ERROR` from the first day the canvas
+   * existed. Nothing caught it because every test here and every seeded board took a different
+   * route: these omitted the key, and `seed_whiteboard` had the `nullif` guard this RPC lacked.
+   */
+  it('accepts an edge with no condition, which is what drawing an arrow sends', async () => {
+    await delta(1, { nodeUpserts: [nodeUpsert(A), nodeUpsert(B)] });
+    const saved = await delta(2, {
+      edgeUpserts: [
+        { edgeId: E, sourceNodeId: A, targetNodeId: B, label: null, condition: null, priority: 0 },
+      ],
+    });
+    expect(saved.edgeRowVersions[E]).toBe(1);
+
+    const rows = await asUser(owner, async (client) =>
+      client.query('select condition_json from public.whiteboard_edges where edge_id = $1', [E]),
+    );
+    // Stored as SQL NULL, not as the string "null": an unconditional edge has no condition.
+    expect(rows.rows[0]).toEqual({ condition_json: null });
+  });
+
+  it('clears a condition when an edge is updated back to none', async () => {
+    await delta(1, { nodeUpserts: [nodeUpsert(A), nodeUpsert(B)] });
+    await delta(2, {
+      edgeUpserts: [
+        { edgeId: E, sourceNodeId: A, targetNodeId: B, condition: { all: [] }, priority: 0 },
+      ],
+    });
+    const cleared = await delta(3, {
+      edgeUpserts: [
+        {
+          edgeId: E,
+          sourceNodeId: A,
+          targetNodeId: B,
+          condition: null,
+          priority: 0,
+          rowVersion: 1,
+        },
+      ],
+    });
+    expect(cleared.edgeRowVersions[E]).toBe(2);
+    const rows = await asUser(owner, async (client) =>
+      client.query('select condition_json from public.whiteboard_edges where edge_id = $1', [E]),
+    );
+    expect(rows.rows[0]).toEqual({ condition_json: null });
+  });
+
   it('deletes incident edges when their node is deleted', async () => {
     await delta(1, { nodeUpserts: [nodeUpsert(A), nodeUpsert(B)] });
     await delta(2, {

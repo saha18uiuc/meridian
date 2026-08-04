@@ -218,7 +218,12 @@ begin
         insert into public.whiteboard_edges
           (edge_id, whiteboard_id, source_node_id, target_node_id, label, condition_json, priority, row_version)
         values (v_id, p_whiteboard_id, (v_item->>'sourceNodeId')::uuid, (v_item->>'targetNodeId')::uuid,
-                v_item->>'label', v_item->'condition',
+                v_item->>'label',
+                -- An unconditional edge arrives as `"condition": null`, which is jsonb `null` and
+                -- not SQL NULL. `ck_whiteboard_edges_condition_object` admits an object or SQL NULL
+                -- and nothing else, so passing it through rejected every plain arrow drawn on the
+                -- board. `EdgeUpsertSchema` defaults the field to null, so this was every arrow.
+                nullif(v_item->'condition', 'null'::jsonb),
                 coalesce((v_item->>'priority')::smallint, 0::smallint), 1);
         v_new_rv := 1;
       else
@@ -229,7 +234,7 @@ begin
            set source_node_id = (v_item->>'sourceNodeId')::uuid,
                target_node_id = (v_item->>'targetNodeId')::uuid,
                label          = v_item->>'label',
-               condition_json = v_item->'condition',
+               condition_json = nullif(v_item->'condition', 'null'::jsonb),
                priority       = coalesce((v_item->>'priority')::smallint, 0::smallint),
                row_version    = row_version + 1
          where edge_id = v_id and whiteboard_id = p_whiteboard_id and row_version = v_rv
