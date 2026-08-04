@@ -8,6 +8,7 @@ import { ActivationControls } from '@/features/agents/ActivationControls';
 import { AgentVersionTable } from '@/features/agents/AgentVersionTable';
 import { ReserveVersionPanel } from '@/features/agents/ReserveVersionPanel';
 import { ExecutionList } from '@/features/executions/ExecutionList';
+import { TriggerRunPanel } from '@/features/executions/TriggerRunPanel';
 
 interface AgentPayload {
   agent: Agent;
@@ -76,6 +77,8 @@ export default function AgentDetailPage() {
         <h3 style={{ margin: 0 }}>Release pointer</h3>
         <ActivationControls agent={payload.agent} versions={payload.versions} onDone={load} />
       </div>
+
+      <TriggerRunPanel agentId={agentId} agentStatus={payload.agent.status} onStarted={load} />
 
       <div className="panel stack">
         <h3 style={{ margin: 0 }}>Recent executions</h3>
