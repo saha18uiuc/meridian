@@ -536,6 +536,12 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'the §12 status contract, pinned. Every route delegates its status code to one module, so a code the mapping does not recognise is answered as a server fault — telling a caller to retry a refusal that will never succeed. The exhaustive case reads the codes out of the migrations rather than out of a list, which is what makes it notice a raise that was added without a status.',
   'apps/web/test/service/helpers.ts':
     'the service-test counterpart of the db factories: signs users in and walks a board to frozen and active',
+  'apps/web/src/features/executions/TriggerRunPanel.tsx':
+    'the only way to make an agent do anything from the UI; before it, a reviewer who opened the app saw an agent and a spec and no way to exercise either, because starting a run meant `pnpm demo` on a machine they do not have',
+  'apps/web/src/features/executions/demo-mail.ts':
+    'generated from the .eml fixtures by packages/ops/src/fixtures/web-demo-mail.ts, so the messages the UI offers cannot drift from the ones the eval suite and the mock mailbox read; retyping them here is how that drift would start',
+  'apps/web/e2e/trigger-run.spec.ts':
+    'covers the run-trigger panel end to end, which is the one path a deployed demo depends on and the only one no other spec touches',
   'apps/backend/test/helpers/workflow-env.ts':
     'a time-skipping Temporal environment with recording activity stubs, which all six workflow tests start from',
   'apps/web/test/stubs/server-only.ts':
@@ -718,6 +724,11 @@ export function verifyTree(): TreeReport {
     'tsconfig.tests.json',
     'eslint.config.mjs',
     'vitest.workspace.ts',
+    // Deployment configuration has to sit at the root: Vercel reads `vercel.json` from the
+    // repository root, and Docker resolves `.dockerignore` relative to the build context, which is
+    // the root because the worker's image needs the whole workspace to install and compile.
+    'vercel.json',
+    '.dockerignore',
     '.nvmrc',
     '.pnpm-store',
     '.temporal',

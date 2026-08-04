@@ -218,4 +218,5 @@ docs                PRD, architecture, decisions, deliverables index, demo walkt
 
 Read `docs/DELIVERABLES.md` for where each thing the assignment asks for lives,
 `docs/ARCHITECTURE.md` for how the pieces fit, `docs/DECISIONS.md` for the choices that are not
-obvious from the code, and `docs/DEMO.md` for the walkthrough.
+obvious from the code, `docs/DEMO.md` for the walkthrough, and `docs/DEPLOY.md` for running it
+somewhere other than a laptop.
