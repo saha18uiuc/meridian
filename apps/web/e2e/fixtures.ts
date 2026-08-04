@@ -15,16 +15,50 @@ export const OTHER_PASSWORD = process.env.DEMO_OTHER_PASSWORD ?? 'meridian-other
 
 export const SEEDED_BOARD_TITLE = 'Inbound Import Receiving';
 
+/**
+ * The whole submit is retried, rather than clicked once.
+ *
+ * Playwright waits for an element to be *actionable*, and a server-rendered button is actionable
+ * before React has attached its handler. A click that lands in that window submits the form
+ * natively: the browser leaves for `/login?`, no sign-in is attempted, and the wait for `/boards`
+ * times out somewhere that says nothing about the cause. The race is usually won on a warm dev
+ * server and reliably lost by the first spec to compile the route, so it reads as a flake.
+ *
+ * Retrying is used instead of a hydration probe because there is nothing on this page to probe: its
+ * inputs hold the same values before and after hydration, so no observable state distinguishes the
+ * two. Whether the click was handled by React is only visible in whether it did anything.
+ */
 export async function signIn(
   page: Page,
   email: string = DEMO_EMAIL,
   password: string = DEMO_PASSWORD,
 ): Promise<void> {
   await page.goto('/login');
-  await page.getByTestId('login-email').fill(email);
-  await page.getByTestId('login-password').fill(password);
-  await page.getByTestId('login-submit').click();
-  await page.waitForURL('**/boards');
+  const refusal = page.getByTestId('login-error');
+
+  for (let attempt = 1; ; attempt += 1) {
+    // A native submit reloads the page, so every attempt refills the fields.
+    await page.getByTestId('login-email').fill(email);
+    await page.getByTestId('login-password').fill(password);
+    await page.getByTestId('login-submit').click();
+
+    const landed = await page.waitForURL('**/boards', { timeout: 5_000 }).then(
+      () => true,
+      () => false,
+    );
+    if (landed) return;
+
+    // Wrong credentials are an answer, not a race to retry past.
+    if (await refusal.isVisible()) {
+      throw new Error(`sign-in was refused for ${email}: ${(await refusal.textContent()) ?? ''}`);
+    }
+    if (attempt === 5) {
+      throw new Error(
+        `the login form never handled a submit for ${email} after ${String(attempt)} attempts; ` +
+          `the page is at ${page.url()}`,
+      );
+    }
+  }
 }
 
 /** Create a board through the form on `/boards` and land on it, returning its ID. */
