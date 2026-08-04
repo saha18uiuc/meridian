@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { Client } from 'pg';
+import { deploymentForBoardPath, type DeploymentFixture } from './deployments.js';
 import { loadOpsEnv, optionalEnv } from './env.js';
 import { parseArgs, optionalArg } from './lib/args.js';
 import { repoPath } from './lib/state.js';
@@ -59,6 +60,7 @@ async function ensureUser(email: string, password: string): Promise<string> {
 export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResult> {
   loadOpsEnv();
   const client = opsClient();
+  const deployment = deploymentForBoardPath(boardPath);
 
   const demoUserId = await ensureUser(
     optionalEnv('DEMO_USER_EMAIL', 'demo@meridian.local'),
@@ -87,7 +89,7 @@ export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResu
       created: false,
       nodeCount: board.nodes.length,
       edgeCount: board.edges.length,
-      release: await release(existing.whiteboard_id),
+      release: await release(existing.whiteboard_id, deployment),
     };
   }
 
@@ -119,7 +121,7 @@ export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResu
     created: true,
     nodeCount: board.nodes.length,
     edgeCount: board.edges.length,
-    release: await release(whiteboardId),
+    release: await release(whiteboardId, deployment),
   };
 }
 
@@ -131,9 +133,10 @@ export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResu
  * bypass the approval gate that activation exists to enforce. So the seed carries the board through
  * the same chain an operator would: freeze, agent, version, commit, approved, active.
  */
-function release(whiteboardId: string): Promise<ReleaseResult> {
+function release(whiteboardId: string, deployment: DeploymentFixture): Promise<ReleaseResult> {
   return releaseDemoAgent({
     whiteboardId,
+    deployment,
     email: optionalEnv('DEMO_USER_EMAIL', 'demo@meridian.local'),
     password: optionalEnv('DEMO_USER_PASSWORD', 'meridian-demo-password'),
   });

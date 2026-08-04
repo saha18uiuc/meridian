@@ -17,7 +17,11 @@
     "outcome": "rejected",
     "businessKey": "MSKU1234565",
     "externalActions": [],
-    "stepInstanceKeys": ["decide:MSKU1234565"],
-    "evidenceKeys": ["assessment:MSKU1234565"]
+    "stepInstanceKeys": [
+      "decide:MSKU1234565"
+    ],
+    "evidenceKeys": [
+      "assessment:MSKU1234565"
+    ]
   }
 }

@@ -10,6 +10,7 @@ import { BuildManifestSchema } from '@meridian/core/schemas';
 import type { Database, Json } from '@meridian/core/database';
 import { workerEnv } from '@meridian/core';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { DEPLOYMENTS, type DeploymentFixture } from './deployments.js';
 import { loadOpsEnv, optionalEnv, requireEnv } from './env.js';
 import { finalizeAgentVersion } from './finalize-agent-version.js';
 import { repoPath } from './lib/state.js';
@@ -32,9 +33,6 @@ import { opsClient } from './lib/supabase.js';
  * commit — which is what a failed run leaves behind — is picked up from where it stopped, because
  * re-freezing a board that is already frozen is not a retry, it is a second contract.
  */
-
-const DEPLOYMENT_KEY = 'inbound-import-receiving';
-const CODE_PATH = 'generated-agents/inbound-import-receiving/v001';
 
 export interface ReleaseResult {
   agentId: string;
@@ -120,16 +118,18 @@ async function readGraph(
 
 export async function releaseDemoAgent(options: {
   whiteboardId: string;
+  deployment: DeploymentFixture;
   email: string;
   password: string;
 }): Promise<ReleaseResult> {
+  const { deploymentKey, codePath: CODE_PATH } = options.deployment;
   const service = opsClient();
   const operator = await operatorClient(options.email, options.password);
 
   const existing = await service
     .from('agents')
     .select('agent_id, active_agent_version_id')
-    .eq('deployment_key', DEPLOYMENT_KEY)
+    .eq('deployment_key', deploymentKey)
     .maybeSingle();
   if (existing.error !== null) throw new Error(`could not read agents: ${existing.error.message}`);
   if (existing.data !== null && existing.data.active_agent_version_id !== null) {
@@ -148,7 +148,7 @@ export async function releaseDemoAgent(options: {
     return {
       agentId: existing.data.agent_id,
       agentVersionId: active.data.agent_version_id,
-      deploymentKey: DEPLOYMENT_KEY,
+      deploymentKey,
       specId: active.data.spec_id,
       specHash: spec.data.spec_hash,
       gitCommitSha: active.data.git_commit_sha ?? '',
@@ -230,8 +230,8 @@ export async function releaseDemoAgent(options: {
       await (async () => {
         const created = await operator.rpc('create_agent', {
           p_whiteboard_id: options.whiteboardId,
-          p_deployment_key: DEPLOYMENT_KEY,
-          p_name: 'Inbound Import Receiving',
+          p_deployment_key: deploymentKey,
+          p_name: options.deployment.name,
         });
         if (created.error !== null) throw new Error(`create_agent: ${created.error.message}`);
         return created.data as unknown as { agentId: string };
@@ -306,7 +306,7 @@ export async function releaseDemoAgent(options: {
   return {
     agentId,
     agentVersionId,
-    deploymentKey: DEPLOYMENT_KEY,
+    deploymentKey,
     specId,
     specHash,
     gitCommitSha,
@@ -318,18 +318,28 @@ export async function main(_argv: readonly string[] = []): Promise<void> {
   loadOpsEnv();
   const service = opsClient();
   const email = optionalEnv('DEMO_USER_EMAIL', 'demo@meridian.local');
-  const { data, error } = await service
-    .from('whiteboards')
-    .select('whiteboard_id')
-    .eq('title', 'Inbound Import Receiving')
-    .maybeSingle();
-  if (error !== null) throw new Error(error.message);
-  if (data === null) throw new Error('no seeded board; run `pnpm seed` first');
+  const results: ReleaseResult[] = [];
+  for (const deployment of DEPLOYMENTS) {
+    const { data, error } = await service
+      .from('whiteboards')
+      .select('whiteboard_id')
+      .eq('title', deployment.name)
+      .maybeSingle();
+    if (error !== null) throw new Error(error.message);
+    // Releasing what is seeded rather than insisting on both: a developer who seeded one board is
+    // not in an error state, and failing here would make the second example feel mandatory when the
+    // point of it is that it is interchangeable.
+    if (data === null) continue;
 
-  const result = await releaseDemoAgent({
-    whiteboardId: data.whiteboard_id,
-    email,
-    password: optionalEnv('DEMO_USER_PASSWORD', 'meridian-demo-password'),
-  });
-  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    results.push(
+      await releaseDemoAgent({
+        whiteboardId: data.whiteboard_id,
+        deployment,
+        email,
+        password: optionalEnv('DEMO_USER_PASSWORD', 'meridian-demo-password'),
+      }),
+    );
+  }
+  if (results.length === 0) throw new Error('no seeded board; run `pnpm seed` first');
+  process.stdout.write(`${JSON.stringify(results, null, 2)}\n`);
 }

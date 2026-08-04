@@ -495,6 +495,8 @@ export const REQUIRED_EVAL_CASES = 16;
  */
 export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
   'packages/ops/src/index.ts': 'barrel so apps/web and apps/backend can import the intake path',
+  'packages/ops/src/deployments.ts':
+    'the table of worked examples the release path iterates over — key, name, board, code path — so releasing a second deployment is data rather than a second copy of release-demo-agent.ts; if adding a third deployment required editing anything but this table and the generated registry, the claim that the skeleton is reusable would be false',
   'packages/ops/src/intake/pre-alert-trigger.ts':
     "the SOP's subject-line trigger, kept beside correlation but separate from it: deciding whether a message is in scope is a different question from deciding which shipment it belongs to, and folding the phrase into the Gmail search query would let an environment variable widen a policy the SOP fixed",
   'scripts/regen-fixtures.ts':

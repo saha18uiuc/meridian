@@ -16,8 +16,13 @@ import { repoPath } from '../lib/state.js';
 
 const NAMESPACE = 'meridian.examples.inbound-import-receiving';
 
-export function stableUuid(slug: string): string {
-  const digest = createHash('sha1').update(`${NAMESPACE}:${slug}`).digest();
+/**
+ * A UUIDv5-shaped hash of a slug within a namespace. The namespace is a parameter because a second
+ * example board needs its own identifier space: two boards that both contain a card slugged
+ * `action-fetch-thread` must not end up sharing a node ID.
+ */
+export function stableUuidIn(namespace: string, slug: string): string {
+  const digest = createHash('sha1').update(`${namespace}:${slug}`).digest();
   // Stamp version 5 and the RFC 4122 variant so the value is a well-formed UUID rather than a
   // hex string that merely looks like one; the database column would reject the latter.
   digest[6] = (digest[6]! & 0x0f) | 0x50;
@@ -26,7 +31,11 @@ export function stableUuid(slug: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
-interface SeedNode {
+export function stableUuid(slug: string): string {
+  return stableUuidIn(NAMESPACE, slug);
+}
+
+export interface SeedNode {
   nodeId: string;
   primitiveType: 'input' | 'action' | 'rule' | 'outcome';
   title: string;
@@ -34,7 +43,7 @@ interface SeedNode {
   position: { x: number; y: number };
 }
 
-interface SeedEdge {
+export interface SeedEdge {
   edgeId: string;
   sourceNodeId: string;
   targetNodeId: string;
@@ -43,7 +52,7 @@ interface SeedEdge {
   priority: number;
 }
 
-interface SeedBoard {
+export interface SeedBoard {
   /**
    * Named rather than server-assigned, because it is hashed.
    *

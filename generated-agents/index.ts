@@ -1,6 +1,7 @@
 import type { AgentDefinition, AgentRegistry } from '@meridian/agent-kit/contracts';
 import { resolveAgent as resolveFromRegistry } from '@meridian/agent-kit/contracts';
 import { agent as inboundImportReceivingV001 } from './inbound-import-receiving/v001/agent.js';
+import { agent as vendorCoiRenewalV001 } from './vendor-coi-renewal/v001/agent.js';
 
 /**
  * GENERATED FILE — regenerate with `pnpm exec tsx scripts/generate-registry.ts`.
@@ -19,6 +20,9 @@ import { agent as inboundImportReceivingV001 } from './inbound-import-receiving/
 export const AGENT_REGISTRY = {
   'inbound-import-receiving': {
     1: inboundImportReceivingV001,
+  },
+  'vendor-coi-renewal': {
+    1: vendorCoiRenewalV001,
   },
 } as const satisfies AgentRegistry;
 

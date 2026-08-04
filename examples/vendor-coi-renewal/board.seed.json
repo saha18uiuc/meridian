@@ -1,0 +1,528 @@
+{
+  "whiteboardId": "6b29ce61-4db8-52b0-bd31-72baf446e98f",
+  "title": "Vendor Insurance Certificate Renewal",
+  "viewport": {
+    "x": 0,
+    "y": 0,
+    "zoom": 0.6
+  },
+  "nodes": [
+    {
+      "nodeId": "3a3f75c0-4612-5e0a-b18f-2cfd7d493820",
+      "primitiveType": "input",
+      "title": "Renewal request email",
+      "data": {
+        "inputKind": "event",
+        "sourceSystem": "Gmail",
+        "required": true,
+        "fields": [
+          {
+            "name": "subject",
+            "type": "string",
+            "required": true,
+            "description": "Vendor subject line. The process only looks at a message whose subject contains \"Certificate of Insurance\"."
+          },
+          {
+            "name": "body",
+            "type": "string",
+            "required": true,
+            "description": "Plain-text body."
+          },
+          {
+            "name": "receivedAt",
+            "type": "date",
+            "required": true,
+            "description": "Provider receipt timestamp."
+          }
+        ],
+        "correlationKeys": ["vendorId"]
+      },
+      "position": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "b13025fd-94a2-5eed-8344-491f3165edf1",
+      "primitiveType": "input",
+      "title": "Certificate of insurance",
+      "data": {
+        "inputKind": "document",
+        "sourceSystem": "Email attachment",
+        "required": true,
+        "fields": [
+          {
+            "name": "policyNumber",
+            "type": "string",
+            "required": true,
+            "description": "Insurer policy number."
+          },
+          {
+            "name": "insurerName",
+            "type": "string",
+            "required": true,
+            "description": "Carrier name."
+          },
+          {
+            "name": "coverageAmount",
+            "type": "number",
+            "required": true,
+            "description": "General liability limit in USD."
+          },
+          {
+            "name": "expiryDate",
+            "type": "date",
+            "required": true,
+            "description": "Date the policy lapses."
+          },
+          {
+            "name": "additionalInsured",
+            "type": "string",
+            "required": false,
+            "description": "Named additional insured, where the carrier lists one. Recorded, never a reason to reject."
+          }
+        ],
+        "correlationKeys": ["policyNumber"]
+      },
+      "position": {
+        "x": 0,
+        "y": 200
+      }
+    },
+    {
+      "nodeId": "ddcff994-6950-58c9-99f0-4e2ddf59b2a2",
+      "primitiveType": "action",
+      "title": "Fetch the thread and download attachments",
+      "data": {
+        "actor": "agent",
+        "operation": "mail.read",
+        "instructions": "Read every message on the thread and download each attachment to durable storage before extracting anything.",
+        "system": "Gmail",
+        "inputs": ["Renewal request email"],
+        "outputs": ["Thread messages", "Stored attachments"]
+      },
+      "position": {
+        "x": 280,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62",
+      "primitiveType": "action",
+      "title": "Extract the certificate fields",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Extract the policy number, insurer, coverage limit, and expiry date. Record the extracted values as evidence against the document they came from.",
+        "system": "Document extraction service",
+        "inputs": ["Stored attachments"],
+        "outputs": ["Certificate fields"]
+      },
+      "position": {
+        "x": 560,
+        "y": 200
+      }
+    },
+    {
+      "nodeId": "6083a6b5-a2fc-5b97-a9ad-da26515cce12",
+      "primitiveType": "rule",
+      "title": "Retry a transient extraction failure",
+      "data": {
+        "ruleKind": "retry",
+        "condition": "The extraction tool returned a retryable error.",
+        "branches": [],
+        "maxAttempts": 3,
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 840,
+        "y": 200
+      }
+    },
+    {
+      "nodeId": "fda3240a-29e7-546e-b580-8909e63fb79f",
+      "primitiveType": "rule",
+      "title": "Is the vendor identified?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "A known vendor account number appears in the subject, the body, or the certificate.",
+        "branches": [
+          {
+            "label": "vendor identified",
+            "condition": "Exactly one vendor account number was found.",
+            "targetNodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62"
+          },
+          {
+            "label": "vendor not identified",
+            "condition": "No vendor account number was found, or two different ones conflict.",
+            "targetNodeId": "9b903663-425e-59ad-8947-e2541ebc406a"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 560,
+        "y": 0
+      }
+    },
+    {
+      "nodeId": "c3e1cde3-a5ed-5d8e-a551-5f0be01d7a11",
+      "primitiveType": "rule",
+      "title": "Does the certificate carry every required field?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "The certificate must state a policy number, an insurer, a coverage amount, and an expiry date.",
+        "branches": [
+          {
+            "label": "certificate complete",
+            "condition": "All four fields are present.",
+            "targetNodeId": "38085c27-e37a-57ec-bf21-65c3fab6626c"
+          },
+          {
+            "label": "certificate incomplete",
+            "condition": "At least one of the four fields is absent.",
+            "targetNodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 1120,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "38085c27-e37a-57ec-bf21-65c3fab6626c",
+      "primitiveType": "rule",
+      "title": "Does coverage meet the contracted minimum?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "General liability coverage must be at least USD 1,000,000.",
+        "branches": [
+          {
+            "label": "coverage sufficient",
+            "condition": "The stated limit is at least the contracted minimum.",
+            "targetNodeId": "e161ec4e-e729-5ac2-9add-f1ad1d7398da"
+          },
+          {
+            "label": "coverage below minimum",
+            "condition": "The stated limit is below the contracted minimum.",
+            "targetNodeId": "58a9cff7-15b0-5117-b562-5dd350a0a629"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 1400,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "e161ec4e-e729-5ac2-9add-f1ad1d7398da",
+      "primitiveType": "rule",
+      "title": "Is the policy still in force?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "The expiry date must be on or after the renewal date the request names.",
+        "branches": [
+          {
+            "label": "policy in force",
+            "condition": "The certificate does not expire before the renewal date.",
+            "targetNodeId": "c3516263-eb44-5be4-bb44-bbc93a244e4b"
+          },
+          {
+            "label": "policy already lapsed",
+            "condition": "The certificate expires before the renewal date.",
+            "targetNodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79"
+          }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 1680,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79",
+      "primitiveType": "action",
+      "title": "Ask the vendor for a corrected certificate",
+      "data": {
+        "actor": "agent",
+        "operation": "mail.send",
+        "instructions": "Reply on the original thread naming the policy number and every field that is missing or out of date. Send exactly one request per renewal per round.",
+        "system": "Gmail",
+        "inputs": ["Certificate findings"],
+        "outputs": ["Sent request"]
+      },
+      "position": {
+        "x": 1400,
+        "y": 400
+      }
+    },
+    {
+      "nodeId": "84535ea9-9bc7-50f0-a5ed-8d72697fffbe",
+      "primitiveType": "rule",
+      "title": "Wait for the vendor to reply",
+      "data": {
+        "ruleKind": "wait",
+        "condition": "A reply arrives on the same thread carrying a corrected certificate.",
+        "branches": [],
+        "timeoutMinutes": 4320,
+        "fallbackNodeId": null
+      },
+      "position": {
+        "x": 1400,
+        "y": 560
+      }
+    },
+    {
+      "nodeId": "e675fb96-1a52-5b39-b61b-f44cd21892ef",
+      "primitiveType": "rule",
+      "title": "Escalate an unexpected failure",
+      "data": {
+        "ruleKind": "exception",
+        "condition": "Extraction exhausted its retries, or a tool failed in a way the process does not define.",
+        "branches": [],
+        "fallbackNodeId": "9b903663-425e-59ad-8947-e2541ebc406a"
+      },
+      "position": {
+        "x": 840,
+        "y": 420
+      }
+    },
+    {
+      "nodeId": "6aeb3d05-8560-5fa5-9f0f-93dae497dab3",
+      "primitiveType": "action",
+      "title": "Escalate to a risk reviewer",
+      "data": {
+        "actor": "human",
+        "operation": "human.handoff",
+        "instructions": "Give the reviewer the thread, the stored certificate, and the reason the automated path stopped.",
+        "system": "",
+        "inputs": ["Thread", "Stored attachments", "Stop reason"],
+        "outputs": ["Reviewer decision"]
+      },
+      "position": {
+        "x": 840,
+        "y": 580
+      }
+    },
+    {
+      "nodeId": "c3516263-eb44-5be4-bb44-bbc93a244e4b",
+      "primitiveType": "outcome",
+      "title": "Certificate accepted",
+      "data": {
+        "resultKind": "ready",
+        "terminal": true
+      },
+      "position": {
+        "x": 1960,
+        "y": 120
+      }
+    },
+    {
+      "nodeId": "d2f147a9-d697-5e5c-960a-22c27dfda7c6",
+      "primitiveType": "outcome",
+      "title": "Waiting on a corrected certificate",
+      "data": {
+        "resultKind": "needs_information",
+        "terminal": true,
+        "requiredAction": {
+          "actionType": "mail.send",
+          "description": "A request has been sent and no corrected certificate arrived in time.",
+          "capability": "mail.send"
+        }
+      },
+      "position": {
+        "x": 1680,
+        "y": 560
+      }
+    },
+    {
+      "nodeId": "9b903663-425e-59ad-8947-e2541ebc406a",
+      "primitiveType": "outcome",
+      "title": "Risk review required",
+      "data": {
+        "resultKind": "manual_review",
+        "terminal": true,
+        "requiredAction": {
+          "actionType": "human.handoff",
+          "description": "A risk reviewer must decide how to proceed.",
+          "capability": "human.handoff"
+        }
+      },
+      "position": {
+        "x": 1120,
+        "y": 580
+      }
+    },
+    {
+      "nodeId": "58a9cff7-15b0-5117-b562-5dd350a0a629",
+      "primitiveType": "outcome",
+      "title": "Certificate rejected",
+      "data": {
+        "resultKind": "rejected",
+        "terminal": true
+      },
+      "position": {
+        "x": 1400,
+        "y": 720
+      }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "b6b0a699-6fc1-580d-a5c8-65c4144b9dbb",
+      "sourceNodeId": "3a3f75c0-4612-5e0a-b18f-2cfd7d493820",
+      "targetNodeId": "ddcff994-6950-58c9-99f0-4e2ddf59b2a2",
+      "label": "renewal request received",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "41b14da0-3ce0-5ed7-a60c-6554e9b3f45a",
+      "sourceNodeId": "b13025fd-94a2-5eed-8344-491f3165edf1",
+      "targetNodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62",
+      "label": "certificate attached",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "24295178-7354-5838-80af-578a90bc51f5",
+      "sourceNodeId": "ddcff994-6950-58c9-99f0-4e2ddf59b2a2",
+      "targetNodeId": "fda3240a-29e7-546e-b580-8909e63fb79f",
+      "label": "thread downloaded",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "867cde67-ca01-5c5b-a824-d8811ed076bf",
+      "sourceNodeId": "fda3240a-29e7-546e-b580-8909e63fb79f",
+      "targetNodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62",
+      "label": "vendor identified",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "23efd76c-a8b7-5025-81b3-2ea91b51c9a9",
+      "sourceNodeId": "fda3240a-29e7-546e-b580-8909e63fb79f",
+      "targetNodeId": "9b903663-425e-59ad-8947-e2541ebc406a",
+      "label": "vendor not identified",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "79030d2c-d7ac-5204-a90c-7b7916b1a7ce",
+      "sourceNodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62",
+      "targetNodeId": "6083a6b5-a2fc-5b97-a9ad-da26515cce12",
+      "label": "extraction attempted",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "0455d509-5876-5a30-a073-ffb5b474cc6d",
+      "sourceNodeId": "6083a6b5-a2fc-5b97-a9ad-da26515cce12",
+      "targetNodeId": "c3e1cde3-a5ed-5d8e-a551-5f0be01d7a11",
+      "label": "extraction succeeded",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e4dcb69d-8765-5b6c-b194-1eb265fdb538",
+      "sourceNodeId": "6083a6b5-a2fc-5b97-a9ad-da26515cce12",
+      "targetNodeId": "e675fb96-1a52-5b39-b61b-f44cd21892ef",
+      "label": "extraction still failing after the last attempt",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "19defb27-3ed4-5bc0-a556-39955767c925",
+      "sourceNodeId": "c3e1cde3-a5ed-5d8e-a551-5f0be01d7a11",
+      "targetNodeId": "38085c27-e37a-57ec-bf21-65c3fab6626c",
+      "label": "certificate complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "e024f8ac-58f2-5ade-8426-db515963bf27",
+      "sourceNodeId": "c3e1cde3-a5ed-5d8e-a551-5f0be01d7a11",
+      "targetNodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79",
+      "label": "certificate incomplete",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "f2db7520-0f44-570e-8bbc-d86331ed443f",
+      "sourceNodeId": "38085c27-e37a-57ec-bf21-65c3fab6626c",
+      "targetNodeId": "e161ec4e-e729-5ac2-9add-f1ad1d7398da",
+      "label": "coverage sufficient",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "f8c15a4b-120d-53d0-af6b-5c09a40ea8b5",
+      "sourceNodeId": "38085c27-e37a-57ec-bf21-65c3fab6626c",
+      "targetNodeId": "58a9cff7-15b0-5117-b562-5dd350a0a629",
+      "label": "coverage below minimum",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "6ea30aca-15ff-5a50-91b5-83d621c8fdc1",
+      "sourceNodeId": "e161ec4e-e729-5ac2-9add-f1ad1d7398da",
+      "targetNodeId": "c3516263-eb44-5be4-bb44-bbc93a244e4b",
+      "label": "policy in force",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "7a0aef14-d7ae-58ab-93e1-f9f58bfa0e2c",
+      "sourceNodeId": "e161ec4e-e729-5ac2-9add-f1ad1d7398da",
+      "targetNodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79",
+      "label": "policy already lapsed",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "6baeca79-a98d-5bae-8ec3-fd6fe4b886f1",
+      "sourceNodeId": "adb092bf-426d-5076-bddd-900f7e8b9a79",
+      "targetNodeId": "84535ea9-9bc7-50f0-a5ed-8d72697fffbe",
+      "label": "request sent",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "ed5895f7-3475-577a-94f7-7caa0c29a497",
+      "sourceNodeId": "84535ea9-9bc7-50f0-a5ed-8d72697fffbe",
+      "targetNodeId": "3e5d7440-bc49-58be-b9be-ff4b9f0cde62",
+      "label": "corrected certificate received",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "bf205ad2-46b0-5678-b681-634880c0e73f",
+      "sourceNodeId": "84535ea9-9bc7-50f0-a5ed-8d72697fffbe",
+      "targetNodeId": "d2f147a9-d697-5e5c-960a-22c27dfda7c6",
+      "label": "no reply before the deadline",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "48a06612-3fa3-55e9-b711-111d0a3f8302",
+      "sourceNodeId": "e675fb96-1a52-5b39-b61b-f44cd21892ef",
+      "targetNodeId": "6aeb3d05-8560-5fa5-9f0f-93dae497dab3",
+      "label": "unexpected failure raised",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "97faa0d3-b418-5cb0-8d99-90c72ff14776",
+      "sourceNodeId": "6aeb3d05-8560-5fa5-9f0f-93dae497dab3",
+      "targetNodeId": "9b903663-425e-59ad-8947-e2541ebc406a",
+      "label": "reviewer takes over",
+      "condition": null,
+      "priority": 0
+    }
+  ]
+}

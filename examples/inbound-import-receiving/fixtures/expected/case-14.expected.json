@@ -7,7 +7,9 @@
     "summary": {
       "containerNumber": "OOLU1234567",
       "mawb": null,
-      "invoiceNumbers": ["INV-1040"],
+      "invoiceNumbers": [
+        "INV-1040"
+      ],
       "batchNumbers": [
         "SCL01",
         "SCL02",

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { sha256Hex } from '@meridian/core';
 import { loadOpsEnv } from './env.js';
-import { buildSnapshot } from './fixtures/spec-snapshot.js';
+import { buildSnapshot, SNAPSHOT_TARGETS, type SnapshotTarget } from './fixtures/spec-snapshot.js';
 import { formatGates, gates } from './gates.js';
 import { flag, parseArgs } from './lib/args.js';
 import { runAsync } from './lib/proc.js';
@@ -208,7 +208,7 @@ export function checkCommittedSnapshot(): { ok: boolean; detail: string } {
   const seed = JSON.parse(readFileSync(repoPath(SEED_BOARD_PATH), 'utf8')) as Parameters<
     typeof buildSnapshot
   >[0];
-  const rebuilt = buildSnapshot(seed);
+  const rebuilt = buildSnapshot(seed, SNAPSHOT_TARGETS[0] as SnapshotTarget);
 
   const snapshotPath = repoPath(SNAPSHOT_CODE_PATH, 'spec.snapshot.json');
   const committedSpec = JSON.parse(readFileSync(snapshotPath, 'utf8')) as Record<string, unknown>;

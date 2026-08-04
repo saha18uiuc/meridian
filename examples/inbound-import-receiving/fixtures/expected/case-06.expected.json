@@ -7,11 +7,19 @@
     "summary": {
       "containerNumber": "MSKU1234565",
       "mawb": null,
-      "invoiceNumbers": ["INV-1024"],
-      "batchNumbers": ["B77A", "B77B"],
+      "invoiceNumbers": [
+        "INV-1024"
+      ],
+      "batchNumbers": [
+        "B77A",
+        "B77B"
+      ],
       "goodsCount": 2,
       "validGoodsCount": 2,
-      "missingInformation": ["batch:B77B:certificateOfAnalysis", "batch:B77C:certificateOfAnalysis"]
+      "missingInformation": [
+        "batch:B77B:certificateOfAnalysis",
+        "batch:B77C:certificateOfAnalysis"
+      ]
     },
     "findings": [
       {

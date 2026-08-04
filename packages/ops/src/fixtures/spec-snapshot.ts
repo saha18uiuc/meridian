@@ -29,10 +29,36 @@ import { stableUuid } from './boards.js';
  * exactly the hash committed here — which is what `pnpm demo` and `pnpm verify:e2e` rely on.
  */
 
-const CODE_PATH = 'generated-agents/inbound-import-receiving/v001';
-const DEPLOYMENT_KEY = 'inbound-import-receiving';
-const SEED_PATH = 'examples/inbound-import-receiving/board.seed.json';
-const EVAL_CASE_DIR = 'examples/inbound-import-receiving/evals';
+/**
+ * Which deployment a snapshot is being built for. The three paths are separate parameters rather
+ * than derived from the key, because the directory layout is a convention and a convention that
+ * silently assumes itself is one nobody can deviate from.
+ */
+export interface SnapshotTarget {
+  deploymentKey: string;
+  codePath: string;
+  seedPath: string;
+  evalCaseDir: string | null;
+  /** Namespaced so two boards cannot mint the same spec ID. */
+  specIdSlug: string;
+}
+
+export const SNAPSHOT_TARGETS: readonly SnapshotTarget[] = [
+  {
+    deploymentKey: 'inbound-import-receiving',
+    codePath: 'generated-agents/inbound-import-receiving/v001',
+    seedPath: 'examples/inbound-import-receiving/board.seed.json',
+    evalCaseDir: 'examples/inbound-import-receiving/evals',
+    specIdSlug: 'spec-inbound-import-receiving-v1',
+  },
+  {
+    deploymentKey: 'vendor-coi-renewal',
+    codePath: 'generated-agents/vendor-coi-renewal/v001',
+    seedPath: 'examples/vendor-coi-renewal/board.seed.json',
+    evalCaseDir: null,
+    specIdSlug: 'spec-vendor-coi-renewal-v1',
+  },
+];
 
 interface SeedFile {
   whiteboardId: string;
@@ -78,11 +104,12 @@ export function seededGraph(seed: SeedFile): CanonicalGraph {
  * The suite the version was validated against, read from the case files rather than transcribed.
  * A manifest that named cases which no longer exist would claim coverage nobody can reproduce.
  */
-function evalCaseKeys(): string[] {
-  return readdirSync(repoPath(EVAL_CASE_DIR))
+function evalCaseKeys(dir: string | null): string[] {
+  if (dir === null) return [];
+  return readdirSync(repoPath(dir))
     .filter((name) => name.endsWith('.json'))
     .map((name) => {
-      const parsed = JSON.parse(readFileSync(repoPath(EVAL_CASE_DIR, name), 'utf8')) as {
+      const parsed = JSON.parse(readFileSync(repoPath(dir, name), 'utf8')) as {
         caseKey: string;
       };
       return parsed.caseKey;
@@ -97,13 +124,13 @@ export interface GeneratedSnapshot {
   manifest: BuildManifest;
 }
 
-export function buildSnapshot(seed: SeedFile): GeneratedSnapshot {
+export function buildSnapshot(seed: SeedFile, target: SnapshotTarget): GeneratedSnapshot {
   const graph = seededGraph(seed);
   const canvasHash = deriveCanvasHash(graph);
 
   // The spec ID and the freeze timestamp are outside the hash, so fixing them here costs nothing in
   // fidelity and buys a file that regenerates byte-identically. A real freeze mints its own.
-  const specId = stableUuid('spec-inbound-import-receiving-v1');
+  const specId = stableUuid(target.specIdSlug);
   const compiled = compileSpec({
     graph,
     specId,
@@ -125,9 +152,9 @@ export function buildSnapshot(seed: SeedFile): GeneratedSnapshot {
 
   const manifest: BuildManifest = {
     manifestVersion: 1,
-    deploymentKey: DEPLOYMENT_KEY,
+    deploymentKey: target.deploymentKey,
     versionNo: 1,
-    codePath: CODE_PATH,
+    codePath: target.codePath,
     specId,
     specHash,
     specVersion: 1,
@@ -140,7 +167,7 @@ export function buildSnapshot(seed: SeedFile): GeneratedSnapshot {
     toolkitVersions: { '@composio/core': '0.14.1', openai: '7.3.0', zod: '4.4.3' },
     validation: {
       commands: ['pnpm lint', 'pnpm typecheck', 'pnpm test:unit', 'pnpm evals'],
-      evalCaseKeys: evalCaseKeys(),
+      evalCaseKeys: evalCaseKeys(target.evalCaseDir),
     },
   };
 
@@ -148,8 +175,13 @@ export function buildSnapshot(seed: SeedFile): GeneratedSnapshot {
 }
 
 export async function main(_argv: readonly string[] = []): Promise<void> {
-  const seed = JSON.parse(readFileSync(repoPath(SEED_PATH), 'utf8')) as SeedFile;
-  const { specJson, specHash, canvasHash, manifest } = buildSnapshot(seed);
+  for (const target of SNAPSHOT_TARGETS) await writeSnapshot(target);
+}
+
+async function writeSnapshot(target: SnapshotTarget): Promise<void> {
+  const CODE_PATH = target.codePath;
+  const seed = JSON.parse(readFileSync(repoPath(target.seedPath), 'utf8')) as SeedFile;
+  const { specJson, specHash, canvasHash, manifest } = buildSnapshot(seed, target);
 
   // Canonical bytes, per the snapshot-file contract: re-canonicalizing this file and re-canonicalizing
   // the `jsonb` read back from the database must produce the same bytes and the same hash.
