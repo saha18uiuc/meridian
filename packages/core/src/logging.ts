@@ -27,6 +27,13 @@ export function createLogger(name: string): Logger {
     name,
     level: process.env['LOG_LEVEL'] ?? 'info',
     redact: { paths: REDACTED_PATHS, censor: REDACTION_CENSOR },
+    /**
+     * `Error` has no enumerable properties, so pino's default JSON serialisation of one is `{}`.
+     * Its built-in serialiser is only wired to the key `err`, and this codebase says `{ error }`
+     * everywhere — including the line that reports a worker dying at startup, which is exactly when
+     * the message matters and exactly where an empty object costs the most time.
+     */
+    serializers: { error: pino.stdSerializers.err },
   });
 }
 
