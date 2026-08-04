@@ -3,24 +3,16 @@
   "description": "A certificate arrives with no commercial invoice, so a specialist is asked.",
   "specTrace": "Input \"Commercial invoice\" is required:true, and Action \"Escalate to a receiving specialist\" is the declared human handoff.",
   "inputRefs": {
-    "emailPaths": [
-      "examples/inbound-import-receiving/fixtures/emails/late-followup.eml"
-    ],
-    "attachmentPaths": [
-      "examples/inbound-import-receiving/fixtures/attachments/coa-B77C.pdf"
-    ],
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/late-followup.eml"],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/coa-B77C.pdf"],
     "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-13.expected.json"
   },
   "expected": {
     "outcome": "manual_review",
     "businessKey": "MSKU1234565",
     "externalActions": [],
-    "stepInstanceKeys": [
-      "escalate:MSKU1234565"
-    ],
-    "evidenceKeys": [
-      "escalation:MSKU1234565"
-    ],
+    "stepInstanceKeys": ["escalate:MSKU1234565"],
+    "evidenceKeys": ["escalation:MSKU1234565"],
     "humanDecisionRequired": true
   }
 }

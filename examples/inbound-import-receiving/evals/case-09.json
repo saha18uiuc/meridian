@@ -3,9 +3,7 @@
   "description": "Two different valid container numbers in one message.",
   "specTrace": "Rule \"Is a shipment business key present?\" branch \"no usable business key\" covers the conflict case explicitly.",
   "inputRefs": {
-    "emailPaths": [
-      "examples/inbound-import-receiving/fixtures/emails/conflicting-keys.eml"
-    ],
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/conflicting-keys.eml"],
     "attachmentPaths": [],
     "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-09.expected.json"
   },

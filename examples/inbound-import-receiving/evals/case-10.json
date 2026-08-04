@@ -7,17 +7,13 @@
       "examples/inbound-import-receiving/fixtures/emails/happy-path.eml",
       "examples/inbound-import-receiving/fixtures/emails/duplicate-invoice.eml"
     ],
-    "attachmentPaths": [
-      "examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf"
-    ],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-1024.pdf"],
     "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-10.expected.json"
   },
   "expected": {
     "outcome": "completed",
     "businessKey": "MSKU1234565",
     "externalActions": [],
-    "evidenceKeys": [
-      "assessment:MSKU1234565"
-    ]
+    "evidenceKeys": ["assessment:MSKU1234565"]
   }
 }

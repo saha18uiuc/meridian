@@ -35,10 +35,7 @@
             "description": "Provider receipt timestamp."
           }
         ],
-        "correlationKeys": [
-          "containerNumber",
-          "mawb"
-        ]
+        "correlationKeys": ["containerNumber", "mawb"]
       },
       "position": {
         "x": 0,
@@ -97,9 +94,7 @@
             "description": "Batch identifier per good."
           }
         ],
-        "correlationKeys": [
-          "invoiceNumber"
-        ]
+        "correlationKeys": ["invoiceNumber"]
       },
       "position": {
         "x": 0,
@@ -122,9 +117,7 @@
             "description": "Batch the certificate covers."
           }
         ],
-        "correlationKeys": [
-          "batchNumber"
-        ]
+        "correlationKeys": ["batchNumber"]
       },
       "position": {
         "x": 0,
@@ -140,13 +133,8 @@
         "operation": "mail.read",
         "instructions": "Read every message on the thread and download each attachment to durable storage before extracting anything.",
         "system": "Gmail",
-        "inputs": [
-          "Arrival notice email"
-        ],
-        "outputs": [
-          "Thread messages",
-          "Stored attachments"
-        ]
+        "inputs": ["Arrival notice email"],
+        "outputs": ["Thread messages", "Stored attachments"]
       },
       "position": {
         "x": 280,
@@ -162,13 +150,8 @@
         "operation": "document.extract",
         "instructions": "Extract the commercial invoice and certificate of analysis fields. Record the extracted values as evidence against the document they came from.",
         "system": "Document extraction service",
-        "inputs": [
-          "Stored attachments"
-        ],
-        "outputs": [
-          "Invoice fields",
-          "Certificate fields"
-        ]
+        "inputs": ["Stored attachments"],
+        "outputs": ["Invoice fields", "Certificate fields"]
       },
       "position": {
         "x": 560,
@@ -314,13 +297,8 @@
         "operation": "mail.send",
         "instructions": "Reply on the original thread naming every missing field and every batch without a certificate. Send exactly one request per shipment per round.",
         "system": "Gmail",
-        "inputs": [
-          "Missing field list",
-          "Unmatched batch list"
-        ],
-        "outputs": [
-          "Sent request"
-        ]
+        "inputs": ["Missing field list", "Unmatched batch list"],
+        "outputs": ["Sent request"]
       },
       "position": {
         "x": 1400,
@@ -367,14 +345,8 @@
         "operation": "human.handoff",
         "instructions": "Give the specialist the thread, the stored attachments, and the reason the automated path stopped.",
         "system": "",
-        "inputs": [
-          "Thread",
-          "Stored attachments",
-          "Stop reason"
-        ],
-        "outputs": [
-          "Specialist decision"
-        ]
+        "inputs": ["Thread", "Stored attachments", "Stop reason"],
+        "outputs": ["Specialist decision"]
       },
       "position": {
         "x": 840,

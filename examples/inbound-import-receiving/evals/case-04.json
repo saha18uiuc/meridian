@@ -17,8 +17,6 @@
     "outcome": "rejected",
     "businessKey": "MSKU1234565",
     "externalActions": [],
-    "evidenceKeys": [
-      "assessment:MSKU1234565"
-    ]
+    "evidenceKeys": ["assessment:MSKU1234565"]
   }
 }

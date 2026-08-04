@@ -3,20 +3,14 @@
   "description": "An invoiced batch with no certificate of analysis.",
   "specTrace": "Rule \"Does each batch have exactly one certificate of analysis?\" branch \"certificate missing or ambiguous\" leads to Action \"Ask the forwarder for the missing information\".",
   "inputRefs": {
-    "emailPaths": [
-      "examples/inbound-import-receiving/fixtures/emails/missing-coa.eml"
-    ],
-    "attachmentPaths": [
-      "examples/inbound-import-receiving/fixtures/attachments/invoice-1026.pdf"
-    ],
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/missing-coa.eml"],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-1026.pdf"],
     "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-05.expected.json"
   },
   "expected": {
     "outcome": "needs_information",
     "businessKey": "CMAU9988771",
-    "missingFields": [
-      "batch:C31D:certificateOfAnalysis"
-    ],
+    "missingFields": ["batch:C31D:certificateOfAnalysis"],
     "externalActions": [
       {
         "actionType": "mail.reply",
@@ -24,11 +18,7 @@
         "finalStatus": "succeeded"
       }
     ],
-    "stepInstanceKeys": [
-      "respond:CMAU9988771"
-    ],
-    "evidenceKeys": [
-      "assessment:CMAU9988771"
-    ]
+    "stepInstanceKeys": ["respond:CMAU9988771"],
+    "evidenceKeys": ["assessment:CMAU9988771"]
   }
 }
