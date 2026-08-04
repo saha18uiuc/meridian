@@ -19,11 +19,9 @@ import {
 } from '@meridian/core/schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ModelUnavailableError, ReviewModelCallFailedError } from '@/server/http/error-map';
-import { listBoardComments, listLiveAssumptions } from '@/server/repositories/comments';
 import { createServiceClient } from '@/server/supabase/service-client';
 import { assembleSnapshot } from '@/server/services/assemble-snapshot';
 import { assertOwner, ownerOfBoard } from '@/server/services/ownership';
-import { reconcile, type PreviousRoot } from '@/server/services/review-reconcile';
 
 type Client = SupabaseClient<Database>;
 
@@ -178,6 +176,11 @@ function isRetryable(error: unknown): boolean {
 /**
  * One review round, start to finish, inside one awaited request (A20). No database lock is held
  * across the model call, and the `finally` block guarantees the session cannot be left `running`.
+ *
+ * Reconciliation against earlier rounds — what recurs, what resolves, what stays live — is decided
+ * inside `finalize_review_session` and not here. This service assembles and validates the round's
+ * findings, which is the A21 boundary; the classification of *previous* roots is a cross-row
+ * invariant over `comments` and belongs with the transaction that writes them.
  */
 export async function runReview(
   userClient: Client,
@@ -222,22 +225,12 @@ export async function runReview(
       ),
     );
 
-    const previousRoots = await loadPreviousRoots(userClient, whiteboardId);
-    const assumptions = await listLiveAssumptions(userClient, whiteboardId);
-    const plan = reconcile(
-      previousRoots,
-      collapsed,
-      assumptions.map((a) => a.sourceRootCommentId),
-      deterministic.map((finding) => finding.issueKey),
-    );
-
     const finalized = await rpc(service, 'finalize_review_session', {
       p_actor_user_id: userId,
       p_review_session_id: reviewSessionId,
       p_findings: collapsed,
       p_summary: {
         summary,
-        recurredRejected: plan.recurredRejected.map((root) => root.commentId),
         deterministicCount: deterministic.length,
         modelCount: modelFindings.length,
       },
@@ -255,6 +248,7 @@ export async function runReview(
         inserted: (finalized['inserted'] as number | undefined) ?? 0,
         recurred: (finalized['recurred'] as number | undefined) ?? 0,
         resolved: (finalized['resolved'] as number | undefined) ?? 0,
+        recurredRejected: (finalized['recurredRejected'] as string[] | undefined) ?? [],
       },
       findings: collapsed,
     };
@@ -269,17 +263,6 @@ export async function runReview(
     });
     throw new ReviewModelCallFailedError(reviewSessionId, message);
   }
-}
-
-async function loadPreviousRoots(client: Client, whiteboardId: string): Promise<PreviousRoot[]> {
-  const comments = await listBoardComments(client, whiteboardId);
-  return comments
-    .filter((c) => c.parentCommentId === null && c.issueKey !== null && c.status !== null)
-    .map((c) => ({
-      commentId: c.commentId,
-      issueKey: c.issueKey as string,
-      status: c.status as PreviousRoot['status'],
-    }));
 }
 
 async function rpc<Name extends keyof Database['public']['Functions']>(

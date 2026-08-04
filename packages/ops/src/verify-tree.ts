@@ -57,7 +57,6 @@ export const REQUIRED_PATHS: readonly string[] = [
   'apps/web/test/service/save-delta.test.ts',
   'apps/web/test/service/review-create.test.ts',
   'apps/web/test/service/review-finalize.test.ts',
-  'apps/web/test/service/review-reconcile.test.ts',
   'apps/web/test/service/comment-actions.test.ts',
   'apps/web/test/service/freeze.test.ts',
   'apps/web/test/service/agents.test.ts',
@@ -172,7 +171,6 @@ export const REQUIRED_PATHS: readonly string[] = [
   'apps/web/src/server/services/save-whiteboard-delta.ts',
   'apps/web/src/server/services/assemble-snapshot.ts',
   'apps/web/src/server/services/run-review.ts',
-  'apps/web/src/server/services/review-reconcile.ts',
   'apps/web/src/server/services/comment-actions.ts',
   'apps/web/src/server/services/freeze-spec.ts',
   'apps/web/src/server/services/agents.ts',
@@ -543,6 +541,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
   'packages/core/test/db/delta-empty-arrays.test.ts': '§16: empty and NULL delta arrays',
   'packages/core/test/db/manual-review-intake.test.ts': '§7.0 RPC 23 named test',
   'packages/core/test/db/rpc-inventory.test.ts': '§7.0 machine-checkable expectation',
+  'packages/core/test/db/review-reconcile-policy.test.ts':
+    'the §5.5.3 reconciliation rules, asserted against the rows `finalize_review_session` writes. The plan put this policy in a TypeScript service beside the review route; that module computed a classification the route then discarded, while the RPC resolved any root the round did not mention — so a model finding nobody addressed was silently marked resolved. The policy now lives in the transaction that owns the rows, and these are its cases.',
   'packages/core/test/db/rpc-rename-whiteboard.test.ts': '§7.0 RPC 2 named test',
   'apps/web/test/service/intake-no-key.test.ts': '§7.0 RPC 23: named explicitly',
   'apps/backend/test/workflow-boundary.test.ts':

@@ -127,6 +127,12 @@ export const ReviewCountsSchema = z
     inserted: z.number().int().nonnegative(),
     recurred: z.number().int().nonnegative(),
     resolved: z.number().int().nonnegative(),
+    /**
+     * Roots the operator had already rejected that this round raised again. They are reported
+     * rather than counted because nothing happened to them: a rejected root is never reopened
+     * (A26), so it belongs in neither `recurred`'s effect nor `resolved`'s.
+     */
+    recurredRejected: z.array(z.uuid()),
   })
   .strict();
 export type ReviewCounts = z.infer<typeof ReviewCountsSchema>;

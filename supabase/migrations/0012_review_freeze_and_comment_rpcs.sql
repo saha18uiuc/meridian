@@ -8,6 +8,21 @@ returns boolean language sql immutable set search_path = '' as $$
   select p_parent is null and p_status in ('open','answered');
 $$;
 
+-- Whether the operator has recorded an assumption that still stands on this thread. Resolution of
+-- a model finding depends on it, so it is a named predicate rather than an inline EXISTS: this is
+-- the evidence that distinguishes "the ambiguity was addressed" from "the model stopped bringing
+-- it up". `record_explicit_assumption` stamps `supersededAt` on the entry it replaces, so the live
+-- assumption is the one without it.
+create or replace function meridian.root_has_live_assumption(p_root_comment_id uuid)
+returns boolean language sql stable set search_path = '' as $$
+  select exists (
+    select 1 from public.comments a
+     where a.parent_comment_id = p_root_comment_id
+       and a.metadata_json->>'kind' = 'assumption'
+       and a.metadata_json->>'supersededAt' is null
+  );
+$$;
+
 -- [A21] Structural proof that a server-supplied snapshot really describes this
 -- board at this revision. The database cannot recompute a canonical SHA-256,
 -- but it CAN prove the snapshot enumerates exactly the rows that exist, with
@@ -169,10 +184,12 @@ declare
   v_f        jsonb;
   v_key      text;
   v_root     uuid;
+  v_root_status text;
   v_inserted integer := 0;
   v_recurred integer := 0;
   v_resolved integer := 0;
   v_keys     text[]  := '{}';
+  v_rejected uuid[]  := '{}';
 begin
   perform set_config('meridian.in_review_finalize', 'on', true);
 
@@ -209,13 +226,20 @@ begin
     v_keys := v_keys || v_key;
 
     -- Does a LIVE root already carry this issue on this board?
-    select comment_id into v_root from public.comments
+    select comment_id, status into v_root, v_root_status from public.comments
      where whiteboard_id = v_sess.whiteboard_id
        and parent_comment_id is null
        and issue_key = v_key
        and status in ('open','answered','rejected')
      limit 1
      for update;
+
+    if v_root is not null and v_root_status = 'rejected' then
+      -- Recorded, never reopened (A26). "We ruled this out and it keeps coming back" is worth
+      -- being able to see, so the recurrence is still appended below; what it must not do is
+      -- return the root to the unresolved set.
+      v_rejected := v_rejected || v_root;
+    end if;
 
     if v_root is null then
       -- ck_comments_root_thread_identity is checked at INSERT, so the identifier is minted here
@@ -246,14 +270,24 @@ begin
     end if;
   end loop;
 
-  -- Resolution: a live (open|answered) root whose issue_key is ABSENT from this
-  -- round is resolved. Rejected roots are never touched (A26).
+  -- Resolution (§5.5.3). Absence from a round is necessary but NOT sufficient, and which extra
+  -- evidence is required depends on where the finding came from:
+  --
+  --   det: — a deterministic check is not a matter of opinion. Its issue_key is present in
+  --          `v_keys` exactly while the check still fires, so absence *is* the evidence.
+  --   mod: — a model that stops repeating itself has demonstrated nothing; it may have run out of
+  --          attention or phrased the concern differently. Silence therefore leaves the root live.
+  --          It resolves only once the operator has recorded an explicit assumption on the thread,
+  --          which is the artefact that says a human decided what the ambiguity means.
+  --
+  -- Rejected roots are never touched (A26): `is_unresolved_root` already excludes them.
   with resolved as (
     update public.comments c
        set status = 'resolved', resolved_at = now()
      where c.whiteboard_id = v_sess.whiteboard_id
        and meridian.is_unresolved_root(c.parent_comment_id, c.status)
        and not (c.issue_key = any(v_keys))
+       and (c.issue_key like 'det:%' or meridian.root_has_live_assumption(c.comment_id))
     returning 1)
   select count(*) into v_resolved from resolved;
 
@@ -263,6 +297,7 @@ begin
          review_summary_json = coalesce(p_summary, '{}'::jsonb)
            || jsonb_build_object('counts', jsonb_build_object(
                 'inserted', v_inserted, 'recurred', v_recurred, 'resolved', v_resolved))
+           || jsonb_build_object('recurredRejected', to_jsonb(v_rejected))
    where review_session_id = p_review_session_id;
 
   -- [A18] Review currency.
@@ -274,6 +309,7 @@ begin
   return jsonb_build_object(
     'reviewSessionId', p_review_session_id, 'wasAlreadyCompleted', false,
     'inserted', v_inserted, 'recurred', v_recurred, 'resolved', v_resolved,
+    'recurredRejected', to_jsonb(v_rejected),
     'lastReviewedRevisionNo', v_sess.source_revision_no);
 end;
 $$;
@@ -743,6 +779,7 @@ grant  execute on function public.freeze_whiteboard_spec(
   uuid, uuid, integer, jsonb, char, jsonb, char, uuid[], boolean, boolean) to service_role;
 
 revoke all on function meridian.is_unresolved_root(uuid, text) from public, anon;
+revoke all on function meridian.root_has_live_assumption(uuid) from public, anon;
 revoke all on function meridian.assert_snapshot_matches_board(uuid, integer, jsonb)
   from public, anon, authenticated;
 revoke all on function meridian.lock_board_for_actor(uuid, uuid) from public, anon, authenticated;

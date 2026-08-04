@@ -186,6 +186,57 @@ whoever can reach the endpoint.
 
 ---
 
+## Resolution is decided in SQL, because it is a claim about rows
+
+`finalize_review_session` decides which earlier findings a round resolves. Nothing in TypeScript
+does, and there is no longer a module that looks as though it might.
+
+There used to be. `review-reconcile.ts` implemented the §5.5.3 rules as a pure function with twelve
+cases behind it, and `run-review.ts` called it — then used the result only to populate one field of
+the review summary. The `p_findings` it passed to the RPC were the raw merged list, and the RPC
+resolved **any** live root whose `issue_key` the round did not mention. So the careful policy was
+computed and thrown away, and the database applied a cruder one underneath it: a model finding that
+the model simply stopped repeating was marked resolved, with nobody having addressed it and no
+assumption recorded. That is precisely what the PRD forbids, and the passing test suite said
+otherwise because it tested the function rather than the rows.
+
+The two candidate fixes were to pass an explicit resolve list into the RPC, or to teach the RPC the
+policy and delete the TypeScript. The second is right here for four reasons.
+
+The RPC already holds every input the policy needs. Origin is carried by the stored `issue_key`
+prefix, which is minted once and never recomputed (A12); "the deterministic check still fires" is
+exactly "this round's findings contain that key"; and the assumption is a comment in the thread.
+Adding a parameter would have shipped the database facts it already had.
+
+Resolution is a cross-row invariant over `comments`, and this repository puts those in
+`SECURITY DEFINER` RPCs (A8, A9). Every other comment-status transition — reply, reject,
+assumption — is already decided in SQL. Resolution was the one exception, and that asymmetry is how
+it drifted.
+
+A21 is not an argument for the other side. It governs the _provenance_ of trusted artifacts: a
+browser must not supply snapshots, hashes, or specs, so the server assembles and validates what it
+sends. It does not ask the database to take a caller's word about its own rows. A resolve list
+would have made "silence does not resolve a model finding" true only while the caller was correct,
+which is the property that just failed.
+
+And it is now atomic. Inserts, recurrences, and resolutions happen in one statement pass inside one
+transaction, so there is no interval in which a round's findings exist and its resolutions do not.
+
+The policy reads, in full: a live root resolves when this round does not mention it **and** either
+its key is `det:` — a deterministic check is not a matter of opinion, so its silence is evidence —
+or the operator has recorded an assumption that still stands on the thread. A reply is not enough,
+because a reply moves the root to `answered` and `answered` is explicitly still unresolved. A
+rejected root is untouched, because `is_unresolved_root` excludes it (A26); its recurrence is still
+appended to the thread and reported in `recurredRejected`, since "we ruled this out and it keeps
+coming back" is worth being able to see.
+
+Two declared files were removed rather than left as dead duplicates:
+`apps/web/src/server/services/review-reconcile.ts` and its unit test. The twelve cases they carried
+now live in `packages/core/test/db/review-reconcile-policy.test.ts`, where they assert the rows the
+transaction writes instead of the return value of a function nobody reads.
+
+---
+
 ## `spec_hash` covers the contract, not the circumstances of the freeze
 
 The hash is taken over a _semantic view_ of `spec_json`, which holds out five fields:

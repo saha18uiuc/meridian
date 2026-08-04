@@ -45,6 +45,7 @@ export interface FinalizeResult {
   inserted?: number;
   recurred?: number;
   resolved?: number;
+  recurredRejected?: string[];
 }
 
 export function finalizeReview(
@@ -84,5 +85,27 @@ export function nodeFinding(
     anchorType: 'node',
     anchorId: board.actionNodeId,
     origin: 'deterministic',
+  };
+}
+
+/**
+ * A model finding, which the resolution policy treats differently from a deterministic one: its
+ * absence from a later round is not evidence that anything was fixed. The `mod:` prefix on the
+ * issue key is what carries that distinction, because `issue_key` is stored once and never
+ * recomputed (A12).
+ */
+export function modelFinding(
+  board: SeededBoard,
+  issueKey: string,
+  severity: Finding['severity'] = 'blocking',
+): Finding {
+  return {
+    issueKey,
+    severity,
+    body: `Issue ${issueKey}`,
+    anchorType: 'node',
+    anchorId: board.actionNodeId,
+    origin: 'model',
+    checkCode: null,
   };
 }
