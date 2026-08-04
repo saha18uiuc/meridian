@@ -28,6 +28,18 @@ async function connect(page: Page, sourceKind: string, targetKind: string): Prom
   );
 }
 
+/** Drag a card by its header, which is the part of it that is not a control. */
+async function dragCard(page: Page, kind: string, by: { x: number; y: number }): Promise<void> {
+  const header = page.locator(`.card-${kind} .card-title`).first();
+  const box = await header.boundingBox();
+  if (box === null) throw new Error(`no ${kind} card to drag`);
+  const from = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x + by.x, from.y + by.y, { steps: 12 });
+  await page.mouse.up();
+}
+
 test.describe('authoring a board from nothing', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page);
@@ -68,6 +80,12 @@ test.describe('authoring a board from nothing', () => {
     await page.getByTestId('add-outcome').click();
     revision = await savedAbove(page, revision);
     await expect(page.getByTestId('canvas').locator('.card')).toHaveCount(2);
+
+    // Clicking the palette lays cards out in a row, close enough together that the arrow between
+    // them would run underneath one of them. Moving a card is an ordinary thing to do and it puts
+    // the connection somewhere a person could point at.
+    await dragCard(page, 'outcome', { x: 40, y: 300 });
+    revision = await savedAbove(page, revision);
 
     await connect(page, 'input', 'outcome');
     revision = await savedAbove(page, revision);
