@@ -17,6 +17,58 @@ import { withFailureMapping } from './failures.js';
  * worker supplies it in `runtime.ts`; the eval harness and every mock run supply nothing and reach
  * a deterministic fixture instead.
  */
+const GOOD_PROPERTIES = {
+  lineKey: { type: 'string' },
+  description: { type: 'string' },
+  batchNumber: { type: ['string', 'null'] },
+  htsCode: { type: ['string', 'null'] },
+  fdaProductCode: { type: ['string', 'null'] },
+  andaNumber: { type: ['string', 'null'] },
+  registrationNumber: { type: ['string', 'null'] },
+  ndcNumber: { type: ['string', 'null'] },
+} as const;
+
+/**
+ * The shape behind each schema name, sent to the model rather than named at it.
+ *
+ * A name is not a contract. Asked only for schema "invoice", the model returns a document that is
+ * entirely correct under names of its own choosing — `invoice_number`, `lines[].line_id`, `batch` —
+ * and the agent, which reads `invoiceNumber` and `goods[].lineKey`, finds nothing and files a
+ * perfectly legible invoice as unreadable. The mock path hid this for as long as it existed,
+ * because its fixture answered in the shape the agent wanted.
+ *
+ * `sourcePath` is deliberately absent: the agent already knows where the document came from and
+ * fills it in itself, so asking the model would only invite an invented answer.
+ *
+ * These mirror `GoodSchema`, `InvoiceSchema`, and `CoaSchema` in `@meridian/core/schemas`;
+ * `model-schemas.test.ts` fails if the two drift apart.
+ */
+export const EXTRACTION_SCHEMAS: Record<string, Record<string, unknown>> = {
+  invoice: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['invoiceNumber', 'goods'],
+    properties: {
+      invoiceNumber: { type: 'string' },
+      goods: {
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          required: Object.keys(GOOD_PROPERTIES),
+          properties: GOOD_PROPERTIES,
+        },
+      },
+    },
+  },
+  coa: {
+    type: 'object',
+    additionalProperties: false,
+    required: ['batchNumber'],
+    properties: { batchNumber: { type: 'string' } },
+  },
+};
+
 export async function modelExtractStructured(
   text: string,
   schemaName: string,
@@ -27,6 +79,16 @@ export async function modelExtractStructured(
       throw new NonRetryableToolError(
         'model',
         'structured extraction requires AI_MODE=live and OPENAI_API_KEY',
+      );
+    }
+
+    const schema = EXTRACTION_SCHEMAS[schemaName];
+    if (schema === undefined) {
+      // Falling back to an unconstrained prompt is what produced the mismatch this map exists to
+      // prevent, so an unknown name stops here instead.
+      throw new NonRetryableToolError(
+        'model',
+        `no extraction schema is defined for '${schemaName}'`,
       );
     }
 
@@ -41,12 +103,13 @@ export async function modelExtractStructured(
       input: [
         {
           role: 'system',
-          content: `Extract the fields for schema "${schemaName}" as strict JSON. Use null for anything absent; never invent a value.`,
+          content: `Extract the ${schemaName} fields from the document. Use null for anything the document does not state; never invent a value.`,
         },
         // Bounded because a model response is exactly the kind of payload that must be summarised
         // before it reaches an event row, and an unbounded prompt is the other half of that risk.
         { role: 'user', content: text.slice(0, 100_000) },
       ],
+      text: { format: { type: 'json_schema', name: schemaName, schema, strict: true } },
     });
     return JSON.parse(response.output_text) as Record<string, unknown>;
   });
