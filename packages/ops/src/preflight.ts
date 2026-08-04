@@ -54,6 +54,31 @@ export function checkPnpm(actual: string | null): PreflightResult {
   };
 }
 
+/**
+ * `GMAIL_LIVE_MODE` is the single switch, so turning it on also sends *documents* down the live
+ * path, and live field extraction has no answer without a real model behind it. Left on `mock`, the
+ * pair is unsatisfiable in a way that hides: intake succeeds, attachments download, and the run only
+ * dies at the first field extraction, several minutes and one consumed inbox message later. Naming
+ * it here turns that into a line of configuration.
+ */
+export function checkLiveModeCoherence(
+  gmailLiveMode: string | undefined,
+  aiMode: string | undefined,
+): PreflightResult {
+  const live = ['true', '1'].includes((gmailLiveMode ?? 'false').trim());
+  const mode = (aiMode ?? 'mock').trim();
+  const ok = !live || mode === 'live';
+  return {
+    check: 'live mode coherence',
+    ok,
+    detail: ok
+      ? `GMAIL_LIVE_MODE=${String(live)}, AI_MODE=${mode}`
+      : `GMAIL_LIVE_MODE is on but AI_MODE is '${mode}'; live documents cannot extract fields without a model`,
+    remedy:
+      'set AI_MODE=live to run against the real inbox, or GMAIL_LIVE_MODE=false to use fixtures',
+  };
+}
+
 function checkTool(name: string, args: readonly string[], remedy: string): PreflightResult {
   const result = run(name, args);
   if (result.unavailable || result.code !== 0) {
@@ -94,6 +119,8 @@ export async function runPreflight(): Promise<PreflightResult[]> {
           remedy: `free ${foreign.map((r) => r.port).join(', ')} yourself; preflight never kills a process it does not own`,
         }),
   });
+
+  results.push(checkLiveModeCoherence(process.env.GMAIL_LIVE_MODE, process.env.AI_MODE));
 
   for (const credential of credentialPresence()) {
     results.push({
