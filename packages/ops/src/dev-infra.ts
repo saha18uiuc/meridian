@@ -28,10 +28,14 @@ import {
 const TEMPORAL_MATCH = 'temporal server start-dev';
 const SUPABASE_TIMEOUT_MS = 180_000;
 const TEMPORAL_TIMEOUT_MS = 60_000;
+const GATEWAY_TIMEOUT_MS = 60_000;
+
+/** Matches `project_id` in `supabase/config.toml`, which names every container in this stack. */
+const SUPABASE_PROJECT = 'meridian';
 
 export interface InfraReport {
   component: 'supabase' | 'temporal';
-  action: 'already-running' | 'started' | 'reclaimed-stale-pid' | 'remote';
+  action: 'already-running' | 'started' | 'reclaimed-stale-pid' | 'remote' | 'gateway-refreshed';
   detail: string;
 }
 
@@ -44,8 +48,39 @@ async function httpOk(url: string, accept: readonly number[]): Promise<boolean> 
   }
 }
 
-async function supabaseReady(apiPort: number): Promise<boolean> {
+async function restReady(apiPort: number): Promise<boolean> {
   return httpOk(`http://127.0.0.1:${apiPort}/rest/v1/`, [200, 401]);
+}
+
+/**
+ * Sign-in works, which is a separate question from whether the database answers.
+ *
+ * The gateway resolves each upstream once and caches the address. `supabase db reset` restarts the
+ * auth container, which comes back on a different address, and the gateway keeps routing to the old
+ * one — so `/rest/v1/` returns 200 while `/auth/v1/*` returns 502 from a container Docker reports as
+ * healthy. Probing only REST called that stack ready, and the first thing every seed and every
+ * end-to-end test does is create or sign in a user.
+ */
+async function authReady(apiPort: number): Promise<boolean> {
+  return httpOk(`http://127.0.0.1:${apiPort}/auth/v1/health`, [200]);
+}
+
+async function supabaseReady(apiPort: number): Promise<boolean> {
+  return (await restReady(apiPort)) && (await authReady(apiPort));
+}
+
+/**
+ * Restart the gateway so it resolves its upstreams again.
+ *
+ * Scoped to this project's container by name — the machine may be running several Supabase stacks,
+ * and restarting somebody else's gateway to fix ours is not a trade this command gets to make.
+ */
+async function refreshGateway(): Promise<boolean> {
+  const restarted = await runAsync('docker', ['restart', `supabase_kong_${SUPABASE_PROJECT}`]);
+  if (restarted.code !== 0) return false;
+  return waitFor(() => authReady(Number.parseInt(optionalEnv('SUPABASE_API_PORT', '54521'), 10)), {
+    timeoutMs: GATEWAY_TIMEOUT_MS,
+  });
 }
 
 async function temporalReady(port: number, uiPort: number): Promise<boolean> {
@@ -72,6 +107,22 @@ export async function startSupabase(apiPort: number): Promise<InfraReport> {
   if (await supabaseReady(apiPort)) {
     return { component: 'supabase', action: 'already-running', detail: `api on ${apiPort}` };
   }
+
+  // A stack that serves data but not sign-in is up and pointing at the wrong place, not down.
+  // Starting it again would report success and change nothing.
+  if (await restReady(apiPort)) {
+    if (await refreshGateway()) {
+      return {
+        component: 'supabase',
+        action: 'gateway-refreshed',
+        detail: `api on ${apiPort}; the gateway was routing to a restarted auth container`,
+      };
+    }
+    throw new Error(
+      `supabase serves /rest/v1/ on ${apiPort} but not /auth/v1/health, and restarting supabase_kong_${SUPABASE_PROJECT} did not fix it`,
+    );
+  }
+
   // `supabase start` is itself idempotent and scoped to this repo's config.toml, which is what
   // keeps every other local Supabase stack on this machine out of its reach.
   const started = await runAsync('supabase', ['start'], { cwd: repoPath() });

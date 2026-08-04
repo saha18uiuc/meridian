@@ -1,5 +1,28 @@
 import { describe, expect, it } from 'vitest';
-import { temporalProbeArgs } from '../src/health-check.js';
+import { classifySupabaseHealth, temporalProbeArgs } from '../src/health-check.js';
+
+describe('the Supabase health probe', () => {
+  const BASE = 'http://127.0.0.1:54521';
+
+  it('is not ok when data is served but nobody can sign in', () => {
+    // `supabase db reset` restarts the auth container onto a new address and the gateway keeps
+    // routing to the old one, so `/rest/v1/` answers 200 while `/auth/v1/*` answers 502 — from
+    // containers Docker reports as healthy. Probing only REST called that `ok`, and the next
+    // command to run was `pnpm seed`, whose first act is to create a user.
+    const entry = classifySupabaseHealth(true, false, BASE);
+    expect(entry.status).toBe('degraded');
+    expect(entry.detail).toContain('pnpm dev:infra');
+  });
+
+  it('is ok only when both halves answer', () => {
+    expect(classifySupabaseHealth(true, true, BASE).status).toBe('ok');
+  });
+
+  it('reports a stack that is simply not up as not-started, whatever auth says', () => {
+    expect(classifySupabaseHealth(false, false, BASE).status).toBe('not-started');
+    expect(classifySupabaseHealth(false, true, BASE).status).toBe('not-started');
+  });
+});
 
 describe('the Temporal health probe', () => {
   const CLOUD = 'us-west-2.aws.api.temporal.io:7233';

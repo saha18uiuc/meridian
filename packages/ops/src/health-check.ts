@@ -30,13 +30,30 @@ async function probe(url: string, accept: readonly number[]): Promise<boolean> {
   }
 }
 
+/**
+ * Both halves, because a stack can serve one and not the other.
+ *
+ * The gateway caches each upstream's address, and `supabase db reset` gives the auth container a
+ * new one. The result is a state this probe used to call `ok`: rows are readable, nobody can sign
+ * in, and every container reports healthy. It is `degraded`, and `pnpm dev:infra` repairs it.
+ */
+export function classifySupabaseHealth(rest: boolean, auth: boolean, base: string): HealthEntry {
+  if (!rest) return { component: 'supabase', status: 'not-started', detail: base };
+  return auth
+    ? { component: 'supabase', status: 'ok', detail: base }
+    : {
+        component: 'supabase',
+        status: 'degraded',
+        detail: `${base}; data is served but sign-in is not — run \`pnpm dev:infra\` to refresh the gateway`,
+      };
+}
+
 async function supabaseHealth(apiPort: number): Promise<HealthEntry> {
-  const ok = await probe(`http://127.0.0.1:${apiPort}/rest/v1/`, [200, 401]);
-  return {
-    component: 'supabase',
-    status: ok ? 'ok' : 'not-started',
-    detail: `http://127.0.0.1:${apiPort}`,
-  };
+  const base = `http://127.0.0.1:${apiPort}`;
+  const rest = await probe(`${base}/rest/v1/`, [200, 401]);
+  // Not probed when REST is down: the answer adds nothing to "the stack is not up".
+  const auth = rest && (await probe(`${base}/auth/v1/health`, [200]));
+  return classifySupabaseHealth(rest, auth, base);
 }
 
 /**
