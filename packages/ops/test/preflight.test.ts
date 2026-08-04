@@ -28,6 +28,8 @@ describe('live mode coherence', () => {
 
 describe('the Temporal target', () => {
   const CLOUD = 'meridian.a1b2c.tmprl.cloud:7233';
+  /** What API key authentication actually connects to; the namespace appears nowhere in it. */
+  const CLOUD_REGIONAL = 'us-west-2.aws.api.temporal.io:7233';
 
   it('accepts the untouched dev server', () => {
     expect(checkTemporalTarget(undefined, undefined, undefined).ok).toBe(true);
@@ -36,6 +38,21 @@ describe('the Temporal target', () => {
 
   it('accepts a fully configured Cloud namespace', () => {
     expect(checkTemporalTarget(CLOUD, 'key', 'meridian.a1b2c').ok).toBe(true);
+  });
+
+  it('classifies the regional API key endpoint as Cloud, not as some unknown remote host', () => {
+    // Recognising only `.tmprl.cloud` silently downgraded every API-key deployment to
+    // `self-hosted`, which is the one classification that switches all three Cloud rules off. The
+    // check went on passing, so nothing drew attention to it: a namespace missing its account
+    // suffix, or an endpoint with no key at all, would have been waved through.
+    const result = checkTemporalTarget(CLOUD_REGIONAL, 'key', 'meridian.a1b2c');
+    expect(result.ok).toBe(true);
+    expect(result.detail).toContain('cloud');
+  });
+
+  it('still applies the Cloud rules to the regional endpoint', () => {
+    expect(checkTemporalTarget(CLOUD_REGIONAL, undefined, 'meridian.a1b2c').ok).toBe(false);
+    expect(checkTemporalTarget(CLOUD_REGIONAL, 'key', 'meridian').detail).toMatch(/account suffix/);
   });
 
   it('rejects a key pointed at the dev server, which would ignore it', () => {

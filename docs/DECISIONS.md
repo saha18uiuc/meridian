@@ -124,6 +124,37 @@ the review route is fully awaited, and the eval suite is a CLI rather than a bac
 
 ---
 
+## Temporal runs on a provisioned Cloud namespace; the dev server stays supported
+
+The deployed configuration is a Meridian-provisioned Temporal Cloud namespace in `us-west-2` on AWS,
+reached at the regional gRPC endpoint `us-west-2.aws.api.temporal.io:7233` and authenticated with an
+API key. The local `temporal server start-dev` remains a first-class target for offline work, and
+neither one is a special case in the code: `temporalTarget()` in `packages/core/src/env.ts` derives
+the address, namespace, TLS flag and credential from four environment variables, and all five call
+sites that open a connection read it. Switching between Cloud and the dev server is an environment
+change, which is the whole reason the constructors were consolidated into one function.
+
+Two things about Cloud are worth writing down because they are not guessable. With API key
+authentication the endpoint is _regional_ and contains neither the namespace nor the account, so it
+is indistinguishable from any other remote host by inspection; the per-namespace
+`<namespace>.<account>.tmprl.cloud` form belongs to mTLS. And Cloud namespaces are
+`<namespace>.<account>` — the dashboard heading shows the bare name, so copying what is on screen
+produces a namespace Cloud will not accept.
+
+The two targets are kept from colliding by `ownsLocalTemporal()`, which answers whether this machine
+is _running_ Temporal rather than merely talking to it. An API key settles it alone, since the dev
+server has no credential to check one against; otherwise the address has to name loopback.
+`pnpm dev:infra` consults it and reports `remote` instead of spawning anything. Without that, a move
+to Cloud would leave a dev server bound to 7233 serving nobody, and — because the readiness probe
+checks loopback — that abandoned server would go on reporting a healthy Temporal while every workflow
+ran somewhere else. The failure this prevents is not an outage but a false green.
+
+`pnpm test:temporal` deliberately does not follow the configured target: it runs a time-skipping
+`TestWorkflowEnvironment` on an ephemeral server of its own, because those tests assert orchestration
+and need to skip a 24-hour timer, which no real server will do.
+
+---
+
 ## Reviews are synchronous; evals are not
 
 `POST /api/whiteboards/:id/reviews` performs the entire round and returns the terminal result. The

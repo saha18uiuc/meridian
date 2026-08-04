@@ -100,7 +100,12 @@ export function checkTemporalTarget(
 ): PreflightResult {
   const host = (address ?? '127.0.0.1:7233').split(':')[0] ?? '';
   const local = ['127.0.0.1', 'localhost', '::1'].includes(host);
-  const cloud = host.endsWith('.tmprl.cloud');
+  // Cloud answers on two hostname families, and recognising only one is how the Cloud rules below
+  // come to be skipped on a real Cloud namespace. `<namespace>.<account>.tmprl.cloud` is the
+  // per-namespace host that mTLS uses; API key authentication uses the regional endpoint
+  // `<region>.<provider>.api.temporal.io`, which carries neither the namespace nor the account and
+  // so looks indistinguishable from any other remote host unless it is named here.
+  const cloud = host.endsWith('.tmprl.cloud') || host.endsWith('.api.temporal.io');
   const keyed = (apiKey ?? '').trim() !== '';
   const ns = (namespace ?? 'default').trim();
   const kind = local ? 'dev server' : cloud ? 'cloud' : 'self-hosted';

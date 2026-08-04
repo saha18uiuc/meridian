@@ -33,14 +33,51 @@ stack on this machine is left alone.
 | Port        | Service                                   |
 | ----------- | ----------------------------------------- |
 | 3000        | Next.js                                   |
-| 7233        | Temporal server                           |
-| 8233        | Temporal Web UI                           |
+| 7233        | Temporal server (local dev server only)   |
+| 8233        | Temporal Web UI (local dev server only)   |
 | 9464        | Worker health endpoint                    |
 | 54521       | Supabase REST/auth                        |
 | 54522       | Postgres                                  |
 | 54523       | Supabase Studio                           |
 | 54524       | Inbucket (mail catcher)                   |
 | 54525–54527 | Supabase analytics, storage, edge runtime |
+
+## Temporal: Cloud or the local dev server
+
+Which Temporal this repository talks to is an environment change and nothing else. There is no
+Cloud branch in the code and no build flag: all five places that open a connection — the worker, the
+backend client, the ops CLI, the web intake path, and the health route — derive it from
+`temporalTarget()` in `packages/core/src/env.ts`, so the target is decided in one place from four
+variables.
+
+```bash
+# Temporal Cloud, API key authentication. With an API key the endpoint is the *regional* gRPC one,
+# not a per-namespace host; older mTLS-style namespaces use <namespace>.<account>.tmprl.cloud:7233.
+TEMPORAL_ADDRESS=us-west-2.aws.api.temporal.io:7233
+TEMPORAL_NAMESPACE=<namespace>.<account>     # the account suffix is required
+TEMPORAL_API_KEY=<key>                       # implies TLS on its own
+TEMPORAL_TLS=true
+TEMPORAL_UI_URL=https://cloud.temporal.io/namespaces/<namespace>.<account>
+
+# The local dev server, for offline work. Clearing the key is what switches back.
+TEMPORAL_ADDRESS=127.0.0.1:7233
+TEMPORAL_NAMESPACE=default
+TEMPORAL_API_KEY=
+TEMPORAL_TLS=false
+TEMPORAL_UI_URL=http://127.0.0.1:8233
+```
+
+Nothing else changes, and in particular nothing needs to remember to stop starting a server:
+`ownsLocalTemporal()` reads the same configuration and tells `pnpm dev:infra` whether this machine
+is responsible for a dev server. Pointed at Cloud it reports `temporal remote … nothing to start
+here`, leaves port 7233 unbound, and `pnpm health` probes the Cloud namespace instead. That property
+is the difference between using Temporal and being able to deploy this.
+
+The namespace this repository is currently configured against is Meridian-provisioned, in
+`us-west-2` on AWS, with **an API key that expires 2026-09-03**. After that date every Temporal call
+fails to authenticate until the key is rotated in `.env`; the dev server block above needs no
+credential and keeps working regardless. `pnpm test:temporal` is unaffected either way — it runs its
+own ephemeral time-skipping server and never reaches the configured target.
 
 ## Cold start
 

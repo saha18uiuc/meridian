@@ -39,21 +39,51 @@ async function supabaseHealth(apiPort: number): Promise<HealthEntry> {
   };
 }
 
-async function temporalHealth(address: string, uiUrl: string): Promise<HealthEntry> {
-  // A secured Temporal Service rejects the unauthenticated probe, which the CLI reports the same
-  // way it reports a server that is not there. Without the key, `pnpm health` would call a healthy
-  // Cloud namespace `not-started` — the one answer that sends an operator looking in the wrong
-  // place. The dev server has no credential to check, so passing none there stays correct.
-  const apiKey = process.env.TEMPORAL_API_KEY?.trim();
-  const health = await runAsync('temporal', [
+/**
+ * Ask the configured namespace whether it is there, rather than asking the cluster.
+ *
+ * `temporal operator cluster health` asks a cluster-wide question, and an API key is not a
+ * cluster-wide credential: Temporal Cloud answers `Request unauthorized` for a namespace that is
+ * serving traffic perfectly well. Because the CLI exits non-zero for an unauthorized call exactly
+ * as it does for a server that is not running, `pnpm health` reported a healthy Cloud namespace as
+ * `not-started` — the one answer that sends an operator to look in the wrong place. Supplying the
+ * key was necessary but not sufficient; the command itself had to stop being cluster-scoped.
+ *
+ * Describing the namespace is a question both targets answer, and a stricter one than liveness: it
+ * proves the credential is accepted *for the namespace this repository is configured against*, not
+ * merely that something is listening on the address. The dev server has no credential to check, so
+ * passing none there stays correct.
+ */
+export function temporalProbeArgs(
+  address: string,
+  namespace: string,
+  apiKey: string | undefined,
+): string[] {
+  const key = apiKey?.trim();
+  return [
     'operator',
-    'cluster',
-    'health',
+    'namespace',
+    'describe',
     '--address',
     address,
-    ...(apiKey === undefined || apiKey === '' ? [] : ['--api-key', apiKey, '--tls']),
-  ]);
-  if (health.code !== 0) return { component: 'temporal', status: 'not-started', detail: address };
+    '--namespace',
+    namespace,
+    ...(key === undefined || key === '' ? [] : ['--api-key', key, '--tls']),
+  ];
+}
+
+async function temporalHealth(
+  address: string,
+  namespace: string,
+  uiUrl: string,
+): Promise<HealthEntry> {
+  const health = await runAsync(
+    'temporal',
+    temporalProbeArgs(address, namespace, process.env.TEMPORAL_API_KEY),
+  );
+  if (health.code !== 0) {
+    return { component: 'temporal', status: 'not-started', detail: `${address} (${namespace})` };
+  }
   const ui = await probe(uiUrl, [200]);
   return {
     component: 'temporal',
@@ -177,6 +207,7 @@ export async function healthCheck(): Promise<HealthEntry[]> {
   loadOpsEnv();
   const apiPort = Number.parseInt(optionalEnv('SUPABASE_API_PORT', '54521'), 10);
   const address = optionalEnv('TEMPORAL_ADDRESS', '127.0.0.1:7233');
+  const namespace = optionalEnv('TEMPORAL_NAMESPACE', 'default');
   const uiUrl = optionalEnv('TEMPORAL_UI_URL', 'http://127.0.0.1:8233');
   const appUrl = optionalEnv('APP_BASE_URL', 'http://localhost:3000');
   const workerPort = Number.parseInt(optionalEnv('WORKER_HEALTH_PORT', '9464'), 10);
@@ -185,7 +216,7 @@ export async function healthCheck(): Promise<HealthEntry[]> {
   const entries: HealthEntry[] = [];
   const supabase = await supabaseHealth(apiPort);
   entries.push(supabase);
-  entries.push(await temporalHealth(address, uiUrl));
+  entries.push(await temporalHealth(address, namespace, uiUrl));
   entries.push(await webHealth(appUrl));
   const worker = await workerHealth(workerPort);
   entries.push(worker.entry);

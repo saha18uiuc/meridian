@@ -346,6 +346,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'packages/ops/src/dev-infra.ts',
   'packages/ops/src/stop-local.ts',
   'packages/ops/src/health-check.ts',
+  'packages/ops/src/terminate-running-workflows.ts',
   'packages/ops/src/gen-types.ts',
   'packages/ops/src/seed-demo.ts',
   'packages/ops/src/run-evals.ts',
@@ -463,6 +464,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'scripts/dev-infra.ts',
   'scripts/stop-local.ts',
   'scripts/health-check.ts',
+  'scripts/terminate-workflows.ts',
   'scripts/gen-types.ts',
   'scripts/seed-demo.ts',
   'scripts/run-evals.ts',
@@ -532,6 +534,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'pins the shape sent to the model against the schemas in @meridian/core. A schema name is not a contract: asked only for "invoice", the model answers accurately under names of its own choosing and the agent files a legible document as unreadable. No other test can catch a rename here, because the mock extractor answers in the agent shape by construction.',
   'packages/ops/test/preflight.test.ts':
     'the live-mode coherence check — the one preflight result that asserts a relationship between two settings rather than the presence of a tool. GMAIL_LIVE_MODE also sends documents down the live path, so pairing it with a mocked model is unsatisfiable in a way that only surfaces mid-run.',
+  'packages/ops/test/health-check.test.ts':
+    'pins the Temporal probe to a namespace-scoped question. The cluster-wide one is unauthorized for an API key, and the CLI reports that with the same non-zero exit as a server that is not running — so a healthy Cloud namespace was reported `not-started`, which sends an operator to look in the wrong place.',
   'packages/ops/test/connect-gmail.test.ts':
     'covers the consent flow being re-runnable: a second run must find the existing connection rather than throw, which is the difference between a setup step an operator can repeat and one that works exactly once.',
   // Named in §16 or §7.0 but absent from the §11 tree listing, which enumerates source exhaustively
