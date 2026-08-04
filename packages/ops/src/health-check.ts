@@ -40,12 +40,18 @@ async function supabaseHealth(apiPort: number): Promise<HealthEntry> {
 }
 
 async function temporalHealth(address: string, uiUrl: string): Promise<HealthEntry> {
+  // A secured Temporal Service rejects the unauthenticated probe, which the CLI reports the same
+  // way it reports a server that is not there. Without the key, `pnpm health` would call a healthy
+  // Cloud namespace `not-started` — the one answer that sends an operator looking in the wrong
+  // place. The dev server has no credential to check, so passing none there stays correct.
+  const apiKey = process.env.TEMPORAL_API_KEY?.trim();
   const health = await runAsync('temporal', [
     'operator',
     'cluster',
     'health',
     '--address',
     address,
+    ...(apiKey === undefined || apiKey === '' ? [] : ['--api-key', apiKey, '--tls']),
   ]);
   if (health.code !== 0) return { component: 'temporal', status: 'not-started', detail: address };
   const ui = await probe(uiUrl, [200]);
