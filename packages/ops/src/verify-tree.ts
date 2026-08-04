@@ -561,6 +561,10 @@ const IGNORED_TOP_LEVEL = new Set([
   'coverage',
   'test-results',
   'playwright-report',
+  // The default `PLAYWRIGHT_BROWSERS_PATH`, so it appears the moment anyone runs the e2e suite
+  // with the documented settings — which made `pnpm verify` red on exactly the machines that had
+  // followed the README furthest.
+  '.playwright-browsers',
 ]);
 
 export interface TreeReport {
