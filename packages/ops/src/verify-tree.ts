@@ -724,10 +724,10 @@ export function verifyTree(): TreeReport {
     'tsconfig.tests.json',
     'eslint.config.mjs',
     'vitest.workspace.ts',
-    // Deployment configuration has to sit at the root: Vercel reads `vercel.json` from the
-    // repository root, and Docker resolves `.dockerignore` relative to the build context, which is
-    // the root because the worker's image needs the whole workspace to install and compile.
-    'vercel.json',
+    // Docker resolves `.dockerignore` relative to the build context, which is the repository root
+    // because the worker's image needs the whole workspace to install and compile. (Vercel's config
+    // is not here: it reads `vercel.json` from the project's root directory, which for this layout
+    // is `apps/web`.)
     '.dockerignore',
     '.nvmrc',
     '.pnpm-store',

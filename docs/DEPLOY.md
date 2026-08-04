@@ -65,16 +65,21 @@ credentials** (`DEMO_USER_EMAIL` / `DEMO_USER_PASSWORD`) rather than invite peop
 
 ## 2. Web app on Vercel
 
-Import the repository. `vercel.json` at the root already sets what matters, and is worth explaining
-since JSON cannot carry comments:
+Import the repository. Vercel detects the Next app and sets **Root Directory** to `apps/web`; leave
+it there. Every command then runs from `apps/web`, which is why `apps/web/vercel.json` — the file
+Vercel reads, given that root — says what it says. JSON cannot carry comments, so:
 
-- `buildCommand` is `pnpm build`, which is `tsc -b` followed by the Next build. The workspace
-  packages must be compiled before Next can resolve them, so the plain framework preset is not
-  enough.
-- `outputDirectory` is `apps/web/.next`, because the project root is the workspace root rather than
-  the app.
+- `buildCommand` is `cd ../.. && pnpm build`, which is `tsc -b` followed by the Next build. The
+  framework preset alone runs `next build`, and that fails here: the workspace packages are imported
+  through subpath exports that point at `dist/*.js`, so nothing resolves until they are compiled.
+  The output still lands in `apps/web/.next`, which is where Vercel already looks.
+- `installCommand` also steps up to the root, because the lockfile and the workspace definition live
+  there and the worker, the web app, and the packages are installed as one graph.
 - `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is set for the build, or installing the web app's dev
   dependencies fetches a browser the build never opens.
+
+The first deploy is expected to fail or to produce a site that cannot sign in, because none of the
+environment variables below exist yet. Add them, then redeploy.
 
 Set the environment variables marked "web" in the table below. Note `WORKER_HEALTH_URL`: without it
 the health endpoint probes `127.0.0.1`, which on Vercel is Vercel.
