@@ -634,9 +634,19 @@ Making that possible is what forced the release path to stop naming a deployment
 what distinguishes the two examples: a key, a name, a board, and a code path. If adding a third
 required editing anything else, the claim would be false.
 
-The second deployment deliberately has no eval corpus. Its job is to prove the lifecycle
-generalises, and fifteen more fixture documents would not make that point better than the first
-deployment's sixteen cases already make theirs.
+It initially shipped with no eval corpus, on the reasoning that its job was to prove the lifecycle
+generalises and that breadth already lived in the first deployment's sixteen cases. That reasoning
+was wrong, and worth recording as wrong. Without a corpus the second agent never executed, so what
+had actually been demonstrated was that the _authoring and compile_ half of the platform is
+domain-agnostic — nothing at all about the runtime half. The manifest was also claiming `pnpm evals`
+under `validation.commands` while listing zero cases, which is a false statement in a lineage
+artifact.
+
+It now has five cases, one per branch its board declares. Writing them surfaced three more places
+where the platform still assumed a single deployment: the eval harness hard-coded the first
+example's mail and attachment directories, business-key extraction was the shipment extractor by
+construction, and `EvalCaseSchema` required case keys to match `/^case-\d{2}$/`, so a second suite
+could not name its cases at all. None of those would have been found by reading the code.
 
 ---
 
@@ -649,6 +659,22 @@ certificate is almost always a stale attachment, and the current one exists.
 
 So the board routes them differently, and `outcomeFor` says only what the two arrows say. This is
 recorded because it is exactly the kind of asymmetry a future reader would "tidy up".
+
+---
+
+---
+
+## Correlation belongs to the deployment
+
+Which unit of work a message belongs to looked like a platform question while there was one
+deployment, because "the business key" and "a valid ISO 6346 container number or IATA air waybill"
+were the same sentence. They are not the same thing. One example asks which shipment a message is
+about; the other asks which vendor. There is no answer the platform could supply for both, and a
+platform that supplied the first one would silently send every vendor renewal to manual review.
+
+`DeploymentFixture` therefore carries an `extractBusinessKey`, and intake takes an extractor rather
+than containing one. Refusing to guess between two conflicting keys stays in the platform, because
+that is a property of how the system behaves under ambiguity rather than a fact about shipments.
 
 ---
 
