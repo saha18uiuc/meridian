@@ -4,16 +4,16 @@
     "outcome": "manual_review",
     "businessKey": null,
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": null,
       "mawb": null,
       "invoiceNumbers": [],
       "batchNumbers": [],
       "goodsCount": 0,
-      "validGoodsCount": 0
+      "validGoodsCount": 0,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }

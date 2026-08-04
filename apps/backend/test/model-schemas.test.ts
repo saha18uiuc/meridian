@@ -1,12 +1,18 @@
-import { CoaSchema, GoodSchema, InvoiceSchema } from '@meridian/core/schemas';
+import {
+  CoaSchema,
+  GoodSchema,
+  InvoiceSchema,
+} from '@meridian/generated-agents/inbound-import-receiving/v001/rules';
 import type { z } from 'zod';
 import { describe, expect, it } from 'vitest';
 import { EXTRACTION_SCHEMAS } from '../src/temporal/activities/model.js';
 
 /**
  * The model is only useful if it answers in the names the agent reads, so these assert that the
- * schema sent to OpenAI still matches the canonical shape. A field renamed in `@meridian/core`
- * without a matching change here would otherwise surface as a document silently filed unreadable.
+ * schema sent to OpenAI still matches the shape the agent reads. The shapes live in the generated
+ * agent rather than in `@meridian/core`, because a commercial invoice is this deployment's concern
+ * and not the platform's; a field renamed there without a matching change here would otherwise
+ * surface as a document silently filed unreadable.
  */
 
 function coreKeys(schema: z.ZodObject<z.ZodRawShape>, omit: readonly string[] = []): string[] {

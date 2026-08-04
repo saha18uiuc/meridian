@@ -4,20 +4,16 @@
     "outcome": "ready",
     "businessKey": "020-12345675",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": null,
       "mawb": "020-12345675",
-      "invoiceNumbers": [
-        "INV-1027"
-      ],
-      "batchNumbers": [
-        "D14E"
-      ],
+      "invoiceNumbers": ["INV-1027"],
+      "batchNumbers": ["D14E"],
       "goodsCount": 1,
-      "validGoodsCount": 1
+      "validGoodsCount": 1,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }

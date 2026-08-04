@@ -4,23 +4,16 @@
     "outcome": "needs_information",
     "businessKey": "TGHU7654320",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "TGHU7654320",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1025"
-      ],
-      "batchNumbers": [
-        "B90X"
-      ],
+      "invoiceNumbers": ["INV-1025"],
+      "batchNumbers": ["B90X"],
       "goodsCount": 1,
-      "validGoodsCount": 0
+      "validGoodsCount": 0,
+      "missingInformation": ["good:LINE-1:andaNumber", "good:LINE-1:ndcNumber"]
     },
-    "missingInformation": [
-      "good:LINE-1:andaNumber",
-      "good:LINE-1:ndcNumber"
-    ],
-    "validationFailures": [
+    "findings": [
       {
         "scope": "good",
         "key": "LINE-1",

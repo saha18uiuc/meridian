@@ -3,9 +3,7 @@
   "description": "An invoice carrying all four required identifiers but no Registration Number still receives.",
   "specTrace": "Input \"Commercial invoice\" marks registrationNumber not required; Rule \"Does every good carry the four required fields?\" names HTS, FDA product code, NDC, and ANDA only.",
   "inputRefs": {
-    "emailPaths": [
-      "examples/inbound-import-receiving/fixtures/emails/registration-gap.eml"
-    ],
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/registration-gap.eml"],
     "attachmentPaths": [
       "examples/inbound-import-receiving/fixtures/attachments/invoice-1031.pdf",
       "examples/inbound-import-receiving/fixtures/attachments/coa-E22F.pdf"
@@ -22,8 +20,6 @@
       "validate-good:INV-1031:LINE-1",
       "decide:MEDU2000002"
     ],
-    "evidenceKeys": [
-      "assessment:MEDU2000002"
-    ]
+    "evidenceKeys": ["assessment:MEDU2000002"]
   }
 }

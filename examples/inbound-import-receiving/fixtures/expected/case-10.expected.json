@@ -4,21 +4,16 @@
     "outcome": "completed",
     "businessKey": "MSKU1234565",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "MSKU1234565",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1024"
-      ],
-      "batchNumbers": [
-        "B77A",
-        "B77B"
-      ],
+      "invoiceNumbers": ["INV-1024"],
+      "batchNumbers": ["B77A", "B77B"],
       "goodsCount": 2,
-      "validGoodsCount": 2
+      "validGoodsCount": 2,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }

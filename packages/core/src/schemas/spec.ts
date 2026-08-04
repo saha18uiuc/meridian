@@ -132,7 +132,6 @@ export const SpecJsonSchema = z
       .object({
         decisionSchema: z.record(z.string(), z.unknown()),
         emailResponseSchema: z.record(z.string(), z.unknown()),
-        shipmentSummarySchema: z.record(z.string(), z.unknown()),
       })
       .strict(),
     /** Sorted by `sourceCommentId` for canonical stability. */

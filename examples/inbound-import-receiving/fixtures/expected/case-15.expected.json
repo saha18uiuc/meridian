@@ -4,22 +4,16 @@
     "outcome": "needs_information",
     "businessKey": "CMAU9988771",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "CMAU9988771",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1026"
-      ],
-      "batchNumbers": [
-        "C31D"
-      ],
+      "invoiceNumbers": ["INV-1026"],
+      "batchNumbers": ["C31D"],
       "goodsCount": 1,
-      "validGoodsCount": 1
+      "validGoodsCount": 1,
+      "missingInformation": ["batch:C31D:certificateOfAnalysis"]
     },
-    "missingInformation": [
-      "batch:C31D:certificateOfAnalysis"
-    ],
-    "validationFailures": [
+    "findings": [
       {
         "scope": "batch",
         "key": "C31D",

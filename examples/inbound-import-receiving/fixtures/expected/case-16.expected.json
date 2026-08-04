@@ -4,20 +4,16 @@
     "outcome": "ready",
     "businessKey": "MEDU2000002",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "MEDU2000002",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1031"
-      ],
-      "batchNumbers": [
-        "E22F"
-      ],
+      "invoiceNumbers": ["INV-1031"],
+      "batchNumbers": ["E22F"],
       "goodsCount": 1,
-      "validGoodsCount": 1
+      "validGoodsCount": 1,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }

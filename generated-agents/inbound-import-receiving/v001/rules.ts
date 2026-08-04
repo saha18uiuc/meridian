@@ -1,4 +1,62 @@
-import type { Coa, Good, Invoice } from '@meridian/core/schemas';
+import { z } from 'zod';
+
+/**
+ * The documents this deployment reads.
+ *
+ * These lived in `@meridian/core` until the shared skeleton was asked to serve a second customer,
+ * at which point "every agent's decision mentions a shipment" stopped being a reasonable thing for
+ * a platform to believe. A commercial invoice is this importer's concern, so it is described here,
+ * beside the rules that read it.
+ */
+
+export const GoodSchema = z
+  .object({
+    lineKey: z.string().min(1),
+    description: z.string(),
+    batchNumber: z.string().nullable(),
+    htsCode: z.string().nullable(),
+    fdaProductCode: z.string().nullable(),
+    andaNumber: z.string().nullable(),
+    registrationNumber: z.string().nullable(),
+    ndcNumber: z.string().nullable(),
+  })
+  .strict();
+export type Good = z.infer<typeof GoodSchema>;
+
+export const InvoiceSchema = z
+  .object({
+    invoiceNumber: z.string().min(1),
+    sourcePath: z.string(),
+    goods: z.array(GoodSchema),
+  })
+  .strict();
+export type Invoice = z.infer<typeof InvoiceSchema>;
+
+export const CoaSchema = z
+  .object({ batchNumber: z.string().min(1), sourcePath: z.string() })
+  .strict();
+export type Coa = z.infer<typeof CoaSchema>;
+
+export const ShipmentInputSchema = z
+  .object({
+    containerNumber: z.string().nullable(),
+    mawb: z.string().nullable(),
+    invoices: z.array(InvoiceSchema),
+    coas: z.array(CoaSchema),
+  })
+  .strict();
+export type ShipmentInput = z.infer<typeof ShipmentInputSchema>;
+
+/** This deployment's summary, carried in the decision envelope's open `summary` field. */
+export interface ShipmentSummary {
+  [key: string]: unknown;
+  containerNumber: string | null;
+  mawb: string | null;
+  invoiceNumbers: string[];
+  batchNumbers: string[];
+  goodsCount: number;
+  validGoodsCount: number;
+}
 
 /**
  * The policy the frozen specification states, expressed as pure functions.
@@ -12,6 +70,10 @@ import type { Coa, Good, Invoice } from '@meridian/core/schemas';
  * question surfaces as a `manual_review` outcome and, in the repair loop, as a policy gap.
  */
 
+/**
+ * A finding in this deployment's vocabulary. The envelope types `scope` as a free string; the union
+ * here is this agent narrowing it to the four nouns its own board uses.
+ */
 export interface ValidationFailure {
   scope: 'invoice' | 'good' | 'batch' | 'shipment';
   key: string;

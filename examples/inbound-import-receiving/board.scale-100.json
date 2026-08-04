@@ -23,9 +23,7 @@
             "description": "Invoice number."
           }
         ],
-        "correlationKeys": [
-          "containerNumber"
-        ]
+        "correlationKeys": ["containerNumber"]
       },
       "position": {
         "x": 0,
@@ -41,12 +39,8 @@
         "operation": "document.extract",
         "instructions": "Produce one validation branch per good on the manifest.",
         "system": "Document extraction service",
-        "inputs": [
-          "Consolidated shipment manifest"
-        ],
-        "outputs": [
-          "Goods list"
-        ]
+        "inputs": ["Consolidated shipment manifest"],
+        "outputs": ["Goods list"]
       },
       "position": {
         "x": 240,
@@ -62,12 +56,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 001.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 001 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 001 fields"]
       },
       "position": {
         "x": 520,
@@ -109,12 +99,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 002.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 002 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 002 fields"]
       },
       "position": {
         "x": 520,
@@ -156,12 +142,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 003.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 003 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 003 fields"]
       },
       "position": {
         "x": 520,
@@ -203,12 +185,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 004.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 004 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 004 fields"]
       },
       "position": {
         "x": 520,
@@ -250,12 +228,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 005.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 005 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 005 fields"]
       },
       "position": {
         "x": 520,
@@ -297,12 +271,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 006.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 006 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 006 fields"]
       },
       "position": {
         "x": 520,
@@ -344,12 +314,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 007.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 007 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 007 fields"]
       },
       "position": {
         "x": 520,
@@ -391,12 +357,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 008.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 008 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 008 fields"]
       },
       "position": {
         "x": 520,
@@ -438,12 +400,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 009.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 009 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 009 fields"]
       },
       "position": {
         "x": 520,
@@ -485,12 +443,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 010.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 010 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 010 fields"]
       },
       "position": {
         "x": 520,
@@ -532,12 +486,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 011.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 011 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 011 fields"]
       },
       "position": {
         "x": 520,
@@ -579,12 +529,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 012.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 012 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 012 fields"]
       },
       "position": {
         "x": 520,
@@ -626,12 +572,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 013.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 013 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 013 fields"]
       },
       "position": {
         "x": 520,
@@ -673,12 +615,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 014.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 014 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 014 fields"]
       },
       "position": {
         "x": 520,
@@ -720,12 +658,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 015.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 015 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 015 fields"]
       },
       "position": {
         "x": 520,
@@ -767,12 +701,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 016.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 016 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 016 fields"]
       },
       "position": {
         "x": 520,
@@ -814,12 +744,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 017.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 017 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 017 fields"]
       },
       "position": {
         "x": 520,
@@ -861,12 +787,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 018.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 018 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 018 fields"]
       },
       "position": {
         "x": 520,
@@ -908,12 +830,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 019.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 019 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 019 fields"]
       },
       "position": {
         "x": 520,
@@ -955,12 +873,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 020.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 020 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 020 fields"]
       },
       "position": {
         "x": 520,
@@ -1002,12 +916,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 021.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 021 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 021 fields"]
       },
       "position": {
         "x": 520,
@@ -1049,12 +959,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 022.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 022 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 022 fields"]
       },
       "position": {
         "x": 520,
@@ -1096,12 +1002,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 023.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 023 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 023 fields"]
       },
       "position": {
         "x": 520,
@@ -1143,12 +1045,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 024.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 024 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 024 fields"]
       },
       "position": {
         "x": 520,
@@ -1190,12 +1088,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 025.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 025 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 025 fields"]
       },
       "position": {
         "x": 520,
@@ -1237,12 +1131,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 026.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 026 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 026 fields"]
       },
       "position": {
         "x": 520,
@@ -1284,12 +1174,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 027.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 027 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 027 fields"]
       },
       "position": {
         "x": 520,
@@ -1331,12 +1217,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 028.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 028 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 028 fields"]
       },
       "position": {
         "x": 520,
@@ -1378,12 +1260,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 029.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 029 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 029 fields"]
       },
       "position": {
         "x": 520,
@@ -1425,12 +1303,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 030.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 030 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 030 fields"]
       },
       "position": {
         "x": 520,
@@ -1472,12 +1346,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 031.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 031 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 031 fields"]
       },
       "position": {
         "x": 520,
@@ -1519,12 +1389,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 032.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 032 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 032 fields"]
       },
       "position": {
         "x": 520,
@@ -1566,12 +1432,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 033.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 033 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 033 fields"]
       },
       "position": {
         "x": 520,
@@ -1613,12 +1475,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 034.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 034 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 034 fields"]
       },
       "position": {
         "x": 520,
@@ -1660,12 +1518,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 035.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 035 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 035 fields"]
       },
       "position": {
         "x": 520,
@@ -1707,12 +1561,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 036.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 036 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 036 fields"]
       },
       "position": {
         "x": 520,
@@ -1754,12 +1604,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 037.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 037 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 037 fields"]
       },
       "position": {
         "x": 520,
@@ -1801,12 +1647,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 038.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 038 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 038 fields"]
       },
       "position": {
         "x": 520,
@@ -1848,12 +1690,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 039.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 039 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 039 fields"]
       },
       "position": {
         "x": 520,
@@ -1895,12 +1733,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 040.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 040 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 040 fields"]
       },
       "position": {
         "x": 520,
@@ -1942,12 +1776,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 041.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 041 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 041 fields"]
       },
       "position": {
         "x": 520,
@@ -1989,12 +1819,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 042.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 042 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 042 fields"]
       },
       "position": {
         "x": 520,
@@ -2036,12 +1862,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 043.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 043 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 043 fields"]
       },
       "position": {
         "x": 520,
@@ -2083,12 +1905,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 044.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 044 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 044 fields"]
       },
       "position": {
         "x": 520,
@@ -2130,12 +1948,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 045.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 045 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 045 fields"]
       },
       "position": {
         "x": 520,
@@ -2177,12 +1991,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 046.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 046 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 046 fields"]
       },
       "position": {
         "x": 520,
@@ -2224,12 +2034,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 047.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 047 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 047 fields"]
       },
       "position": {
         "x": 520,
@@ -2271,12 +2077,8 @@
         "operation": "document.extract",
         "instructions": "Read the five required regulatory fields for good 048.",
         "system": "Document extraction service",
-        "inputs": [
-          "Goods list"
-        ],
-        "outputs": [
-          "Good 048 fields"
-        ]
+        "inputs": ["Goods list"],
+        "outputs": ["Good 048 fields"]
       },
       "position": {
         "x": 520,
@@ -2318,12 +2120,8 @@
         "operation": "summarise shipment",
         "instructions": "Combine every completed good into one shipment summary.",
         "system": "Warehouse management system",
-        "inputs": [
-          "Per-good results"
-        ],
-        "outputs": [
-          "Shipment summary"
-        ]
+        "inputs": ["Per-good results"],
+        "outputs": ["Shipment summary"]
       },
       "position": {
         "x": 1080,

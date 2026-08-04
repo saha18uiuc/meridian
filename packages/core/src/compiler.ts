@@ -347,9 +347,8 @@ export function compileSpec(input: CompileSpecInput): CompileSpecResult {
     policies: { validationRules, waits, retries, exceptions, humanHandoffs },
     capabilities: sortedUnique(capabilities) as Capability[],
     outputs: {
-      decisionSchema: DECISION_SCHEMA,
+      decisionSchema: decisionSchemaFor(graph, terminalNodeIds),
       emailResponseSchema: EMAIL_RESPONSE_SCHEMA,
-      shipmentSummarySchema: SHIPMENT_SUMMARY_SCHEMA,
     },
     assumptions,
     knownGaps,
@@ -390,42 +389,63 @@ function buildAcceptanceCriteria(graph: CanonicalGraph, terminalNodeIds: string[
     .sort();
 }
 
-const DECISION_SCHEMA: Record<string, unknown> = {
-  type: 'object',
-  required: [
-    'outcome',
-    'businessKey',
-    'reason',
-    'shipmentSummary',
-    'missingInformation',
-    'validationFailures',
-    'emailResponse',
-  ],
-  properties: {
-    outcome: {
-      type: 'string',
-      enum: ['ready', 'needs_information', 'manual_review', 'rejected', 'completed'],
-    },
-    businessKey: { type: ['string', 'null'] },
-    reason: { type: 'string' },
-    shipmentSummary: { $ref: '#/definitions/shipmentSummary' },
-    missingInformation: { type: 'array', items: { type: 'string' } },
-    validationFailures: {
-      type: 'array',
-      items: {
-        type: 'object',
-        required: ['scope', 'key', 'field', 'message'],
-        properties: {
-          scope: { type: 'string', enum: ['invoice', 'good', 'batch', 'shipment'] },
-          key: { type: 'string' },
-          field: { type: 'string' },
-          message: { type: 'string' },
+/**
+ * The decision schema a board compiles to.
+ *
+ * Derived rather than declared. An earlier version of this function was a constant describing one
+ * customer's shipments — it named `shipmentSummary`, `containerNumber`, and a `scope` enum of
+ * invoice, good, batch, and shipment — which meant every board any customer drew compiled to a
+ * pharmaceutical import decision. The envelope below is the part that is genuinely the platform's:
+ * a run ends at one of the outcomes its own board declares, against the key it correlated on, with
+ * a reason, a summary of whatever it correlated by, and a list of what it found. The content of the
+ * summary and the vocabulary of the findings come from the board.
+ */
+function decisionSchemaFor(
+  graph: CanonicalGraph,
+  terminalNodeIds: readonly string[],
+): Record<string, unknown> {
+  const byId = new Map(graph.nodes.map((node) => [node.nodeId, node] as const));
+  const outcomes = sortedUnique(
+    terminalNodeIds.flatMap((id) => {
+      const node = byId.get(id);
+      if (node === undefined) return [];
+      const parsed = OutcomeDataSchema.safeParse(node.data);
+      return parsed.success ? [parsed.data.resultKind] : [];
+    }),
+  );
+
+  return {
+    type: 'object',
+    required: ['outcome', 'businessKey', 'reason', 'summary', 'findings', 'emailResponse'],
+    properties: {
+      // Only the outcomes this board actually declares. A spec that permits `rejected` when no card
+      // on the canvas says a run may be rejected is a contract nobody agreed to.
+      outcome: { type: 'string', enum: outcomes },
+      businessKey: { type: ['string', 'null'] },
+      reason: { type: 'string' },
+      // Deliberately unconstrained. What a run summarises is the deployment's business, and the
+      // keys it correlates on are already recorded once, in `data.correlationKeys`; restating them
+      // here would couple two parts of the spec that can legitimately differ.
+      summary: { type: 'object' },
+      findings: {
+        type: 'array',
+        items: {
+          type: 'object',
+          required: ['scope', 'key', 'field', 'message'],
+          properties: {
+            // A free string, not an enum. What a finding is *about* is the deployment's vocabulary,
+            // and the previous enum was one importer's nouns frozen into the platform.
+            scope: { type: 'string' },
+            key: { type: 'string' },
+            field: { type: 'string' },
+            message: { type: 'string' },
+          },
         },
       },
+      emailResponse: { oneOf: [{ $ref: '#/definitions/emailResponse' }, { type: 'null' }] },
     },
-    emailResponse: { oneOf: [{ $ref: '#/definitions/emailResponse' }, { type: 'null' }] },
-  },
-};
+  };
+}
 
 const EMAIL_RESPONSE_SCHEMA: Record<string, unknown> = {
   type: 'object',
@@ -434,25 +454,5 @@ const EMAIL_RESPONSE_SCHEMA: Record<string, unknown> = {
     subject: { type: 'string' },
     body: { type: 'string' },
     recipient: { type: 'string' },
-  },
-};
-
-const SHIPMENT_SUMMARY_SCHEMA: Record<string, unknown> = {
-  type: 'object',
-  required: [
-    'containerNumber',
-    'mawb',
-    'invoiceNumbers',
-    'batchNumbers',
-    'goodsCount',
-    'validGoodsCount',
-  ],
-  properties: {
-    containerNumber: { type: ['string', 'null'] },
-    mawb: { type: ['string', 'null'] },
-    invoiceNumbers: { type: 'array', items: { type: 'string' } },
-    batchNumbers: { type: 'array', items: { type: 'string' } },
-    goodsCount: { type: 'integer' },
-    validGoodsCount: { type: 'integer' },
   },
 };

@@ -69,7 +69,11 @@ export function assertBusinessKey(evalCase: EvalCase, run: RunObservation): Asse
 export function assertMissingFields(evalCase: EvalCase, run: RunObservation): AssertionFailure[] {
   const expected = evalCase.expected.missingFields;
   if (expected === undefined) return [];
-  const actual = [...(run.decision?.missingInformation ?? [])].sort();
+  // The list lives inside the deployment's own `summary`, because what counts as "missing" is the
+  // deployment's business. The harness reads it by convention and asserts nothing about its shape
+  // beyond it being a list of strings.
+  const reported = run.decision?.summary['missingInformation'];
+  const actual = [...(Array.isArray(reported) ? reported.map(String) : [])].sort();
   const wanted = [...expected].sort();
   const same =
     wanted.length === actual.length && wanted.every((value, index) => value === actual[index]);

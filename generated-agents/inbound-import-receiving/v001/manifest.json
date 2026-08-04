@@ -4,21 +4,10 @@
   "versionNo": 1,
   "codePath": "generated-agents/inbound-import-receiving/v001",
   "specId": "fdb5c683-5c80-5d88-9756-962d90a7e22d",
-  "specHash": "dd74e8e74530998dcce9795a53212a8b8f3037da72b87bf3c3c2c80e58be2912",
+  "specHash": "6ffaa3f274b804698e2ac1a39f8374cce7739e48fad234d6ab5e9f801bab56f8",
   "specVersion": 1,
-  "generatedFiles": [
-    "agent.ts",
-    "rules.ts",
-    "prompts.ts",
-    "manifest.json",
-    "spec.snapshot.json"
-  ],
-  "capabilities": [
-    "document.extract",
-    "human.handoff",
-    "mail.read",
-    "mail.send"
-  ],
+  "generatedFiles": ["agent.ts", "rules.ts", "prompts.ts", "manifest.json", "spec.snapshot.json"],
+  "capabilities": ["document.extract", "human.handoff", "mail.read", "mail.send"],
   "generatedAt": "1970-01-01T00:00:00.000Z",
   "generator": {
     "skill": ".codex/skills/spec-to-agent",
@@ -30,12 +19,7 @@
     "zod": "4.4.3"
   },
   "validation": {
-    "commands": [
-      "pnpm lint",
-      "pnpm typecheck",
-      "pnpm test:unit",
-      "pnpm evals"
-    ],
+    "commands": ["pnpm lint", "pnpm typecheck", "pnpm test:unit", "pnpm evals"],
     "evalCaseKeys": [
       "case-01",
       "case-02",

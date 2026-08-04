@@ -261,9 +261,8 @@ function assertExpectedDocument(
   // improvement into a failing suite without telling anyone anything about behaviour.
   compare('outcome');
   compare('businessKey');
-  compare('shipmentSummary');
-  compare('missingInformation');
-  compare('validationFailures');
+  compare('summary');
+  compare('findings');
   return failures;
 }
 
@@ -434,16 +433,8 @@ export async function runCase(options: RunSuiteOptions, evalCase: EvalCase): Pro
           extraction.kind === 'conflict'
             ? 'two different valid business keys appear in one message'
             : 'no valid business key was found',
-        shipmentSummary: {
-          containerNumber: null,
-          mawb: null,
-          invoiceNumbers: [],
-          batchNumbers: [],
-          goodsCount: 0,
-          validGoodsCount: 0,
-        },
-        missingInformation: [],
-        validationFailures: [],
+        summary: {},
+        findings: [],
         emailResponse: null,
       };
     }

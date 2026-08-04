@@ -4,24 +4,16 @@
     "outcome": "rejected",
     "businessKey": "MSKU1234565",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "MSKU1234565",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1024",
-        "INV-1028"
-      ],
-      "batchNumbers": [
-        "B77A",
-        "B77B"
-      ],
+      "invoiceNumbers": ["INV-1024", "INV-1028"],
+      "batchNumbers": ["B77A", "B77B"],
       "goodsCount": 3,
-      "validGoodsCount": 3
+      "validGoodsCount": 3,
+      "missingInformation": ["batch:B77A:batchNumber"]
     },
-    "missingInformation": [
-      "batch:B77A:batchNumber"
-    ],
-    "validationFailures": [
+    "findings": [
       {
         "scope": "batch",
         "key": "B77A",

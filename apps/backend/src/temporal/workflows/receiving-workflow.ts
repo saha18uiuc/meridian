@@ -189,7 +189,7 @@ export async function receivingWorkflow(input: ReceivingInput): Promise<Receivin
       businessKey: input.businessKey,
       reason: decision.reason,
       messageCount: messages.length,
-      shipmentSummary: decision.shipmentSummary,
+      summary: decision.summary,
     },
   });
 

@@ -4,16 +4,16 @@
     "outcome": "manual_review",
     "businessKey": "HLXU1234561",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "HLXU1234561",
       "mawb": null,
       "invoiceNumbers": [],
       "batchNumbers": [],
       "goodsCount": 0,
-      "validGoodsCount": 0
+      "validGoodsCount": 0,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }

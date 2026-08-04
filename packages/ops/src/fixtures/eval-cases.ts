@@ -20,7 +20,7 @@ const EXPECTED_DIR = 'examples/inbound-import-receiving/fixtures/expected';
 const EMAILS = 'examples/inbound-import-receiving/fixtures/emails';
 const ATTACHMENTS = 'examples/inbound-import-receiving/fixtures/attachments';
 
-type Failure = AgentDecision['validationFailures'][number];
+type Failure = AgentDecision['findings'][number];
 
 interface Draft {
   caseKey: string;
@@ -39,7 +39,7 @@ function summary(input: {
   batches?: string[];
   goods?: number;
   validGoods?: number;
-}): AgentDecision['shipmentSummary'] {
+}): Record<string, unknown> {
   return {
     containerNumber: input.container ?? null,
     mawb: input.mawb ?? null,
@@ -148,15 +148,18 @@ export function drafts(): Draft[] {
         outcome: 'ready',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024'],
-          batches: ['B77A', 'B77B'],
-          goods: 2,
-          validGoods: 2,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024'],
+            batches: ['B77A', 'B77B'],
+            goods: 2,
+            validGoods: 2,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -187,15 +190,18 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingFields,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.missingFields,
-          invoices: ['INV-1025'],
-          batches: ['B90X'],
-          goods: 1,
-          validGoods: 0,
-        }),
-        missingInformation: missingList(case02Failures),
-        validationFailures: case02Failures,
+        summary: {
+          ...summary({
+            container: CONTAINERS.missingFields,
+            invoices: ['INV-1025'],
+            batches: ['B90X'],
+            goods: 1,
+            validGoods: 0,
+          }),
+          missingInformation: missingList(case02Failures),
+        },
+
+        findings: case02Failures,
         emailResponse: null,
       },
     },
@@ -218,15 +224,18 @@ export function drafts(): Draft[] {
         outcome: 'rejected',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024'],
-          batches: ['B77A', 'B77B'],
-          goods: 2,
-          validGoods: 2,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024'],
+            batches: ['B77A', 'B77B'],
+            goods: 2,
+            validGoods: 2,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -248,18 +257,21 @@ export function drafts(): Draft[] {
         outcome: 'rejected',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024', 'INV-1028'],
-          batches: ['B77A', 'B77B'],
-          goods: 3,
-          validGoods: 3,
-        }),
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024', 'INV-1028'],
+            batches: ['B77A', 'B77B'],
+            goods: 3,
+            validGoods: 3,
+          }),
+          missingInformation: ['batch:B77A:batchNumber'],
+        },
         // The duplicated batch is the only finding: `happy-path.eml` carries coa-B77A and coa-B77B,
         // so both batches on this shipment are certified. The failure is that INV-1028 re-uses a
         // batch INV-1024 already claimed, and one batch is one physical lot.
-        missingInformation: ['batch:B77A:batchNumber'],
-        validationFailures: [
+
+        findings: [
           {
             scope: 'batch',
             key: 'B77A',
@@ -290,15 +302,18 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingCoa,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.missingCoa,
-          invoices: ['INV-1026'],
-          batches: ['C31D'],
-          goods: 1,
-          validGoods: 1,
-        }),
-        missingInformation: missingList(case05Failures),
-        validationFailures: case05Failures,
+        summary: {
+          ...summary({
+            container: CONTAINERS.missingCoa,
+            invoices: ['INV-1026'],
+            batches: ['C31D'],
+            goods: 1,
+            validGoods: 1,
+          }),
+          missingInformation: missingList(case05Failures),
+        },
+
+        findings: case05Failures,
         emailResponse: null,
       },
     },
@@ -322,15 +337,18 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024'],
-          batches: ['B77A', 'B77B'],
-          goods: 2,
-          validGoods: 2,
-        }),
-        missingInformation: missingList(case06Failures),
-        validationFailures: case06Failures,
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024'],
+            batches: ['B77A', 'B77B'],
+            goods: 2,
+            validGoods: 2,
+          }),
+          missingInformation: missingList(case06Failures),
+        },
+
+        findings: case06Failures,
         emailResponse: null,
       },
     },
@@ -353,15 +371,18 @@ export function drafts(): Draft[] {
         outcome: 'ready',
         businessKey: MAWB_AIR,
         reason: '',
-        shipmentSummary: summary({
-          mawb: MAWB_AIR,
-          invoices: ['INV-1027'],
-          batches: ['D14E'],
-          goods: 1,
-          validGoods: 1,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            mawb: MAWB_AIR,
+            invoices: ['INV-1027'],
+            batches: ['D14E'],
+            goods: 1,
+            validGoods: 1,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -382,9 +403,9 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: null,
         reason: '',
-        shipmentSummary: EMPTY_SUMMARY,
-        missingInformation: [],
-        validationFailures: [],
+        summary: { ...EMPTY_SUMMARY, missingInformation: [] },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -405,9 +426,9 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: null,
         reason: '',
-        shipmentSummary: EMPTY_SUMMARY,
-        missingInformation: [],
-        validationFailures: [],
+        summary: { ...EMPTY_SUMMARY, missingInformation: [] },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -429,15 +450,18 @@ export function drafts(): Draft[] {
         outcome: 'completed',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024'],
-          batches: ['B77A', 'B77B'],
-          goods: 2,
-          validGoods: 2,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024'],
+            batches: ['B77A', 'B77B'],
+            goods: 2,
+            validGoods: 2,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -459,15 +483,18 @@ export function drafts(): Draft[] {
         outcome: 'ready',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.happyPath,
-          invoices: ['INV-1024'],
-          batches: ['B77A', 'B77B'],
-          goods: 2,
-          validGoods: 2,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.happyPath,
+            invoices: ['INV-1024'],
+            batches: ['B77A', 'B77B'],
+            goods: 2,
+            validGoods: 2,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -491,9 +518,9 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: CONTAINERS.scanned,
         reason: '',
-        shipmentSummary: summary({ container: CONTAINERS.scanned }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: { ...summary({ container: CONTAINERS.scanned }), missingInformation: [] },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -517,9 +544,9 @@ export function drafts(): Draft[] {
         outcome: 'manual_review',
         businessKey: CONTAINERS.happyPath,
         reason: '',
-        shipmentSummary: summary({ container: CONTAINERS.happyPath }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: { ...summary({ container: CONTAINERS.happyPath }), missingInformation: [] },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -542,15 +569,18 @@ export function drafts(): Draft[] {
         outcome: 'ready',
         businessKey: CONTAINERS.scale,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.scale,
-          invoices: ['INV-1040'],
-          batches: scaleBatches(),
-          goods: SCALE_GOODS,
-          validGoods: SCALE_GOODS,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.scale,
+            invoices: ['INV-1040'],
+            batches: scaleBatches(),
+            goods: SCALE_GOODS,
+            validGoods: SCALE_GOODS,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },
@@ -572,15 +602,18 @@ export function drafts(): Draft[] {
         outcome: 'needs_information',
         businessKey: CONTAINERS.missingCoa,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.missingCoa,
-          invoices: ['INV-1026'],
-          batches: ['C31D'],
-          goods: 1,
-          validGoods: 1,
-        }),
-        missingInformation: missingList(case05Failures),
-        validationFailures: case05Failures,
+        summary: {
+          ...summary({
+            container: CONTAINERS.missingCoa,
+            invoices: ['INV-1026'],
+            batches: ['C31D'],
+            goods: 1,
+            validGoods: 1,
+          }),
+          missingInformation: missingList(case05Failures),
+        },
+
+        findings: case05Failures,
         emailResponse: null,
       },
     },
@@ -611,15 +644,18 @@ export function drafts(): Draft[] {
         outcome: 'ready',
         businessKey: CONTAINERS.registrationGap,
         reason: '',
-        shipmentSummary: summary({
-          container: CONTAINERS.registrationGap,
-          invoices: ['INV-1031'],
-          batches: ['E22F'],
-          goods: 1,
-          validGoods: 1,
-        }),
-        missingInformation: [],
-        validationFailures: [],
+        summary: {
+          ...summary({
+            container: CONTAINERS.registrationGap,
+            invoices: ['INV-1031'],
+            batches: ['E22F'],
+            goods: 1,
+            validGoods: 1,
+          }),
+          missingInformation: [],
+        },
+
+        findings: [],
         emailResponse: null,
       },
     },

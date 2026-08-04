@@ -6,14 +6,7 @@ import {
   type AttachmentRef,
   type FileRef,
 } from '@meridian/agent-kit/contracts';
-import {
-  AgentDecisionSchema,
-  MessageRefSchema,
-  type AgentDecision,
-  type Coa,
-  type Good,
-  type Invoice,
-} from '@meridian/core/schemas';
+import { AgentDecisionSchema, MessageRefSchema, type AgentDecision } from '@meridian/core/schemas';
 import { z } from 'zod';
 import {
   EXTRACTION_SCHEMA_COA,
@@ -25,7 +18,11 @@ import {
 import {
   assessShipment,
   missingInformationList,
+  type Coa,
+  type Good,
+  type Invoice,
   type ShipmentAssessment,
+  type ShipmentSummary,
   type ValidationFailure,
 } from './rules.js';
 
@@ -53,7 +50,7 @@ const InputSchema = z
 
 type ReceivingInput = z.infer<typeof InputSchema>;
 
-const SPEC_HASH = 'dd74e8e74530998dcce9795a53212a8b8f3037da72b87bf3c3c2c80e58be2912';
+const SPEC_HASH = '6ffaa3f274b804698e2ac1a39f8374cce7739e48fad234d6ab5e9f801bab56f8';
 
 /** Below this, a PDF has no usable text layer and needs OCR the process has not enabled. */
 const MIN_READABLE_CHARS = 32;
@@ -239,7 +236,7 @@ async function readDocuments(
   };
 }
 
-function emptySummary(businessKey: string): AgentDecision['shipmentSummary'] {
+function emptySummary(businessKey: string): ShipmentSummary {
   const isMawb = /^\d{3}-\d{8}$/.test(businessKey);
   return {
     containerNumber: isMawb ? null : businessKey,
@@ -255,7 +252,7 @@ function summaryFor(
   businessKey: string,
   documents: CollectedDocuments,
   assessment: ShipmentAssessment,
-): AgentDecision['shipmentSummary'] {
+): ShipmentSummary {
   return {
     ...emptySummary(businessKey),
     invoiceNumbers: documents.invoices.map((invoice) => invoice.invoiceNumber).sort(),
@@ -280,7 +277,7 @@ async function escalate(
   context: AgentContext,
   businessKey: string,
   reason: string,
-  summary: AgentDecision['shipmentSummary'],
+  summary: ShipmentSummary,
   evidence: Record<string, unknown>,
 ): Promise<AgentDecision> {
   const stepInstanceKey = `escalate:${businessKey}`;
@@ -316,9 +313,8 @@ async function escalate(
     outcome: 'manual_review',
     businessKey,
     reason,
-    shipmentSummary: summary,
-    missingInformation: [],
-    validationFailures: [],
+    summary,
+    findings: [],
     emailResponse: null,
   };
 }
@@ -569,9 +565,10 @@ export const agent = defineAgent<ReceivingInput, AgentDecision>({
       outcome,
       businessKey,
       reason,
-      shipmentSummary: summary,
-      missingInformation: missingInformationList(assessment.failures),
-      validationFailures: assessment.failures,
+      // The envelope's `summary` is open, so the shipment view goes in whole rather than being
+      // flattened into keys the platform would then have to understand.
+      summary: { ...summary, missingInformation: missingInformationList(assessment.failures) },
+      findings: assessment.failures,
       emailResponse,
     };
   },

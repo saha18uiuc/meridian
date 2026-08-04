@@ -4,12 +4,10 @@
     "outcome": "ready",
     "businessKey": "OOLU1234567",
     "reason": "",
-    "shipmentSummary": {
+    "summary": {
       "containerNumber": "OOLU1234567",
       "mawb": null,
-      "invoiceNumbers": [
-        "INV-1040"
-      ],
+      "invoiceNumbers": ["INV-1040"],
       "batchNumbers": [
         "SCL01",
         "SCL02",
@@ -37,10 +35,10 @@
         "SCL24"
       ],
       "goodsCount": 24,
-      "validGoodsCount": 24
+      "validGoodsCount": 24,
+      "missingInformation": []
     },
-    "missingInformation": [],
-    "validationFailures": [],
+    "findings": [],
     "emailResponse": null
   }
 }
