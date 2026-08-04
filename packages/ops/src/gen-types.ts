@@ -21,6 +21,21 @@ const HEADER = `/**
  */
 `;
 
+/**
+ * Prettier is invoked through the repository's own binary and configuration rather than imported,
+ * so this file cannot drift from what `pnpm format:check` enforces.
+ */
+async function format(source: string): Promise<string> {
+  const result = await runAsync('pnpm', ['exec', 'prettier', '--stdin-filepath', TYPES_PATH], {
+    cwd: repoPath(),
+    stdin: source,
+  });
+  if (result.code !== 0) {
+    throw new Error(`prettier could not format the generated types:\n${result.stderr.trim()}`);
+  }
+  return result.stdout;
+}
+
 export async function generateTypes(): Promise<{ path: string; bytes: number; changed: boolean }> {
   loadOpsEnv();
   const dbUrl = optionalEnv(
@@ -41,7 +56,10 @@ export async function generateTypes(): Promise<{ path: string; bytes: number; ch
     throw new Error('supabase gen types produced no Database type; is the local stack running?');
   }
 
-  const contents = `${HEADER}\n${body}\n`;
+  // Formatted before it is written, not after someone notices. `supabase gen types` has its own
+  // opinion about line breaks, so an unformatted write left `pnpm format:check` — and therefore
+  // `pnpm verify` — failing on a file the operator was told to regenerate.
+  const contents = await format(`${HEADER}\n${body}\n`);
   const absolute = repoPath(TYPES_PATH);
   let previous: string;
   try {

@@ -47,10 +47,16 @@ export function output(command: string, args: readonly string[] = []): string | 
 export async function runAsync(
   command: string,
   args: readonly string[] = [],
-  options: SpawnOptions = {},
+  /** `stdin`, when given, is written to the child and the pipe is then closed. */
+  options: SpawnOptions & { stdin?: string } = {},
 ): Promise<RunResult> {
   return new Promise((resolve) => {
-    const child = spawn(command, [...args], { ...options, stdio: ['ignore', 'pipe', 'pipe'] });
+    const { stdin, ...spawnOptions } = options;
+    const child = spawn(command, [...args], {
+      ...spawnOptions,
+      stdio: [stdin === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe'],
+    });
+    if (stdin !== undefined) child.stdin?.end(stdin);
     let stdout = '';
     let stderr = '';
     child.stdout?.on('data', (chunk: Buffer) => {

@@ -1,8 +1,8 @@
 /**
- * GENERATED FILE - DO NOT EDIT BY HAND.
- * Produced by `pnpm db:types` (packages/ops/src/gen-types.ts), which shells:
- *   supabase gen types typescript --local --schema public
- * Regenerate after every migration change; `pnpm verify` fails on drift.
+ * GENERATED FILE — regenerate with `pnpm db:types`.
+ *
+ * These types mirror the local database exactly, which is why the write path can be typed at all.
+ * Edit the migrations, never this file.
  */
 
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];

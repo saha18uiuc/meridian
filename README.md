@@ -211,10 +211,11 @@ packages/agent-kit  The contract surface generated agents see, plus tools and re
 packages/evals      The eval harness: cases, assertions, classification, reports
 packages/ops        Every operator command; `scripts/` holds three-line aliases only
 generated-agents    Committed generated agent versions and the static registry
-examples            The seeded boards, message and document fixtures, and 15 eval cases
+examples            Two seeded boards, their mail and document fixtures, and 21 eval cases
 supabase            14 migrations, seed, storage policies
-docs                PRD, architecture, decisions, demo walkthrough
+docs                PRD, architecture, decisions, deliverables index, demo walkthrough
 ```
 
-Read `docs/ARCHITECTURE.md` for how the pieces fit, `docs/DECISIONS.md` for the choices that are not
+Read `docs/DELIVERABLES.md` for where each thing the assignment asks for lives,
+`docs/ARCHITECTURE.md` for how the pieces fit, `docs/DECISIONS.md` for the choices that are not
 obvious from the code, and `docs/DEMO.md` for the walkthrough.
