@@ -170,6 +170,20 @@ The eval harness runs the generated agent in-process and writes execution rows s
 It does not go through Temporal, so it needs no worker and works the same whichever database it is
 pointed at.
 
+## What is in the deployed environment
+
+Recorded here because "start from the seeded state" is only useful if the seeded state is written
+down somewhere.
+
+| Thing                                 | State                                                                                                                                                                  |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inbound Import Receiving              | Frozen, agent active at v001, never reviewed in the UI                                                                                                                 |
+| Vendor Insurance Certificate Renewal  | Frozen, agent active at v001, never reviewed in the UI                                                                                                                 |
+| Inbound Import Receiving (first pass) | Draft, never reviewed — the board Act 1 opens                                                                                                                          |
+| Executions                            | Ten live runs from `pnpm demo`: four `ready`, one `needs_information`, four `manual_review`, plus two messages that reached a terminal row without starting a workflow |
+| Eval runs                             | v001 at 17/18 (fails `case-18`) and v002 at 18/18                                                                                                                      |
+| `inbound-import-receiving` v002       | `evaluating`, finalized with a commit SHA — approve and activate it on camera                                                                                          |
+
 ## Before you press record
 
 1. `curl -s https://meridian-web-dibyadeep-sahas-projects.vercel.app/api/health` — four `true`s. If
@@ -189,29 +203,33 @@ pointed at.
 > Task 3 §1. The point of this act is that the first version is _wrong_, and that being wrong is
 > visible rather than embarrassing.
 
-1. On **Boards**, type `Inbound Import Receiving (live)` and click **Create**. The button stays
-   disabled until the box has a title.
-2. Add cards from the palette: **Something arrives** (Input), **Do some work** (Action), **Decide or
-   wait** (Rule), **Reach a result** (Outcome). Those four primitives are the entire vocabulary —
-   everything a customer says has to land in one of them, which is what makes the board compilable.
-3. Connect them by dragging from a card's right-hand handle onto the next card's left-hand handle.
-4. Fill in only what the SOP says plainly, and **leave the gaps a real first interview leaves**:
-   - do not list which documents are required;
-   - leave one rule branch unlabelled;
-   - give the extraction step no failure path.
-5. Watch the toolbar say `Saved · revision N` after each edit. Every change is one optimistic-
-   concurrency write, not an autosave of the whole board.
+Open **Inbound Import Receiving (first pass)**. It is seeded as a draft, has never been reviewed,
+and is the process as it comes out of one conversation with the receiving team: an email arrives,
+someone reads the attachments, someone decides whether it all looks right. Eight cards.
+
+Name what is deliberately absent, because the reviewer is about to find every bit of it: no list of
+which documents are required, no check that the invoice and the certificate agree, no correlation
+key, no failure path on extraction, one branch out of the decision with no label, and a _Certificate
+of analysis_ card nobody connected to anything.
+
+To build it live instead: **Create** on `/boards` (the button stays disabled until the title box has
+something in it), add cards from the palette — **Something arrives** (Input), **Do some work**
+(Action), **Decide or wait** (Rule), **Reach a result** (Outcome) — and connect them by dragging
+from a card's right-hand handle onto the next card's left-hand handle. Those four primitives are the
+entire vocabulary: everything a customer says has to land in one of them, which is what makes a
+board compilable at all. The toolbar reads `Saved · revision N` after each edit, because every
+change is one optimistic-concurrency write rather than an autosave of the whole board.
 
 ## Act 2 — First AI review
 
 > Task 3 §2, round one.
 
-6. Click **Review Process**. It stays busy for 50–90 seconds and does not poll: the request is
+1. Click **Review Process**. It stays busy for 50–90 seconds and does not poll: the request is
    awaited end to end, so when it returns, the round is genuinely finished.
-7. Findings arrive as threads in the right-hand panel and as pins on the canvas beside the card each
+2. Findings arrive as threads in the right-hand panel and as pins on the canvas beside the card each
    one is about. Two kinds are mixed together deliberately: deterministic structural checks (the
    unlabelled branch will be one) and model findings about the business logic.
-8. Now play the business user, using a different control for each kind of answer, because they mean
+3. Now play the business user, using a different control for each kind of answer, because they mean
    different things:
    - **Reply** to a finding you want to answer in prose. The thread becomes `answered`, not
      `resolved` — answering a question is not the same as fixing the thing.
@@ -221,48 +239,48 @@ pointed at.
      unresolved total, and is never reopened by a later round.
    - **Apply suggested patch** where the reviewer offered one; the board revision increments and a
      system reply records what it changed.
-9. Then actually fix two things on the board: label the unlabelled branch, and add the missing
+4. Then actually fix two things on the board: label the unlabelled branch, and add the missing
    required-document fields to the Input card.
-10. The header badge changes to _Board changed since review_.
+5. The header badge changes to _Board changed since review_.
 
 ## Act 3 — Second AI review
 
 > Task 3 §2, round two. This is the act that shows the loop is a loop.
 
-11. Click **Review Process** again.
-12. Read the reconciliation out loud, because it is the whole argument:
-    - the unlabelled-branch finding is now **resolved** — and nobody clicked "resolve", there is no
-      such control; it closed because the next round stopped reporting it;
-    - the finding you only answered is still **answered**;
-    - the rejected one is still dismissed, uncounted, and not resurrected.
-13. The unresolved counter counts `open` and `answered` roots only.
+6. Click **Review Process** again.
+7. Read the reconciliation out loud, because it is the whole argument:
+   - the unlabelled-branch finding is now **resolved** — and nobody clicked "resolve", there is no
+     such control; it closed because the next round stopped reporting it;
+   - the finding you only answered is still **answered**;
+   - the rejected one is still dismissed, uncounted, and not resurrected.
+8. The unresolved counter counts `open` and `answered` roots only.
 
 ## Act 4 — Freeze the specification
 
 > Task 3 §3.
 
-14. Click **Submit Process**. The dialog previews what is still unresolved.
-15. Tick each acknowledgement. Freezing **warns rather than blocks**: the tool cannot know whether a
+9. Click **Submit Process**. The dialog previews what is still unresolved.
+10. Tick each acknowledgement. Freezing **warns rather than blocks**: the tool cannot know whether a
     finding matters, but it can refuse to let the acknowledgement be implicit, so the confirm button
     stays disabled until every warning shown is ticked.
-16. Freeze. The spec page shows `specVersion`, the spec hash, the canvas hash, the unresolved comment
+11. Freeze. The spec page shows `specVersion`, the spec hash, the canvas hash, the unresolved comment
     ids, your assumptions, and the known gaps — the acknowledgements are recorded _in the document_,
     not just in a log.
-17. Download it. The spec is immutable from here; the agent is generated from this artifact and not
+12. Download it. The spec is immutable from here; the agent is generated from this artifact and not
     from the board, which is why the board can keep moving afterwards.
 
 ## Act 5 — Generate the agent
 
 > Task 3 §4.
 
-18. On **Agents**, create a logical agent for the board and give it a deployment key.
-19. **Reserve a version**. Nothing is generated yet: the row exists, the code path is allocated, and
+13. On **Agents**, create a logical agent for the board and give it a deployment key.
+14. **Reserve a version**. Nothing is generated yet: the row exists, the code path is allocated, and
     the page prints the exact command to run and the `codePath` it must write to.
-20. Paste that command into Cursor. The `spec-to-agent` skill reads the frozen spec and writes
+15. Paste that command into Cursor. The `spec-to-agent` skill reads the frozen spec and writes
     exactly five files — `agent.ts`, `rules.ts`, `prompts.ts`, `manifest.json`, `spec.snapshot.json`.
-21. `bash .codex/skills/spec-to-agent/scripts/verify.sh` — lint, typecheck, unit tests, one smoke
+16. `bash .codex/skills/spec-to-agent/scripts/verify.sh` — lint, typecheck, unit tests, one smoke
     eval.
-22. `pnpm agent:finalize --agent-version <id>` (with the cloud prefix above). It commits the
+17. `pnpm agent:finalize --agent-version <id>` (with the cloud prefix above). It commits the
     allow-listed paths, then re-reads the commit **out of the Git object database** to confirm it
     contains what it claims. The version now carries a 40-hex SHA that can be checked later without
     trusting the working tree.
@@ -275,28 +293,55 @@ database is not yet runnable by the deployed worker. Evals do not care — they 
 
 > Task 3 §5.
 
-23. `pnpm evals --agent-version <id>` (cloud prefix). Cases run concurrently against the fixture
+18. `pnpm evals --agent-version <id>` (cloud prefix). Cases run concurrently against the fixture
     mailbox; the summary prints per-case pass or fail.
-24. Open a case in **Executions**. An eval row shows expected against actual, with the diff.
-25. On a failure, run the `eval-repair` skill. Say what it does and, more importantly, what it
+19. Open a case in **Executions**. An eval row shows expected against actual, with the diff.
+20. On a failure, run the `eval-repair` skill. Say what it does and, more importantly, what it
     refuses: three of the four failure classes are repairable, and the fourth — a **policy gap** — is
     not. There the suite records a blocking comment back on the board and exits 5 without patching
     anything, because the specification does not decide that case and inventing the answer in
     generated code is the one move that would make the suite green and meaningless.
-26. A repair never edits an evaluated version. `pnpm agent:reserve-repair --parent <id>` allocates the
+21. A repair never edits an evaluated version. `pnpm agent:reserve-repair --parent <id>` allocates the
     next version with its lineage set and copies the five files; the patch lands there, and the
     **whole** suite is re-run, not just the case that failed.
 
+### The repair this repository actually ran
+
+`case-18` is the case worth narrating, because it is a defect the corpus found rather than one
+planted for the camera.
+
+The SOP names four identifiers a good must carry, and v001 encoded exactly those four. Two other
+statements in the same specification also bear on a line: the commercial invoice input marks
+`batchNumber` **required**, and the certificate rule reads "every batch named on an invoice must be
+covered by exactly one certificate of analysis". A line naming no batch does not satisfy that rule
+trivially — it is a line the rule cannot be evaluated for at all. v001 read the four-identifier
+sentence and stopped there, so a good with no batch raised no missing-field failure, and because the
+certificate matcher only iterates batches that exist, it was invisible to that check too. The
+shipment received.
+
+That is an `implementation` failure, not a policy gap: the specification decides the case, and the
+code disagreed with it. So the loop is allowed to repair it, and did — v002 adds `batchNumber` to
+the blocking list, and the whole suite passes 18/18. v001's folder is byte-for-byte unchanged and
+still fails `case-18`, which is the point of versioning it rather than editing it.
+
+| Version | Suite | `case-18`                                            |
+| ------- | ----- | ---------------------------------------------------- |
+| v001    | 17/18 | Fails: received a shipment with no batch on the line |
+| v002    | 18/18 | Passes: asks the forwarder for the Batch Number      |
+
 ## Act 7 — Run it, and read the evidence
 
-27. On **Executions**, use **Send a pre-alert email** to hand a fixture message to intake. The
+22. On **Executions**, use **Send a pre-alert email** to hand a fixture message to intake. The
     business key is extracted _before_ the workflow starts, then one `signalWithStart` call either
     starts the workflow or delivers to the running one — so a second message for the same container
     joins the existing execution rather than racing it.
-28. Open the execution: the agent, version, spec hash, Git commit and resolved toolkit version it ran
+23. Open the execution: the agent, version, spec hash, Git commit and resolved toolkit version it ran
     under; steps grouped by `step_instance_key` with their retries; a paged event feed; and each
     external action moving `reserved → dispatched → succeeded` with its attempt count.
-29. Close on lineage: activate a different version from **Agents** and note that the old execution
+24. On **Agents**, **Approve** v002 and then **Activate** it. Two buttons because they are two
+    decisions: approval says the version is fit to run, activation says it is what runs now. A
+    version can sit approved indefinitely and nothing changes for a single shipment.
+25. Close on lineage: roll back to v001 from the same panel and note that the old execution
     rows still report the spec hash and commit _they_ ran under. Rolling back changes what runs next,
     never what a past run claims about itself.
 
@@ -306,7 +351,7 @@ Deleting a board does not cascade into its agents or frozen specs — those refe
 not `on delete cascade`, so a board cannot be quietly deleted out from under an agent that was
 generated from it. Reset in dependency order, then re-seed:
 
-```bash
+````bash
 # Executions and their children, then versions, agents, specs, boards.
 psql "$SUPABASE_DB_URL" -c "
   delete from public.executions;
@@ -315,11 +360,27 @@ psql "$SUPABASE_DB_URL" -c "
   delete from public.frozen_specs;
   delete from public.whiteboards;"
 
-NEXT_PUBLIC_SUPABASE_URL='https://<ref>.supabase.co' \
-NEXT_PUBLIC_SUPABASE_ANON_KEY='<sb_publishable_…>' \
-SUPABASE_SERVICE_ROLE_KEY='<sb_secret_…>' \
-SUPABASE_DB_URL='<session pooler URI>' \
+Then seed all three boards. The first two are seeded finished; the third is the draft Act 1 opens,
+and `--draft` is what stops the seed freezing a specification nobody has reviewed:
+
+```bash
+# With NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and
+# SUPABASE_DB_URL exported for the hosted project:
 pnpm seed
+pnpm seed --board examples/vendor-coi-renewal/board.seed.json
+pnpm seed --board examples/inbound-import-receiving/board.first-pass.seed.json --draft
+````
+
+The seed refuses to run with a dirty working tree, because it records the current commit SHA on the
+agent versions it releases and a SHA that does not describe the code is worse than no SHA.
+
+To restore the executions and eval runs the table above describes, run `pnpm demo` against the
+deployed queue and the eval suite against each version:
+
+```bash
+TEMPORAL_TASK_QUEUE=meridian-receiving pnpm demo   # ten live runs on the deployed worker
+pnpm evals --agent-version <v001 id>               # 17/18, case-18 fails
+pnpm evals --agent-version <v002 id>               # 18/18
 ```
 
 `pnpm seed` is idempotent, which also means it will not repair a board you have edited — it skips
