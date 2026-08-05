@@ -1,8 +1,8 @@
 {
   "manifestVersion": 1,
   "deploymentKey": "inbound-import-receiving",
-  "versionNo": 1,
-  "codePath": "generated-agents/inbound-import-receiving/v001",
+  "versionNo": 2,
+  "codePath": "generated-agents/inbound-import-receiving/v002",
   "specId": "fdb5c683-5c80-5d88-9756-962d90a7e22d",
   "specHash": "6ffaa3f274b804698e2ac1a39f8374cce7739e48fad234d6ab5e9f801bab56f8",
   "specVersion": 1,

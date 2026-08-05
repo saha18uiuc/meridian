@@ -66,6 +66,8 @@ export interface WorkflowToolOptions {
   toolkitVersion: string;
   /** Signal-populated decision state, owned by the workflow. */
   decisions: Map<string, HumanDecisionPayload>;
+  /** The messages accepted so far, read at call time rather than captured. */
+  deliveredMessageIds(): string[];
   currentStepInstanceKey(): string;
   currentStepExecutionId(): string | null;
 }
@@ -73,11 +75,16 @@ export interface WorkflowToolOptions {
 export function createWorkflowToolRegistry(options: WorkflowToolOptions): ToolRegistry {
   const envelope = { executionId: options.executionId, capabilities: options.capabilities };
 
+  // A read is scoped to what has been delivered; the fixture mailbox holds a thread's later
+  // messages from the start, and a run that could open them would answer with a document it had
+  // not been sent. Signal state replays identically, so this stays deterministic.
+  const reading = () => ({ ...envelope, deliveredMessageIds: options.deliveredMessageIds() });
+
   return {
     mailbox: {
-      searchMessages: (query, maxResults) => acts.mailSearchMessages(envelope, query, maxResults),
-      fetchThread: (threadId) => acts.mailFetchThread(envelope, threadId),
-      downloadAttachments: (threadId) => acts.mailDownloadAttachments(envelope, threadId),
+      searchMessages: (query, maxResults) => acts.mailSearchMessages(reading(), query, maxResults),
+      fetchThread: (threadId) => acts.mailFetchThread(reading(), threadId),
+      downloadAttachments: (threadId) => acts.mailDownloadAttachments(reading(), threadId),
       createDraft: (payload) => acts.mailCreateDraft(envelope, payload),
       sendDraft: async () => {
         // A bare send would be retried by Temporal and could deliver twice; the reserve/dispatch

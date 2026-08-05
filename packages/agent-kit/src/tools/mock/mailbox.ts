@@ -111,21 +111,25 @@ export function createMockMailbox(options: {
    * Restrict the visible inbox to these provider message IDs. An eval case declares the messages
    * it is about, and a case that could see a neighbouring fixture would pass or fail for a reason
    * its author never wrote down.
+   *
+   * A function, for a caller whose set grows while it is being read. A fixture directory holds
+   * every message at once, including replies that have not "arrived" yet, and a live run learns
+   * about messages one signal at a time — so a run given only the first message of a thread could
+   * open the second one's attachment and answer a question nobody had asked it yet. Returning
+   * `null` means the whole directory, which is what intake wants.
    */
-  only?: readonly string[];
+  only?: readonly string[] | (() => readonly string[] | null);
 }): MockMailbox {
   const files = readdirSync(options.emailDir)
     .filter((name) => name.endsWith('.eml'))
     .sort();
-  const visible = options.only === undefined ? null : new Set(options.only);
-  const messages = files
+  const all = files
     .map((name) =>
       toMailMessage(
         parseEml(readFileSync(join(options.emailDir, name), 'utf8'), name),
         options.attachmentDir,
       ),
     )
-    .filter((message) => visible === null || visible.has(message.messageId))
     // Oldest first, which is the order Gmail returns a thread in and the order the receiving policy
     // depends on: "has this invoice already been received?" is a question about arrival, so a
     // mailbox that handed messages back in filename order would let an alphabetical accident decide
@@ -134,6 +138,13 @@ export function createMockMailbox(options: {
     .sort(
       (a, b) => a.receivedAt.localeCompare(b.receivedAt) || a.messageId.localeCompare(b.messageId),
     );
+
+  function messages(): MailMessage[] {
+    const selection = typeof options.only === 'function' ? options.only() : options.only;
+    if (selection === undefined || selection === null) return all;
+    const visible = new Set(selection);
+    return all.filter((message) => visible.has(message.messageId));
+  }
 
   let counter = 0;
   const sent: SentOutboundMail[] = [];
@@ -160,7 +171,7 @@ export function createMockMailbox(options: {
         .filter((term) => term !== '' && !/^-?[a-z_]+:/i.test(term))
         .join(' ')
         .toLowerCase();
-      return messages
+      return messages()
         .filter(
           (message) =>
             needle === '' ||
@@ -171,11 +182,11 @@ export function createMockMailbox(options: {
     },
 
     async fetchThread(threadId) {
-      return messages.filter((message) => message.threadId === threadId);
+      return messages().filter((message) => message.threadId === threadId);
     },
 
     async downloadAttachments(threadId) {
-      return messages
+      return messages()
         .filter((message) => message.threadId === threadId)
         .flatMap((message) => message.attachments);
     },

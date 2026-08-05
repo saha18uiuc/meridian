@@ -375,7 +375,7 @@ async function requestMissingInformation(
 
 export const agent = defineAgent<ReceivingInput, AgentDecision>({
   deploymentKey: 'inbound-import-receiving',
-  versionNo: 1,
+  versionNo: 2,
   specHash: SPEC_HASH,
   inputSchema: InputSchema,
   decisionSchema: AgentDecisionSchema,

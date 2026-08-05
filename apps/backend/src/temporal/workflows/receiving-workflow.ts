@@ -83,6 +83,7 @@ export async function receivingWorkflow(input: ReceivingInput): Promise<Receivin
     capabilities: input.capabilities,
     toolkitVersion: input.toolkitVersion,
     decisions,
+    deliveredMessageIds: () => messages.map((message) => message.providerMessageId),
     currentStepInstanceKey: () => currentStepInstanceKey,
     currentStepExecutionId: () => currentStepExecutionId,
   });

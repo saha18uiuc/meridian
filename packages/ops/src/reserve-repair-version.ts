@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { loadOpsEnv } from './env.js';
 import { optionalArg, parseArgs, requireArg } from './lib/args.js';
 import { repoPath } from './lib/state.js';
@@ -25,6 +25,41 @@ export interface RepairReservation {
   specHash: string;
   copiedFiles: string[];
   operatorCommand: string;
+}
+
+/**
+ * Give the copies their own identity.
+ *
+ * A verbatim copy inherits the parent's: `agent.ts` states `versionNo` as a literal and
+ * `manifest.json` names the folder it was generated into. Left alone, the new version calls itself
+ * v001 — `defineAgent` derives the agent id from that number — so it runs under the parent's
+ * lineage and stamps the parent's version onto its evidence, while the registry lists it under the
+ * real one. Nothing fails; the two just disagree, which is the worst way for this to be wrong.
+ *
+ * Done here rather than left to the repairing agent because it is mechanical, and an instruction to
+ * remember it is an instruction that will eventually be forgotten.
+ */
+function retargetCopies(codePath: string, versionNo: number): void {
+  const agentPath = repoPath(codePath, 'agent.ts');
+  if (existsSync(agentPath)) {
+    const source = readFileSync(agentPath, 'utf8');
+    const rewritten = source.replace(/^(\s*versionNo:\s*)\d+/m, `$1${String(versionNo)}`);
+    if (rewritten === source) {
+      throw new ReservationError(
+        `could not find a versionNo declaration to update in ${codePath}/agent.ts`,
+        EXIT_REFUSED,
+      );
+    }
+    writeFileSync(agentPath, rewritten);
+  }
+
+  const manifestPath = repoPath(codePath, 'manifest.json');
+  if (existsSync(manifestPath)) {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>;
+    manifest.versionNo = versionNo;
+    manifest.codePath = codePath;
+    writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  }
 }
 
 export async function reserveRepairVersion(options: {
@@ -59,6 +94,7 @@ export async function reserveRepairVersion(options: {
     copyFileSync(source, repoPath(reservation.codePath, file));
     copied.push(file);
   }
+  retargetCopies(reservation.codePath, reservation.versionNo);
 
   return {
     parentAgentVersionId: parent.agent_version_id,

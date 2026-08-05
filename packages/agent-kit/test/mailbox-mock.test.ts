@@ -87,6 +87,36 @@ describe('mock mailbox', () => {
     ]);
   });
 
+  it('re-reads `only` on every call, so a thread grows as its messages are delivered', async () => {
+    // The case the fixtures make easy to get wrong: two messages share `thread-missing-coa`, and
+    // the certificate the second one carries is what decides the run. A mailbox that resolved the
+    // set once would hand that certificate to a run which had only been given the first message.
+    let inbox: string[] = ['<missing-coa@forwarder.example>'];
+    const box = createMockMailbox({
+      emailDir: EMAIL_DIR,
+      attachmentDir: ATTACHMENT_DIR,
+      only: () => inbox,
+    });
+
+    const before = await box.downloadAttachments('thread-missing-coa');
+    expect(before.map((attachment) => attachment.filename)).toEqual(['invoice-1026.pdf']);
+
+    inbox = [...inbox, '<missing-coa-reply@forwarder.example>'];
+
+    const after = await box.downloadAttachments('thread-missing-coa');
+    expect(after.map((attachment) => attachment.filename)).toContain('coa-C31D.pdf');
+    expect(await box.fetchThread('thread-missing-coa')).toHaveLength(2);
+  });
+
+  it('shows the whole directory when the getter declines to restrict it', async () => {
+    const box = createMockMailbox({
+      emailDir: EMAIL_DIR,
+      attachmentDir: ATTACHMENT_DIR,
+      only: () => null,
+    });
+    expect(await box.searchMessages('')).toHaveLength(16);
+  });
+
   it('appends the marker footer to every outbound message', async () => {
     const box = mailbox();
     await box.sendMessage({

@@ -27,6 +27,14 @@ export interface ToolFactoryOptions {
    * and every mock run pass nothing and never reach a live document.
    */
   extractStructured?: (text: string, schemaName: string) => Promise<Record<string, unknown>>;
+  /**
+   * Which messages this caller has actually been handed, for the fixture mailbox.
+   *
+   * Read on every call rather than fixed at construction, because a run learns about messages one
+   * signal at a time and the fixture directory holds them all from the start. `null` — the default
+   * — means the whole directory, which is what intake reads.
+   */
+  visibleMessageIds?: () => readonly string[] | null;
 }
 
 /**
@@ -46,6 +54,7 @@ export function createTools(options: ToolFactoryOptions): ToolRegistry {
     const fixtures = createMockMailbox({
       emailDir: `${root}/emails`,
       attachmentDir: `${root}/attachments`,
+      ...(options.visibleMessageIds === undefined ? {} : { only: options.visibleMessageIds }),
     });
     return {
       mailbox: env.GMAIL_SEND_LIVE

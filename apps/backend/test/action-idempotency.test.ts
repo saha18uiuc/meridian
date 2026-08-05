@@ -41,6 +41,7 @@ describe('the workflow-side action surface', () => {
       capabilities: ['mail.send'],
       toolkitVersion: '20250101_00',
       decisions: new Map(),
+      deliveredMessageIds: () => [],
       currentStepInstanceKey: () => 'respond:MSKU1234565',
       currentStepExecutionId: () => 'step-1',
     });
