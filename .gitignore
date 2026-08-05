@@ -2,8 +2,11 @@ node_modules/
 .next/
 dist/
 .turbo/
-.env
-.env.local
+# Every `.env` variant, not two named ones. `.env` and `.env.local` were listed individually, which
+# quietly left `.env.production`, `.env.hosted` and anything else a deploy invents publishable — in a
+# public repository, by whoever creates the file next and does not think to check.
+.env*
+!.env.example
 .temporal/
 .meridian/*
 !.meridian/.gitkeep
