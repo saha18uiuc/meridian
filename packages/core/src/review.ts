@@ -5,12 +5,15 @@ import {
   reachableFrom,
   validateGraphIntegrity,
 } from './graph.js';
+import { canonicalJson } from './hashing.js';
 import { deriveDeterministicIssueKey, deriveModelIssueKey } from './issue-key.js';
 import type { CanonicalGraph } from './schemas/board.js';
+import type { Comment } from './schemas/comment.js';
+import { parseCommentMetadata } from './schemas/comment-metadata.js';
 import type { WhiteboardNode } from './schemas/node.js';
 import { safeParseNodeData } from './schemas/primitives.js';
 import { isKnownCapability, KNOWN_CAPABILITIES, looksLikeCapability } from './schemas/spec.js';
-import type { CheckCode, Finding, ModelFinding, Severity } from './schemas/review.js';
+import type { AnchorType, CheckCode, Finding, ModelFinding, Severity } from './schemas/review.js';
 
 /**
  * The fifteen deterministic checks (§5.5.2).
@@ -653,4 +656,133 @@ export function isUnresolvedRoot(
   status: string | null | undefined,
 ): boolean {
   return parentCommentId === null && (status === 'open' || status === 'answered');
+}
+
+/** One earlier finding and what the operator decided about it. */
+export interface SettledDecision {
+  /** The finding verbatim, so the model can recognise its own wording rather than a paraphrase. */
+  finding: string;
+  /** The assumption recorded on it, or the reason it was dismissed. */
+  decision: string;
+  anchorType: AnchorType;
+  anchorId: string | null;
+}
+
+export interface SettledContext {
+  assumptions: SettledDecision[];
+  rejections: SettledDecision[];
+}
+
+function isSettledContextEmpty(context: SettledContext): boolean {
+  return context.assumptions.length === 0 && context.rejections.length === 0;
+}
+
+/**
+ * What the operator has already decided, as the reviewer needs to hear it.
+ *
+ * Rounds after the first were reviewing the board and nothing else, which put the resolution
+ * policy at odds with itself: a model finding resolves only when it has a recorded assumption
+ * *and* the round does not raise it again (§5.5.3), yet the model deciding whether to raise it was
+ * never shown the assumption. Whether an answered question closed therefore came down to whether
+ * the model happened to repeat itself, and a board whose ambiguity was settled deliberately — an
+ * assumption is precisely the artefact for ambiguity the board is not going to state — looked
+ * identical to one where nobody had answered anything.
+ *
+ * Rejections travel for the same reason. A dismissed finding never reopens (A26), so re-reporting
+ * it can only produce a recurrence notice on a thread that is closed to the operator.
+ *
+ * This is context, not instruction: the round still runs every deterministic check, and a decision
+ * cannot suppress one, because those are not matters of opinion.
+ */
+export function deriveSettledContext(comments: readonly Comment[]): SettledContext {
+  const roots = new Map<string, Comment>();
+  for (const comment of comments) {
+    if (comment.parentCommentId === null) roots.set(comment.commentId, comment);
+  }
+
+  const assumptions = assumptionDecisions(comments, roots);
+  const rejections = rejectionDecisions(comments, roots);
+  assumptions.sort(byRoot);
+  rejections.sort(byRoot);
+
+  return {
+    assumptions: assumptions.map((entry) => entry.decision),
+    rejections: rejections.map((entry) => entry.decision),
+  };
+}
+
+interface Settled {
+  root: Comment;
+  decision: SettledDecision;
+}
+
+function byRoot(a: Settled, b: Settled): number {
+  return a.root.createdAt === b.root.createdAt
+    ? a.root.commentId.localeCompare(b.root.commentId)
+    : a.root.createdAt.localeCompare(b.root.createdAt);
+}
+
+function assumptionDecisions(
+  comments: readonly Comment[],
+  roots: ReadonlyMap<string, Comment>,
+): Settled[] {
+  // Superseded assumptions stay on the thread as history. Only the current one is a decision.
+  const superseded = new Set<string>();
+  for (const comment of comments) {
+    const metadata = parseCommentMetadata(comment.metadataJson);
+    if (metadata?.kind === 'assumption' && metadata.supersedesCommentId !== null) {
+      superseded.add(metadata.supersedesCommentId);
+    }
+  }
+
+  const settled: Settled[] = [];
+  for (const comment of comments) {
+    const metadata = parseCommentMetadata(comment.metadataJson);
+    if (metadata?.kind !== 'assumption' || superseded.has(comment.commentId)) continue;
+    const root = roots.get(metadata.sourceRootCommentId);
+    if (root === undefined) continue;
+    settled.push({ root, decision: toDecision(root, metadata.assumptionText) });
+  }
+  return settled;
+}
+
+function rejectionDecisions(
+  comments: readonly Comment[],
+  roots: ReadonlyMap<string, Comment>,
+): Settled[] {
+  const settled: Settled[] = [];
+  for (const comment of comments) {
+    const metadata = parseCommentMetadata(comment.metadataJson);
+    if (metadata?.kind !== 'rejection' || comment.parentCommentId === null) continue;
+    // Only a root the database agrees is rejected. A rationale whose status change was rolled back
+    // is not a decision, and presenting it as one would silence a finding that is still live.
+    const root = roots.get(comment.parentCommentId);
+    if (root?.status !== 'rejected') continue;
+    settled.push({ root, decision: toDecision(root, metadata.reason) });
+  }
+  return settled;
+}
+
+function toDecision(root: Comment, decision: string): SettledDecision {
+  return {
+    finding: root.body,
+    decision,
+    anchorType: root.anchorType,
+    anchorId: root.anchorId,
+  };
+}
+
+/**
+ * The settled context as a message for the model, or `null` when nothing has been settled — which
+ * keeps a first round byte-identical to what it sent before this existed.
+ */
+export function settledContextPrompt(context: SettledContext): string | null {
+  if (isSettledContextEmpty(context)) return null;
+  return [
+    'The process owner has already answered these findings from earlier rounds. An assumption is a',
+    'decision that now forms part of the specification; a rejection is a judgement that the point',
+    'does not apply here. Both hold even though the board does not restate them, so do not report',
+    'an issue that one of them already answers. Report anything they do not cover.',
+    canonicalJson(context),
+  ].join('\n');
 }

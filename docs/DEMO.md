@@ -262,7 +262,8 @@ change is one optimistic-concurrency write rather than an autosave of the whole 
    - **Reply** to a finding you want to answer in prose. The thread becomes `answered`, not
      `resolved` — answering a question is not the same as fixing the thing.
    - **Record assumption** where the business genuinely has no rule yet. Assumptions are the only
-     evidence that closes a model finding, and they are published into the frozen spec.
+     evidence that closes a model finding, they are published into the frozen spec, and the next
+     round is told about them so it stops asking a question you have answered.
    - **Reject** one finding with a reason. It moves to _Dismissed_, stops counting toward the
      unresolved total, and is never reopened by a later round.
    - **Apply suggested patch** where the reviewer offered one; the board revision increments and a
@@ -278,8 +279,11 @@ change is one optimistic-concurrency write rather than an autosave of the whole 
 6. Click **Review Process** again.
 7. Read the reconciliation out loud, because it is the whole argument:
    - the unlabelled-branch finding is now **resolved** — and nobody clicked "resolve", there is no
-     such control; it closed because the next round stopped reporting it;
-   - the finding you only answered is still **answered**;
+     such control; it closed because you fixed the board and the check stopped firing;
+   - the one you recorded an assumption on is **resolved** too, on different evidence: a model
+     finding needs a human decision on the thread, not merely a model that went quiet;
+   - the finding you only answered in prose is still **answered**, because a reply changes neither
+     the board nor the spec;
    - the rejected one is still dismissed, uncounted, and not resurrected.
 8. The unresolved counter counts `open` and `answered` roots only.
 

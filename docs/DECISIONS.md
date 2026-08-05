@@ -237,6 +237,38 @@ transaction writes instead of the return value of a function nobody reads.
 
 ---
 
+## The reviewer is told what the operator already decided
+
+Half of the resolution rule above asks the model a question: a model finding closes only when the
+round does not raise it again **and** an assumption stands on the thread. For a while the model
+answering the first half was shown the canonical graph and nothing else — not the assumption that
+made up the second half, not the finding it was being asked to reconsider.
+
+So the two halves of one rule were reading different evidence. An assumption exists precisely for
+ambiguity the board is not going to state, which means the board the model re-read was as silent as
+before, and it was near enough as likely to re-raise the point as not. A settled question therefore
+closed or stayed open depending on whether the model happened to repeat itself — and the same
+board, reviewed twice, could go either way. From the operator's side that is indistinguishable from
+an answer being ignored: the assumption is recorded, the thread is still open, and nothing says why.
+
+Later rounds now carry a second message: the assumptions that still stand and the findings that were
+rejected, each next to the finding it settles. It is deliberately context and not instruction. The
+deterministic checks still all run and no decision can suppress one, because those are not matters
+of opinion — a disconnected node is disconnected however the operator feels about it. And a round
+with nothing settled sends exactly what it sent before, so a first review is unchanged.
+
+Rejections travel for the same reason as assumptions, from the opposite direction. A rejected root
+never reopens (A26), so re-reporting one cannot produce anything but a recurrence notice on a thread
+the operator has closed. The recurrence machinery stays regardless: `recurredRejected` is how "we
+ruled this out and it keeps coming back" stays visible, and it should keep working when a model
+raises the point in spite of being told.
+
+What is still not sent is replies. A reply moves a root to `answered` and changes neither the board
+nor the specification, so there is nothing in it a generated agent would ever act on. Feeding it to
+the reviewer would let a thread be argued closed in a place the compiler cannot read.
+
+---
+
 ## `spec_hash` covers the contract, not the circumstances of the freeze
 
 The hash is taken over a _semantic view_ of `spec_json`, which holds out five fields:

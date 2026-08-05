@@ -531,6 +531,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'builds a committed, approved, active agent version, which nine db tests need before they can begin',
   'packages/core/test/helpers/review.ts':
     'builds a finalized review session with comments, which the comment and freeze tests need before they can begin',
+  'packages/core/test/review.settled-context.test.ts':
+    'pins what a later round is told about earlier ones. §5.5.3 resolves a model finding only when it has a recorded assumption AND the round does not raise it again, and for a while the model deciding whether to raise it was never shown the assumption — so a settled question closed or stayed open according to whether the model repeated itself. These are the cases that keep the two halves of that rule looking at the same evidence.',
   'packages/ops/src/gates.ts':
     'the four verifications that need a credential this repository cannot contain, reported by name every time rather than left for a reader to infer from an all-green summary. It never fails: an absent key is not a defect in the code, and a red `pnpm verify` on the machine the README is written for would train the reader to ignore it.',
   'scripts/gates.ts': 'the three-line alias for `pnpm gates`, like every other file in scripts/',

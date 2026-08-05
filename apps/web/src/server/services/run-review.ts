@@ -4,10 +4,13 @@ import {
   canonicalJson,
   collapseFindings,
   createLogger,
+  deriveSettledContext,
   reanchorToCanvasIfUnknown,
   runDeterministicChecks,
   serverEnv,
+  settledContextPrompt,
   toModelFinding,
+  type SettledContext,
 } from '@meridian/core';
 import type { Database, Json } from '@meridian/core/database';
 import {
@@ -19,6 +22,7 @@ import {
 } from '@meridian/core/schemas';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { ModelUnavailableError, ReviewModelCallFailedError } from '@/server/http/error-map';
+import { listBoardComments } from '@/server/repositories/comments';
 import { createServiceClient } from '@/server/supabase/service-client';
 import { assembleSnapshot } from '@/server/services/assemble-snapshot';
 import { assertOwner, ownerOfBoard } from '@/server/services/ownership';
@@ -115,6 +119,7 @@ async function callModel(
   graph: CanonicalGraph,
   snapshotHash: string,
   model: ResolvedModel,
+  settled: SettledContext,
 ): Promise<{ findings: Finding[]; summary: string }> {
   const env = serverEnv();
   if (env.AI_MODE === 'mock') {
@@ -128,6 +133,13 @@ async function callModel(
   const { zodTextFormat } = await import('openai/helpers/zod');
   const client = new OpenAI({ apiKey: env.OPENAI_API_KEY as string });
 
+  const settledMessage = settledContextPrompt(settled);
+  const input = [
+    { role: 'system' as const, content: SYSTEM_PROMPT },
+    { role: 'user' as const, content: canonicalJson(graph) },
+    ...(settledMessage === null ? [] : [{ role: 'user' as const, content: settledMessage }]),
+  ];
+
   let lastError: unknown = null;
   const backoffs = [1000, 4000];
   for (let attempt = 0; attempt <= env.AI_REVIEW_MAX_RETRIES; attempt += 1) {
@@ -138,10 +150,7 @@ async function callModel(
         {
           model: model.modelName,
           reasoning: { effort: model.reasoningEffort },
-          input: [
-            { role: 'system', content: SYSTEM_PROMPT },
-            { role: 'user', content: canonicalJson(graph) },
-          ],
+          input,
           text: { format: zodTextFormat(ReviewOutputSchema, 'review') },
         },
         { signal: controller.signal },
@@ -200,6 +209,11 @@ export async function runReview(
   const deterministic = runDeterministicChecks(assembled.snapshot);
   const model = await resolveModel();
 
+  // Read before the session row exists, like the model itself: whatever the operator settles while
+  // this round is in flight belongs to the next one, not to a round that has already been shown a
+  // board. The read is the caller's, so it sees only their own board.
+  const settled = deriveSettledContext(await listBoardComments(userClient, whiteboardId));
+
   const service = createServiceClient();
   const created = await rpc(service, 'create_review_session', {
     p_actor_user_id: userId,
@@ -218,6 +232,7 @@ export async function runReview(
       assembled.snapshot,
       assembled.hash,
       model,
+      settled,
     );
     const collapsed = collapseFindings(
       [...deterministic, ...modelFindings].map((finding) =>
