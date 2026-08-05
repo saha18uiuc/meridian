@@ -68,7 +68,16 @@ export default function BoardsPage() {
             style={{ width: 260 }}
             data-testid="new-board-title"
           />
-          <button type="submit" className="primary" disabled={busy} data-testid="new-board-submit">
+          {/* Disabled while the title is blank, because the handler refuses a blank one anyway and
+              did so in silence: the button looked live, the click did nothing, and nothing on the
+              page said why. A requirement the UI enforces has to be a requirement the UI shows. */}
+          <button
+            type="submit"
+            className="primary"
+            disabled={busy || title.trim() === ''}
+            title={title.trim() === '' ? 'Name the board first' : undefined}
+            data-testid="new-board-submit"
+          >
             Create
           </button>
         </form>
