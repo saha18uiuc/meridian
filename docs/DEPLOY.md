@@ -157,7 +157,26 @@ run against the live Temporal Cloud namespace and needs roughly 200–300 MB at 
 | `COMPOSIO_*`                                                         |     |   ✓    | Tool calls happen in activities                             |
 | `GMAIL_LIVE_MODE=false`                                              |     |   ✓    | See "Mock mode"                                             |
 | `STORAGE_BUCKET_*`, `OCR_*`, `WORKER_MAX_*`, `AGENT_MAX_CONCURRENCY` |     |   ✓    | Defaults are fine                                           |
+| `AI_REASONING_EFFORT`, `AI_REVIEW_TIMEOUT_MS`                        |  ✓  |        | See "How long a review takes" below                         |
 | `SUPABASE_DB_URL`, `DEMO_USER_*`, `EVAL_*`, `MERIDIAN_STATE_DIR`     |     |        | Local tooling only; not needed by either deployed service   |
+
+### How long a review takes
+
+A review is one model call the request awaits, so its duration is a deployment concern rather than a
+detail. Measured against the 25-node vendor board on `gpt-5.5`:
+
+| `AI_REASONING_EFFORT` | Duration | Findings |
+| --------------------- | -------- | -------- |
+| `high`                | 118.7s   | 8        |
+| `medium`              | 52.1s    | 8        |
+
+`medium` is what the deployed app uses: on this corpus it finds the same number of issues in under
+half the time, and a demo spends that time with a button held busy.
+
+`AI_REVIEW_TIMEOUT_MS` must stay comfortably under the review route's `maxDuration` (300s). A call
+killed by the platform rather than by its own abort takes the request down with it, and the `catch`
+that would mark the session `failed` never runs — leaving a session `running` that blocks the next
+review of that board.
 
 ## One Temporal namespace, two environments
 

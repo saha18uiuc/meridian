@@ -46,7 +46,7 @@ describe('server environment', () => {
     expect(env.AI_MODE).toBe('mock');
     expect(env.AI_REVIEW_MODEL).toBe('gpt-5.5');
     expect(env.AI_REASONING_EFFORT).toBe('high');
-    expect(env.AI_REVIEW_TIMEOUT_MS).toBe(120_000);
+    expect(env.AI_REVIEW_TIMEOUT_MS).toBe(240_000);
     expect(env.TEMPORAL_TASK_QUEUE).toBe('meridian-receiving');
     expect(env.MERIDIAN_STATE_DIR).toBe('.meridian');
     expect(env.GMAIL_LIVE_MODE).toBe(false);

@@ -102,7 +102,19 @@ const aiEnv = {
     .optional()
     .transform((v) => (v === undefined || v.trim() === '' ? undefined : v)),
   AI_ALLOW_LOCAL_FALLBACK: bool(false),
-  AI_REVIEW_TIMEOUT_MS: int(120_000),
+  /**
+   * Headroom over the model call, not a target for it.
+   *
+   * It was 120s, which a measured review of a 25-node board at the default `high` effort finished
+   * in 118.7s. A budget the normal case lands a second inside is not a timeout, it is a coin flip:
+   * the same board failed in production at 121s while a smaller one had passed at 119s. Both looked
+   * like the model erroring rather than a limit we had chosen.
+   *
+   * Any increase is bounded by the review route's `maxDuration` (300s), since the call has to finish
+   * inside the request that awaits it, and a call killed with the request cannot mark its session
+   * failed. 240s keeps roughly a minute in reserve for snapshot assembly and finalization.
+   */
+  AI_REVIEW_TIMEOUT_MS: int(240_000),
   AI_REVIEW_MAX_RETRIES: z.coerce.number().int().nonnegative().default(2),
 };
 
