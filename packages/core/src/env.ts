@@ -79,7 +79,16 @@ const supabaseServer = {
   NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1),
   NEXT_PUBLIC_APP_BASE_URL: z.url(),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  SUPABASE_DB_URL: z.string().min(1),
+  /**
+   * Optional, because no request path opens a direct Postgres connection: the app reaches the
+   * database over PostgREST with the keys above. Only the operational scripts need SQL — migrations,
+   * type generation, the seed — and each requires it by name at the point of use.
+   *
+   * Requiring it here made every deployment carry the superuser connection string to satisfy a
+   * schema rather than a caller, and a deployment that omitted it failed on the first route to read
+   * server configuration, several layers away from anything resembling the cause.
+   */
+  SUPABASE_DB_URL: z.string().min(1).optional(),
   APP_BASE_URL: z.url(),
 };
 
