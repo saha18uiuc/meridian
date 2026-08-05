@@ -5,6 +5,7 @@ import {
   NEW_MESSAGE_SIGNAL,
   RECEIVING_WORKFLOW_TYPE,
   TEMPORAL_TASK_QUEUE,
+  taskQueueName,
 } from '@meridian/core/temporal-contract';
 import { describe, expect, it } from 'vitest';
 import { activities } from '../src/temporal/activities/index.js';
@@ -72,8 +73,19 @@ describe('the workflow bundle', () => {
 });
 
 describe('the shared Temporal contract', () => {
+  // Both sides resolve the name the same way rather than both hardcoding it, which is the property
+  // that matters: a worker polling one queue while intake starts work on another is a system that
+  // accepts every request and runs nothing, with no error anywhere to say so.
   it('agrees with the worker on the task queue', () => {
-    expect(TASK_QUEUE).toBe(TEMPORAL_TASK_QUEUE);
+    expect(TASK_QUEUE).toBe(taskQueueName());
+  });
+
+  it('falls back to the shared constant when the environment names no queue', () => {
+    expect(taskQueueName({})).toBe(TEMPORAL_TASK_QUEUE);
+    expect(taskQueueName({ TEMPORAL_TASK_QUEUE: '  ' })).toBe(TEMPORAL_TASK_QUEUE);
+    expect(taskQueueName({ TEMPORAL_TASK_QUEUE: 'meridian-receiving-local' })).toBe(
+      'meridian-receiving-local',
+    );
   });
 
   it('names the intake signal the workflow actually handles', () => {

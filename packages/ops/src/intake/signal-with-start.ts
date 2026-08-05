@@ -1,7 +1,7 @@
 import {
   NEW_MESSAGE_SIGNAL,
   RECEIVING_WORKFLOW_TYPE,
-  TEMPORAL_TASK_QUEUE,
+  taskQueueName,
   type ReceivingWorkflowInput,
 } from '@meridian/core/temporal-contract';
 import type { Client } from '@temporalio/client';
@@ -54,7 +54,7 @@ export function buildSignalWithStartOptions(options: SignalWithStartOptions): {
 } {
   return {
     workflowId: options.workflowId,
-    taskQueue: options.taskQueue ?? TEMPORAL_TASK_QUEUE,
+    taskQueue: options.taskQueue ?? taskQueueName(),
     args: [options.input],
     signal: NEW_MESSAGE_SIGNAL,
     signalArgs: [options.signalArg],

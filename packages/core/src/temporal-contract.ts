@@ -11,6 +11,24 @@
 
 export const TEMPORAL_TASK_QUEUE = 'meridian-receiving';
 
+/**
+ * The queue this process should use: `TEMPORAL_TASK_QUEUE` if set, the constant above otherwise.
+ *
+ * One queue for the whole system was right while there was one system. Deployed, this machine and
+ * Render share a Temporal Cloud namespace — the free tier allows only one — and a queue is the unit
+ * of work distribution, so two workers polling the same name are handed each other's tasks. That
+ * already happened: a local worker pointed at a local database won activities belonging to deployed
+ * runs and failed them on foreign keys for rows it could not see, which reads as the deployed
+ * environment being broken rather than as a laptop that should not have been listening.
+ *
+ * Read through a function rather than resolved into a constant at import time, because the workflow
+ * bundle imports this module and a sandbox is not a place to be reading the environment.
+ */
+export function taskQueueName(source: Record<string, string | undefined> = process.env): string {
+  const configured = source.TEMPORAL_TASK_QUEUE?.trim();
+  return configured === undefined || configured === '' ? TEMPORAL_TASK_QUEUE : configured;
+}
+
 export const RECEIVING_WORKFLOW_TYPE = 'receivingWorkflow';
 
 export const NEW_MESSAGE_SIGNAL = 'newMessage';

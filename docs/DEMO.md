@@ -5,6 +5,10 @@ deterministic mocks; no paid API key is needed.
 
 Two terminals. Terminal A runs `pnpm dev` and blocks. Everything else runs in terminal B.
 
+**Recording the assignment demo instead?** Go to [Recording the demo](#recording-the-demo) at the end.
+That walkthrough runs against the deployed app rather than a local stack, and is ordered as a script
+to narrate rather than a checklist to verify.
+
 ---
 
 ## Setup
@@ -64,7 +68,11 @@ Two terminals. Terminal A runs `pnpm dev` and blocks. Everything else runs in te
     acknowledgement, and both are recorded in `spec_json.source`.
 29. The spec page shows `specVersion = 1`, both hashes, `unresolvedCommentIds`, the assumption, and
     the known gaps.
-30. Download the spec. `shasum -a 256` of the file equals the displayed `spec_hash`.
+30. Download the spec. Re-deriving `spec_hash` from the downloaded document reproduces the displayed
+    value. Note that `shasum -a 256` of the file does **not**, and is not meant to: the hash is taken
+    over the semantic view — the contract without `specId`, `specVersion`, `frozenAt`, the review
+    session ids or the acknowledgement flags — so that re-freezing an unchanged board is recognisably
+    the same spec. `freeze-spec.spec.ts` asserts it the correct way, with `deriveSpecHash`.
 
 ## Generation
 
@@ -127,3 +135,202 @@ pnpm verify             # every static gate, next build included
 pnpm verify:e2e         # everything that needs a live stack
 pnpm stop               # leaves a foreign Supabase stack running
 ```
+
+---
+
+# Recording the demo
+
+The lifecycle again, but against <https://meridian-web-dibyadeep-sahas-projects.vercel.app> and
+ordered for a camera. The walkthrough above is a verification checklist; this is a script.
+
+## What happens where, and why
+
+Most of it is the browser. Two steps are not, and the reason is worth saying out loud while
+recording, because it is a design position rather than an omission.
+
+| Lifecycle step               | Where             | Why there                                                                                             |
+| ---------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------- |
+| Whiteboard, review, freeze   | Deployed app      | Authoring and review are the product                                                                  |
+| Reserve a version            | Deployed app      | The version row is reserved before any code exists, so generation has something to fill               |
+| Generate the agent           | Cursor + terminal | Generation writes files into the repository and commits them; a web request cannot                    |
+| Evals                        | Terminal          | A 17-case suite cannot be held open inside an HTTP request, so the route enqueues and the CLI runs it |
+| Trigger a run, read evidence | Deployed app      | This is what an operator does daily                                                                   |
+
+The terminal steps talk to the **deployed** database, not a local one, so everything you do in a
+terminal shows up in the browser a moment later. Point them there by prefixing the command with the
+two values from `.env.vercel` (git-ignored; do not read it aloud on camera):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL='https://<ref>.supabase.co' \
+SUPABASE_SERVICE_ROLE_KEY='<sb_secret_…>' \
+pnpm evals --agent-version <id>
+```
+
+The eval harness runs the generated agent in-process and writes execution rows straight to Supabase.
+It does not go through Temporal, so it needs no worker and works the same whichever database it is
+pointed at.
+
+## Before you press record
+
+1. `curl -s https://meridian-web-dibyadeep-sahas-projects.vercel.app/api/health` — four `true`s. If
+   `worker` is false, Render has spun the container down; open its URL once and wait a minute.
+2. Reset the demo data, so the board list is the two seeded boards and nothing else (see
+   [Resetting the demo data](#resetting-the-demo-data)).
+3. Sign in as `demo@meridian.local` in a clean browser profile. A profile with your Vercel session in
+   it can redirect through SSO on camera.
+4. Know the waits, and decide now where to cut: **a review takes 50–90 seconds**, a live run about a
+   minute, freezing is instant.
+5. Do not start `pnpm dev` for the local stack during the recording. It is safe now — local uses the
+   `meridian-receiving-local` task queue — but a second web app on `localhost:3000` reading a
+   different database is an easy thing to film by accident.
+
+## Act 1 — Whiteboard the process badly, on purpose
+
+> Task 3 §1. The point of this act is that the first version is _wrong_, and that being wrong is
+> visible rather than embarrassing.
+
+1. On **Boards**, type `Inbound Import Receiving (live)` and click **Create**. The button stays
+   disabled until the box has a title.
+2. Add cards from the palette: **Something arrives** (Input), **Do some work** (Action), **Decide or
+   wait** (Rule), **Reach a result** (Outcome). Those four primitives are the entire vocabulary —
+   everything a customer says has to land in one of them, which is what makes the board compilable.
+3. Connect them by dragging from a card's right-hand handle onto the next card's left-hand handle.
+4. Fill in only what the SOP says plainly, and **leave the gaps a real first interview leaves**:
+   - do not list which documents are required;
+   - leave one rule branch unlabelled;
+   - give the extraction step no failure path.
+5. Watch the toolbar say `Saved · revision N` after each edit. Every change is one optimistic-
+   concurrency write, not an autosave of the whole board.
+
+## Act 2 — First AI review
+
+> Task 3 §2, round one.
+
+6. Click **Review Process**. It stays busy for 50–90 seconds and does not poll: the request is
+   awaited end to end, so when it returns, the round is genuinely finished.
+7. Findings arrive as threads in the right-hand panel and as pins on the canvas beside the card each
+   one is about. Two kinds are mixed together deliberately: deterministic structural checks (the
+   unlabelled branch will be one) and model findings about the business logic.
+8. Now play the business user, using a different control for each kind of answer, because they mean
+   different things:
+   - **Reply** to a finding you want to answer in prose. The thread becomes `answered`, not
+     `resolved` — answering a question is not the same as fixing the thing.
+   - **Record assumption** where the business genuinely has no rule yet. Assumptions are the only
+     evidence that closes a model finding, and they are published into the frozen spec.
+   - **Reject** one finding with a reason. It moves to _Dismissed_, stops counting toward the
+     unresolved total, and is never reopened by a later round.
+   - **Apply suggested patch** where the reviewer offered one; the board revision increments and a
+     system reply records what it changed.
+9. Then actually fix two things on the board: label the unlabelled branch, and add the missing
+   required-document fields to the Input card.
+10. The header badge changes to _Board changed since review_.
+
+## Act 3 — Second AI review
+
+> Task 3 §2, round two. This is the act that shows the loop is a loop.
+
+11. Click **Review Process** again.
+12. Read the reconciliation out loud, because it is the whole argument:
+    - the unlabelled-branch finding is now **resolved** — and nobody clicked "resolve", there is no
+      such control; it closed because the next round stopped reporting it;
+    - the finding you only answered is still **answered**;
+    - the rejected one is still dismissed, uncounted, and not resurrected.
+13. The unresolved counter counts `open` and `answered` roots only.
+
+## Act 4 — Freeze the specification
+
+> Task 3 §3.
+
+14. Click **Submit Process**. The dialog previews what is still unresolved.
+15. Tick each acknowledgement. Freezing **warns rather than blocks**: the tool cannot know whether a
+    finding matters, but it can refuse to let the acknowledgement be implicit, so the confirm button
+    stays disabled until every warning shown is ticked.
+16. Freeze. The spec page shows `specVersion`, the spec hash, the canvas hash, the unresolved comment
+    ids, your assumptions, and the known gaps — the acknowledgements are recorded _in the document_,
+    not just in a log.
+17. Download it. The spec is immutable from here; the agent is generated from this artifact and not
+    from the board, which is why the board can keep moving afterwards.
+
+## Act 5 — Generate the agent
+
+> Task 3 §4.
+
+18. On **Agents**, create a logical agent for the board and give it a deployment key.
+19. **Reserve a version**. Nothing is generated yet: the row exists, the code path is allocated, and
+    the page prints the exact command to run and the `codePath` it must write to.
+20. Paste that command into Cursor. The `spec-to-agent` skill reads the frozen spec and writes
+    exactly five files — `agent.ts`, `rules.ts`, `prompts.ts`, `manifest.json`, `spec.snapshot.json`.
+21. `bash .codex/skills/spec-to-agent/scripts/verify.sh` — lint, typecheck, unit tests, one smoke
+    eval.
+22. `pnpm agent:finalize --agent-version <id>` (with the cloud prefix above). It commits the
+    allow-listed paths, then re-reads the commit **out of the Git object database** to confirm it
+    contains what it claims. The version now carries a 40-hex SHA that can be checked later without
+    trusting the working tree.
+
+If you intend to trigger a **live** run of a newly generated version, push first and let Render
+rebuild: the worker bundles the agent registry at build time, so a version that exists only in the
+database is not yet runnable by the deployed worker. Evals do not care — they run in-process.
+
+## Act 6 — Evals, and the loop that refuses
+
+> Task 3 §5.
+
+23. `pnpm evals --agent-version <id>` (cloud prefix). Cases run concurrently against the fixture
+    mailbox; the summary prints per-case pass or fail.
+24. Open a case in **Executions**. An eval row shows expected against actual, with the diff.
+25. On a failure, run the `eval-repair` skill. Say what it does and, more importantly, what it
+    refuses: three of the four failure classes are repairable, and the fourth — a **policy gap** — is
+    not. There the suite records a blocking comment back on the board and exits 5 without patching
+    anything, because the specification does not decide that case and inventing the answer in
+    generated code is the one move that would make the suite green and meaningless.
+26. A repair never edits an evaluated version. `pnpm agent:reserve-repair --parent <id>` allocates the
+    next version with its lineage set and copies the five files; the patch lands there, and the
+    **whole** suite is re-run, not just the case that failed.
+
+## Act 7 — Run it, and read the evidence
+
+27. On **Executions**, use **Send a pre-alert email** to hand a fixture message to intake. The
+    business key is extracted _before_ the workflow starts, then one `signalWithStart` call either
+    starts the workflow or delivers to the running one — so a second message for the same container
+    joins the existing execution rather than racing it.
+28. Open the execution: the agent, version, spec hash, Git commit and resolved toolkit version it ran
+    under; steps grouped by `step_instance_key` with their retries; a paged event feed; and each
+    external action moving `reserved → dispatched → succeeded` with its attempt count.
+29. Close on lineage: activate a different version from **Agents** and note that the old execution
+    rows still report the spec hash and commit _they_ ran under. Rolling back changes what runs next,
+    never what a past run claims about itself.
+
+## Resetting the demo data
+
+Deleting a board does not cascade into its agents or frozen specs — those references are deliberately
+not `on delete cascade`, so a board cannot be quietly deleted out from under an agent that was
+generated from it. Reset in dependency order, then re-seed:
+
+```bash
+# Executions and their children, then versions, agents, specs, boards.
+psql "$SUPABASE_DB_URL" -c "
+  delete from public.executions;
+  delete from public.agent_versions;
+  delete from public.agents;
+  delete from public.frozen_specs;
+  delete from public.whiteboards;"
+
+NEXT_PUBLIC_SUPABASE_URL='https://<ref>.supabase.co' \
+NEXT_PUBLIC_SUPABASE_ANON_KEY='<sb_publishable_…>' \
+SUPABASE_SERVICE_ROLE_KEY='<sb_secret_…>' \
+SUPABASE_DB_URL='<session pooler URI>' \
+pnpm seed
+```
+
+`pnpm seed` is idempotent, which also means it will not repair a board you have edited — it skips
+what already exists. Deleting first is what makes it a reset rather than a no-op.
+
+## If something goes wrong on camera
+
+| Symptom                                   | What it is                                                                                                            |
+| ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `REVIEW_MODEL_CALL_FAILED`                | The model call passed its abort budget. Click review again; the session is already marked failed, so nothing is stuck |
+| Review button busy for over three minutes | The request budget is 300s. Reload; a completed round is already persisted                                            |
+| `STALE_BOARD_REVISION`                    | The board moved between opening the dialog and confirming. Reload and redo the action                                 |
+| Health shows `worker: false`              | Render spun the free container down. Open the worker URL once, wait a minute                                          |
+| An eval case fails that passed before     | Check which database the terminal is pointed at before assuming a code defect                                         |

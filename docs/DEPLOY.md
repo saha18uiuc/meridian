@@ -180,16 +180,16 @@ review of that board.
 
 ## One Temporal namespace, two environments
 
-The deployed worker and any worker you start locally poll **the same task queue in the same Temporal
-Cloud namespace**, because `TEMPORAL_TASK_QUEUE` is a constant in
-`packages/core/src/temporal-contract.ts` and the environment variable of that name does not override
-it. Setting that variable differently on Render and locally isolates nothing; it is listed in the
-env files for completeness and is inert.
+The free tier allows one namespace, so the deployed worker and any worker you start locally live in
+the same one. What separates them is the **task queue**, which `TEMPORAL_TASK_QUEUE` now sets:
+`meridian-receiving` for both deployed services, and `meridian-receiving-local` in the local `.env`.
+Both sides of each environment — the worker that polls and the intake path that starts work — read
+the name through `taskQueueName()`, so they cannot disagree.
 
-The consequence is worth stating plainly, because its symptoms point at the wrong thing entirely.
-Temporal hands each task to whichever worker polls first. A local worker points at the local
-Supabase, so every task it wins from a deployed run fails against a database where those rows do not
-exist:
+That variable used to be inert, and the failure it allowed is worth keeping on record, because its
+symptoms point at the wrong thing entirely. Temporal hands each task to whichever worker polls first.
+A local worker points at the local Supabase, so every task it wins from a deployed run fails against
+a database where those rows do not exist:
 
 - `startStep failed: … violates foreign key constraint "execution_steps_execution_id_fkey"` — the
   execution row exists in the hosted project and not in the local one.
@@ -199,17 +199,18 @@ Both read as database corruption. Both are two workers sharing a queue. The tell
 history: activities on attempt 2 or 3 with no corresponding error in the deployed worker's log,
 because the failures happened in a process on someone's laptop.
 
-So before demoing, stop every local worker — including containers, which outlive the terminal that
-started them:
+Separate queues make that collision impossible rather than merely unlikely, which is why the name is
+configurable now. If you ever see those errors again, the first question is which queue each side
+resolved — the worker logs it at startup and `/healthz` reports it:
 
 ```bash
-pkill -f 'apps/backend/src/temporal/worker'   # pnpm dev / pnpm demo
-docker ps --filter ancestor=meridian-worker   # a local image left running
+curl -s <worker url>/healthz            # the queue the deployed worker is polling
+pkill -f 'apps/backend/src/temporal/worker'   # a stray local worker: pnpm dev / pnpm demo
+docker ps --filter ancestor=meridian-worker   # a local image outliving its terminal
 ```
 
-The durable fix is a separate namespace for the deployment, which Temporal Cloud's free tier does
-not allow, or making the queue name genuinely configurable. Neither was worth doing mid-deployment;
-knowing the symptom is.
+A separate namespace per environment would be stronger still, and is what a paid tier should use;
+one queue per environment is the version of that available here.
 
 ## Mock mode
 
