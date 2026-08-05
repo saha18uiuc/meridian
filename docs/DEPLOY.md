@@ -159,6 +159,39 @@ run against the live Temporal Cloud namespace and needs roughly 200–300 MB at 
 | `STORAGE_BUCKET_*`, `OCR_*`, `WORKER_MAX_*`, `AGENT_MAX_CONCURRENCY` |     |   ✓    | Defaults are fine                                           |
 | `SUPABASE_DB_URL`, `DEMO_USER_*`, `EVAL_*`, `MERIDIAN_STATE_DIR`     |     |        | Local tooling only; not needed by either deployed service   |
 
+## One Temporal namespace, two environments
+
+The deployed worker and any worker you start locally poll **the same task queue in the same Temporal
+Cloud namespace**, because `TEMPORAL_TASK_QUEUE` is a constant in
+`packages/core/src/temporal-contract.ts` and the environment variable of that name does not override
+it. Setting that variable differently on Render and locally isolates nothing; it is listed in the
+env files for completeness and is inert.
+
+The consequence is worth stating plainly, because its symptoms point at the wrong thing entirely.
+Temporal hands each task to whichever worker polls first. A local worker points at the local
+Supabase, so every task it wins from a deployed run fails against a database where those rows do not
+exist:
+
+- `startStep failed: … violates foreign key constraint "execution_steps_execution_id_fkey"` — the
+  execution row exists in the hosted project and not in the local one.
+- `finishStep: step <uuid> not found` — likewise for the step row.
+
+Both read as database corruption. Both are two workers sharing a queue. The tell is the Temporal
+history: activities on attempt 2 or 3 with no corresponding error in the deployed worker's log,
+because the failures happened in a process on someone's laptop.
+
+So before demoing, stop every local worker — including containers, which outlive the terminal that
+started them:
+
+```bash
+pkill -f 'apps/backend/src/temporal/worker'   # pnpm dev / pnpm demo
+docker ps --filter ancestor=meridian-worker   # a local image left running
+```
+
+The durable fix is a separate namespace for the deployment, which Temporal Cloud's free tier does
+not allow, or making the queue name genuinely configurable. Neither was worth doing mid-deployment;
+knowing the symptom is.
+
 ## Mock mode
 
 `GMAIL_LIVE_MODE=false` makes the mailbox tool read the `.eml` fixtures under `examples/` instead of
