@@ -182,10 +182,16 @@ export async function registryConsistency(
 
   const bundled = new Set(registered.map((entry) => `${entry.key}@${entry.versionNo}`));
   const missing: string[] = [];
+  type EmbeddedVersion = { version_no: number };
   for (const row of data) {
-    // PostgREST types an embedded resource as an array even when the foreign key makes it at most
-    // one row, so both shapes are unwrapped rather than asserted away with a cast.
-    const embedded = row.agent_versions;
+    /**
+     * The generated types do not describe the embedded shape of a hint-qualified join, so it
+     * arrives as `any` and the query's contract is stated here instead: `select` asked for
+     * `version_no` and nothing else. PostgREST also types an embedded resource as an array even
+     * when the foreign key makes it at most one row, so both shapes are unwrapped rather than one
+     * being asserted away.
+     */
+    const embedded = row.agent_versions as EmbeddedVersion | EmbeddedVersion[] | null;
     const version = Array.isArray(embedded) ? embedded[0] : embedded;
     if (version === undefined || version === null) continue;
     const label = `${row.deployment_key}@${version.version_no}`;
