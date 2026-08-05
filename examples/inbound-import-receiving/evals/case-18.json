@@ -1,0 +1,28 @@
+{
+  "caseKey": "case-18",
+  "description": "An invoice line that names no batch cannot be received on the strength of it.",
+  "specTrace": "Input \"Commercial invoice\" marks batchNumber required; Rule \"Is there exactly one certificate of analysis per batch?\" states every batch named on an invoice must be covered by exactly one certificate, which a line with no batch can never satisfy.",
+  "inputRefs": {
+    "emailPaths": ["examples/inbound-import-receiving/fixtures/emails/batch-gap.eml"],
+    "attachmentPaths": ["examples/inbound-import-receiving/fixtures/attachments/invoice-1032.pdf"],
+    "expectedPath": "examples/inbound-import-receiving/fixtures/expected/case-18.expected.json"
+  },
+  "expected": {
+    "outcome": "needs_information",
+    "businessKey": "SUDU7000001",
+    "missingFields": ["good:LINE-1:batchNumber"],
+    "externalActions": [
+      {
+        "actionType": "mail.reply",
+        "count": 1,
+        "finalStatus": "succeeded"
+      }
+    ],
+    "stepInstanceKeys": [
+      "extract:SUDU7000001",
+      "validate-good:INV-1032:LINE-1",
+      "respond:SUDU7000001"
+    ],
+    "evidenceKeys": ["assessment:SUDU7000001"]
+  }
+}

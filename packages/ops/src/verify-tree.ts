@@ -428,6 +428,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'examples/inbound-import-receiving/evals/case-15.json',
   'examples/inbound-import-receiving/evals/case-16.json',
   'examples/inbound-import-receiving/evals/case-17.json',
+  'examples/inbound-import-receiving/evals/case-18.json',
   'examples/inbound-import-receiving/fixtures/emails/happy-path.eml',
   'examples/inbound-import-receiving/fixtures/emails/missing-fields.eml',
   'examples/inbound-import-receiving/fixtures/emails/duplicate-invoice.eml',
@@ -459,6 +460,7 @@ export const REQUIRED_PATHS: readonly string[] = [
   'examples/inbound-import-receiving/fixtures/expected/case-15.expected.json',
   'examples/inbound-import-receiving/fixtures/expected/case-16.expected.json',
   'examples/inbound-import-receiving/fixtures/expected/case-17.expected.json',
+  'examples/inbound-import-receiving/fixtures/expected/case-18.expected.json',
   'tsconfig.scripts.json',
   'scripts/preflight.ts',
   'scripts/check-ports.ts',
@@ -489,7 +491,7 @@ export const REQUIRED_PATHS: readonly string[] = [
 ];
 
 export const REQUIRED_MIGRATIONS = 14;
-export const REQUIRED_EVAL_CASES = 17;
+export const REQUIRED_EVAL_CASES = 18;
 
 /**
  * Files present in the tree that the plan's listing does not name, each with the reason it exists.

@@ -1,0 +1,26 @@
+{
+  "caseKey": "case-18",
+  "decision": {
+    "outcome": "needs_information",
+    "businessKey": "SUDU7000001",
+    "reason": "",
+    "summary": {
+      "containerNumber": "SUDU7000001",
+      "mawb": null,
+      "invoiceNumbers": ["INV-1032"],
+      "batchNumbers": [],
+      "goodsCount": 1,
+      "validGoodsCount": 0,
+      "missingInformation": ["good:LINE-1:batchNumber"]
+    },
+    "findings": [
+      {
+        "scope": "good",
+        "key": "LINE-1",
+        "field": "batchNumber",
+        "message": "Invoice INV-1032, Sertraline Tablets 50mg: missing Batch Number."
+      }
+    ],
+    "emailResponse": null
+  }
+}

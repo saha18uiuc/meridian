@@ -86,7 +86,8 @@ const REGISTRATION = '3006521049';
 function good(
   lineKey: string,
   description: string,
-  batchNumber: string,
+  /** Nullable because an invoice line that names no batch is a real thing a forwarder sends. */
+  batchNumber: string | null,
   htsCode: string,
   andaNumber: string | null,
   ndcNumber: string | null,
@@ -165,6 +166,7 @@ export const CONTAINERS = {
   scanned: 'HLXU1234561',
   scale: 'OOLU1234567',
   registrationGap: 'MEDU2000002',
+  batchGap: 'SUDU7000001',
 } as const;
 
 export const MAWB_AIR = '020-12345675';
@@ -271,6 +273,13 @@ export function buildAttachmentIndex(): Record<string, FixtureEntry> {
       '0093-1029-56',
       null,
     ),
+  ]);
+
+  // Every regulatory identifier is present and the Batch Number is not. The invoice input marks
+  // batchNumber required, and the certificate rule is stated per batch, so a line whose batch is
+  // unknown is a line no certificate can be matched to — not a line that quietly receives.
+  index['invoice-1032.pdf'] = invoiceEntry('INV-1032', [
+    good('LINE-1', 'Sertraline Tablets 50mg', null, '3004.90.9260', 'ANDA077321', '0093-7192-56'),
   ]);
 
   index['invoice-scale.pdf'] = invoiceEntry('INV-1040', scaleGoods());
@@ -570,6 +579,26 @@ export function buildEmails(): FixtureEmail[] {
         `Invoice INV-1031 and the certificate of analysis for batch E22F, container`,
         `${CONTAINERS.registrationGap}. The manufacturer has not returned the establishment`,
         'registration number yet; everything else is on the invoice.',
+        '',
+        'Regards,',
+        'Global Forwarding Operations',
+      ].join('\n'),
+    },
+    {
+      file: 'batch-gap.eml',
+      messageId: '<batch-gap@forwarder.example>',
+      threadId: 'thread-batch-gap',
+      date: '2026-02-10T09:05:00.000Z',
+      from: 'ops@forwarder.example',
+      subject: `Pre-Alert Documents - container ${CONTAINERS.batchGap}`,
+      // No certificate is attached, and none could be: with no batch on the line there is nothing
+      // to attach one against. That is what makes this case about the batch and nothing else.
+      attachments: ['invoice-1032.pdf'],
+      body: [
+        'Hello,',
+        '',
+        `Invoice INV-1032 for container ${CONTAINERS.batchGap}. The plant has not confirmed the`,
+        'lot for this line yet, so the batch column is blank; the certificate follows once they do.',
         '',
         'Regards,',
         'Global Forwarding Operations',

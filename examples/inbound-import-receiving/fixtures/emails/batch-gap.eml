@@ -1,0 +1,15 @@
+Message-ID: <batch-gap@forwarder.example>
+X-Meridian-Thread: thread-batch-gap
+Date: 2026-02-10T09:05:00.000Z
+From: ops@forwarder.example
+To: receiving@importer.example
+Subject: Pre-Alert Documents - container SUDU7000001
+X-Meridian-Attachments: invoice-1032.pdf
+
+Hello,
+
+Invoice INV-1032 for container SUDU7000001. The plant has not confirmed the
+lot for this line yet, so the batch column is blank; the certificate follows once they do.
+
+Regards,
+Global Forwarding Operations

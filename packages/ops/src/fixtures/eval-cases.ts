@@ -4,7 +4,7 @@ import { CONTAINERS, MAWB_AIR, SCALE_GOODS } from './documents.js';
 import { repoPath } from '../lib/state.js';
 
 /**
- * Author the sixteen eval cases and their expected decision documents.
+ * Author the eighteen eval cases and their expected decision documents.
  *
  * Every expectation below traces to a statement on the frozen board, and the trace is recorded in
  * the case file itself rather than in a document someone has to remember to update. An expectation
@@ -105,6 +105,16 @@ export function drafts(): Draft[] {
       'Metformin HCl Tablets 850mg',
       'ndcNumber',
       'NDC number',
+    ),
+  ];
+
+  const case18Failures: Failure[] = [
+    missingFieldFailure(
+      'INV-1032',
+      'LINE-1',
+      'Sertraline Tablets 50mg',
+      'batchNumber',
+      'Batch Number',
     ),
   ];
 
@@ -710,6 +720,47 @@ export function drafts(): Draft[] {
         emailResponse: null,
       },
     },
+
+    {
+      caseKey: 'case-18',
+      description: 'An invoice line that names no batch cannot be received on the strength of it.',
+      specTrace:
+        'Input "Commercial invoice" marks batchNumber required; Rule "Is there exactly one certificate of analysis per batch?" states every batch named on an invoice must be covered by exactly one certificate, which a line with no batch can never satisfy.',
+      emails: ['batch-gap.eml'],
+      attachments: ['invoice-1032.pdf'],
+      expected: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.batchGap,
+        missingFields: missingList(case18Failures),
+        externalActions: [{ actionType: 'mail.reply', count: 1, finalStatus: 'succeeded' }],
+        stepInstanceKeys: [
+          `extract:${CONTAINERS.batchGap}`,
+          'validate-good:INV-1032:LINE-1',
+          `respond:${CONTAINERS.batchGap}`,
+        ],
+        evidenceKeys: [`assessment:${CONTAINERS.batchGap}`],
+      },
+      decision: {
+        outcome: 'needs_information',
+        businessKey: CONTAINERS.batchGap,
+        reason: '',
+        summary: {
+          ...summary({
+            container: CONTAINERS.batchGap,
+            invoices: ['INV-1032'],
+            // No batch is listed because none was given, which is the fact being reported rather
+            // than an empty result to skip past.
+            batches: [],
+            goods: 1,
+            validGoods: 0,
+          }),
+          missingInformation: missingList(case18Failures),
+        },
+
+        findings: case18Failures,
+        emailResponse: null,
+      },
+    },
   ];
 }
 
@@ -718,7 +769,7 @@ export async function main(_argv: readonly string[] = []): Promise<void> {
   mkdirSync(repoPath(EXPECTED_DIR), { recursive: true });
 
   const all = drafts();
-  if (all.length !== 17) throw new Error(`expected 17 eval cases, built ${String(all.length)}`);
+  if (all.length !== 18) throw new Error(`expected 18 eval cases, built ${String(all.length)}`);
 
   for (const draft of all) {
     const evalCase: EvalCase = {
