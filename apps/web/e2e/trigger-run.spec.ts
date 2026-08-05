@@ -16,6 +16,15 @@ import { signIn } from './fixtures';
 
 test.describe('trigger a run from the agent page', () => {
   test('fixture mail starts a workflow that reaches an outcome', async ({ page }) => {
+    /**
+     * Longer than the config's 60s, because the wait below asks for 120s and a per-assertion budget
+     * cannot outlive the test holding it. Against a local worker the run finishes in seconds and the
+     * contradiction never shows; against a deployed one on a shared CPU it fails at 60s reporting
+     * the last status it saw, which reads as a stalled workflow rather than as a spec that stopped
+     * watching too early.
+     */
+    test.setTimeout(180_000);
+
     await signIn(page);
 
     const agents = await page.request.get('/api/agents');

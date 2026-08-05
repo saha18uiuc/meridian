@@ -6,6 +6,32 @@ type Client = SupabaseClient<Database>;
 type Row = Database['public']['Tables']['execution_steps']['Row'];
 type Json = Row['input_summary_json'];
 
+/**
+ * Everything PostgREST said, not just the sentence.
+ *
+ * A `message` alone names the constraint that was violated and never the values that violated it,
+ * which for a foreign key is the entire question: "violates execution_steps_execution_id_fkey" is
+ * true of a missing parent and of a typo in the child, and those are not the same bug. `details`
+ * carries the failing row and `code` the SQLSTATE, and both are already in the response — dropping
+ * them turns a diagnosable failure into a guess, at the one moment the answer is expensive.
+ */
+function describe(error: {
+  message: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+}): string {
+  const parts = [error.message];
+  if (error.code !== undefined && error.code !== '') parts.push(`code=${error.code}`);
+  if (error.details !== null && error.details !== undefined && error.details !== '') {
+    parts.push(`details=${error.details}`);
+  }
+  if (error.hint !== null && error.hint !== undefined && error.hint !== '') {
+    parts.push(`hint=${error.hint}`);
+  }
+  return parts.join(' | ');
+}
+
 export function toStep(row: Row): ExecutionStep {
   return {
     stepExecutionId: row.step_execution_id,
@@ -64,7 +90,7 @@ export async function insertStep(
 
   if (error === null && data !== null) return toStep(data);
   if (error !== null && error.code !== '23505') {
-    throw new Error(`startStep failed: ${error.message}`);
+    throw new Error(`startStep failed: ${describe(error)}`);
   }
 
   const existing = await client
@@ -75,7 +101,7 @@ export async function insertStep(
     .eq('attempt_no', input.attemptNo)
     .maybeSingle();
   if (existing.error !== null)
-    throw new Error(`startStep replay read failed: ${existing.error.message}`);
+    throw new Error(`startStep replay read failed: ${describe(existing.error)}`);
   if (existing.data === null) throw new Error('startStep: conflicting insert vanished.');
   return toStep(existing.data);
 }
@@ -100,7 +126,7 @@ export async function finishStep(
     .eq('step_execution_id', stepExecutionId)
     .select('*')
     .maybeSingle();
-  if (error !== null) throw new Error(`finishStep failed: ${error.message}`);
+  if (error !== null) throw new Error(`finishStep failed: ${describe(error)}`);
   if (data === null) throw new Error(`finishStep: step ${stepExecutionId} not found.`);
   return toStep(data);
 }
