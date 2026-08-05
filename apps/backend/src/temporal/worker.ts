@@ -5,6 +5,7 @@ import { createLogger, forgetEmptyEnvVars, temporalTarget, workerEnv } from '@me
 import { NativeConnection, Worker } from '@temporalio/worker';
 import { activities } from './activities/index.js';
 import { startHealthServer } from './health-server.js';
+import { startKeepAlive } from './keep-alive.js';
 import { TASK_QUEUE } from './task-queue.js';
 
 const logger = createLogger('worker');
@@ -67,6 +68,10 @@ async function main(): Promise<void> {
   });
 
   const health = startHealthServer(env.WORKER_HEALTH_PORT);
+  const keepAlive =
+    env.WORKER_KEEPALIVE_URL === undefined
+      ? undefined
+      : startKeepAlive(env.WORKER_KEEPALIVE_URL, env.WORKER_KEEPALIVE_INTERVAL_MS, logger);
   logger.info(
     {
       taskQueue: TASK_QUEUE,
@@ -76,6 +81,7 @@ async function main(): Promise<void> {
       // rather than inferred from the absence of errors.
       tls: target.connection.tls === true,
       healthPort: env.WORKER_HEALTH_PORT,
+      keepAlive: keepAlive !== undefined,
     },
     'worker started',
   );
@@ -84,6 +90,7 @@ async function main(): Promise<void> {
     logger.info({ signal }, 'shutting the worker down');
     worker.shutdown();
     health.close();
+    keepAlive?.close();
   };
   process.on('SIGINT', () => {
     shutdown('SIGINT');

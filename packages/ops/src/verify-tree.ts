@@ -542,6 +542,8 @@ export const DECLARED_ADDITIONS: Readonly<Record<string, string>> = {
     'generated from the .eml fixtures by packages/ops/src/fixtures/web-demo-mail.ts, so the messages the UI offers cannot drift from the ones the eval suite and the mock mailbox read; retyping them here is how that drift would start',
   'apps/web/e2e/trigger-run.spec.ts':
     'covers the run-trigger panel end to end, which is the one path a deployed demo depends on and the only one no other spec touches',
+  'apps/backend/src/temporal/keep-alive.ts':
+    'what keeps the deployed worker from being suspended. Free hosts measure idleness in inbound HTTP, which a Temporal worker never receives however busy it is; suspended, its poll dies and every execution stalls in `running` with nothing logged anywhere. Inert unless WORKER_KEEPALIVE_URL is set, so it changes nothing locally.',
   'apps/backend/test/helpers/workflow-env.ts':
     'a time-skipping Temporal environment with recording activity stubs, which all six workflow tests start from',
   'apps/web/test/stubs/server-only.ts':
@@ -729,6 +731,9 @@ export function verifyTree(): TreeReport {
     // is not here: it reads `vercel.json` from the project's root directory, which for this layout
     // is `apps/web`.)
     '.dockerignore',
+    // Render reads its Blueprint from the repository root and nowhere else, so unlike Vercel's this
+    // one cannot live beside the app it describes.
+    'render.yaml',
     '.nvmrc',
     '.pnpm-store',
     '.temporal',

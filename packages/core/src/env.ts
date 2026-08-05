@@ -121,6 +121,17 @@ const temporalEnv = {
    * the web app and the worker are separate services and a port number describes nothing.
    */
   WORKER_HEALTH_URL: z.url().optional(),
+  /**
+   * The worker's own public URL, which it requests on a timer to stay awake.
+   *
+   * Unset means the host does not sleep idle services and none of this is needed, which is the case
+   * locally and on anything paid. It is separate from `WORKER_HEALTH_URL` because that one is for
+   * the web app's benefit and this one is for the worker's; they usually hold the same address, but
+   * setting one should not silently turn on the other's behaviour.
+   */
+  WORKER_KEEPALIVE_URL: z.url().optional(),
+  /** Comfortably inside the shortest idle timeout worth deploying to (Render's is 15 minutes). */
+  WORKER_KEEPALIVE_INTERVAL_MS: int(600_000),
   WORKER_MAX_CONCURRENT_ACTIVITIES: int(20),
   WORKER_MAX_CONCURRENT_WORKFLOWS: int(10),
   /** Fan-out width inside a single agent run; bounded so one execution cannot starve the queue. */

@@ -1,0 +1,94 @@
+# The Temporal worker, as a service definition rather than a sequence of clicks.
+#
+# Only the worker is here. The web app is on Vercel, which is what Next.js is for, and the two are
+# split because a Temporal worker cannot be a serverless function: it holds a long poll open and
+# survives across workflow timers, while a function is frozen the moment it returns.
+#
+# Render, and not Koyeb, because Koyeb's free tier closed to new signups when they were acquired by
+# Mistral in February 2026. Existing organisations keep it; new ones start at $29/month.
+
+services:
+  - type: web
+    name: meridian-worker
+    runtime: docker
+    plan: free
+    # Supabase is in us-east-1 and this is the free region nearest to it. Every activity makes
+    # several round trips to Postgres, so the distance is paid over and over.
+    region: virginia
+    dockerfilePath: ./apps/backend/Dockerfile
+    # The build context is the repository root, not `apps/backend`. The worker imports four workspace
+    # packages through the lockfile at the root, and a context narrowed to the app cannot see them.
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true
+
+    envVars:
+      # Render routes to whatever port the service binds and defaults `PORT` to 10000. The health
+      # server reads `WORKER_HEALTH_PORT`, so the two are lined up here by hand.
+      - key: WORKER_HEALTH_PORT
+        value: 10000
+
+      # A free instance is 512MB and 0.1 vCPU. The defaults in `env.ts` (20 activities, 10 workflows)
+      # size a worker for a developer's laptop; leaving them would let it admit more concurrent work
+      # than the box can hold, and it would be killed for memory on the first burst.
+      - key: WORKER_MAX_CONCURRENT_ACTIVITIES
+        value: 4
+      - key: WORKER_MAX_CONCURRENT_WORKFLOWS
+        value: 4
+      - key: AGENT_MAX_CONCURRENCY
+        value: 2
+      # V8 sizes its default heap from total system memory, which inside a container is the host's
+      # and not the limit. Unset, the process grows past 512MB and is OOM-killed having logged
+      # nothing of its own.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+
+      # Mock mode: the mailbox tool reads the `.eml` fixtures baked into the image instead of a real
+      # inbox, so every reviewer of the demo sees the same eleven messages produce the same
+      # outcomes. The Composio code path is identical either way.
+      - key: GMAIL_LIVE_MODE
+        value: false
+      # No browser binaries in the image, and an empty allow-list is what disables the browser tool.
+      - key: BROWSER_ALLOWED_DOMAINS
+        value: ''
+      - key: BROWSER_WRITE_ENABLED
+        value: false
+      - key: OCR_ENABLED
+        value: false
+      - key: AI_MODE
+        value: live
+      - key: LOG_LEVEL
+        value: info
+
+      # Set after the first deploy, because it is this service's own public URL and that does not
+      # exist until the service does. Render's `fromService` can supply the host but not a scheme,
+      # and the schema wants a URL. See `keep-alive.ts` for why the worker pings itself at all.
+      - key: WORKER_KEEPALIVE_URL
+        sync: false
+
+      # Secrets. `sync: false` keeps them out of the repository; they are loaded from `.env.render`,
+      # which is git-ignored.
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: TEMPORAL_ADDRESS
+        sync: false
+      - key: TEMPORAL_NAMESPACE
+        sync: false
+      - key: TEMPORAL_API_KEY
+        sync: false
+      - key: TEMPORAL_TLS
+        sync: false
+      - key: TEMPORAL_TASK_QUEUE
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: COMPOSIO_API_KEY
+        sync: false
+      - key: COMPOSIO_GMAIL_AUTH_CONFIG_ID
+        sync: false
+      - key: COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID
+        sync: false
+      - key: OPERATOR_EMAIL
+        sync: false
