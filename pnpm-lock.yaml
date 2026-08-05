@@ -103,9 +103,6 @@ importers:
       '@meridian/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@meridian/evals':
-        specifier: workspace:*
-        version: link:../../packages/evals
       '@meridian/ops':
         specifier: workspace:*
         version: link:../../packages/ops

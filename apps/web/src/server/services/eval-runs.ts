@@ -1,7 +1,6 @@
 import 'server-only';
 
 import { randomUUID } from 'node:crypto';
-import { join } from 'node:path';
 import type { Database, Json } from '@meridian/core/database';
 import { sha256Hex } from '@meridian/core/hashing';
 import type {
@@ -10,7 +9,6 @@ import type {
   StartEvalRunRequest,
   StartEvalRunResponse,
 } from '@meridian/core/schemas';
-import { DEFAULT_CASE_DIR, loadEvalCases } from '@meridian/evals';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAgentVersion } from '@/server/repositories/agent-versions';
 import { createServiceClient } from '@/server/supabase/service-client';
@@ -64,10 +62,7 @@ async function unfinishedRunId(client: Client, agentVersionId: string): Promise<
 }
 
 export interface StartEvalRunOptions {
-  repoRoot?: string;
   service?: Client;
-  /** Injected so the enqueue test does not depend on how many case files happen to exist. */
-  caseKeysOverride?: readonly string[];
 }
 
 export async function startEvalRun(
@@ -91,15 +86,21 @@ export async function startEvalRun(
     return { evalRunId: existing, status: 'queued', caseCount: count ?? 0, wasExisting: true };
   }
 
-  const available =
-    options.caseKeysOverride ??
-    loadEvalCases(join(options.repoRoot ?? process.cwd(), DEFAULT_CASE_DIR)).map(
-      (entry) => entry.caseKey,
-    );
-  const known = new Set(available);
-  const selected = request.caseKeys ?? available;
-  const unknown = selected.filter((key) => !known.has(key));
-  if (unknown.length > 0) throw new Error(`UNKNOWN_EVAL_CASE: ${unknown.join(', ')}`);
+  /**
+   * The caller states which cases to enqueue; this service does not go looking for them.
+   *
+   * It used to default to reading the corpus off disk under `process.cwd()`. That is wrong twice
+   * over. It is wrong in principle, because the deployed web service is not the repository — the
+   * corpus is an input to `pnpm evals`, which runs somewhere that has a checkout, and a request
+   * handler scanning the filesystem for it can only ever answer for the machine it happens to be
+   * on. It was also wrong in practice: a read rooted at `process.cwd()` makes the bundler trace the
+   * entire project into this route's function, which on a hosted deployment is the difference
+   * between a function that deploys and one that is rejected for its size.
+   */
+  const selected = request.caseKeys ?? [];
+  if (selected.length === 0) {
+    throw new Error('EVAL_CASE_KEYS_REQUIRED: name the cases to enqueue');
+  }
 
   const service = options.service ?? createServiceClient();
   const evalRunId = randomUUID();

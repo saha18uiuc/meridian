@@ -12,7 +12,6 @@
   "dependencies": {
     "@meridian/agent-kit": "workspace:*",
     "@meridian/core": "workspace:*",
-    "@meridian/evals": "workspace:*",
     "@meridian/ops": "workspace:*",
     "@supabase/ssr": "0.12.4",
     "@supabase/supabase-js": "2.111.0",
