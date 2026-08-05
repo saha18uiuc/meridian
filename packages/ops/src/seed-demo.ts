@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { Client } from 'pg';
 import { deploymentForBoardPath, type DeploymentFixture } from './deployments.js';
 import { loadOpsEnv, optionalEnv } from './env.js';
-import { parseArgs, optionalArg } from './lib/args.js';
+import { flag, parseArgs, optionalArg } from './lib/args.js';
 import { repoPath } from './lib/state.js';
 import { opsClient } from './lib/supabase.js';
 import { releaseDemoAgent, type ReleaseResult } from './release-demo-agent.js';
@@ -25,7 +25,8 @@ export interface SeedResult {
   created: boolean;
   nodeCount: number;
   edgeCount: number;
-  release: ReleaseResult;
+  /** Null for a draft seed, which has no frozen spec to generate an agent from. */
+  release: ReleaseResult | null;
 }
 
 interface SeedBoard {
@@ -57,10 +58,23 @@ async function ensureUser(email: string, password: string): Promise<string> {
   return existing.id;
 }
 
-export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResult> {
+/**
+ * A board seeded as a draft has no agent behind it, and that is the point.
+ *
+ * The two worked examples are seeded finished — frozen, generated, released — because `pnpm demo`
+ * needs something runnable. A demonstration of the *authoring* loop needs the opposite: a board as
+ * it looks after one conversation with the process owner, before any review has run. Releasing that
+ * would require freezing a specification nobody has reviewed, which is a state the product is
+ * designed to make you work for.
+ */
+export async function seedDemo(
+  boardPath = DEFAULT_BOARD_PATH,
+  options: { release?: boolean } = {},
+): Promise<SeedResult> {
   loadOpsEnv();
   const client = opsClient();
-  const deployment = deploymentForBoardPath(boardPath);
+  const shouldRelease = options.release ?? true;
+  const deployment = shouldRelease ? deploymentForBoardPath(boardPath) : null;
 
   const demoUserId = await ensureUser(
     optionalEnv('DEMO_USER_EMAIL', 'demo@meridian.local'),
@@ -133,7 +147,11 @@ export async function seedDemo(boardPath = DEFAULT_BOARD_PATH): Promise<SeedResu
  * bypass the approval gate that activation exists to enforce. So the seed carries the board through
  * the same chain an operator would: freeze, agent, version, commit, approved, active.
  */
-function release(whiteboardId: string, deployment: DeploymentFixture): Promise<ReleaseResult> {
+function release(
+  whiteboardId: string,
+  deployment: DeploymentFixture | null,
+): Promise<ReleaseResult | null> {
+  if (deployment === null) return Promise.resolve(null);
   return releaseDemoAgent({
     whiteboardId,
     deployment,
@@ -145,7 +163,9 @@ function release(whiteboardId: string, deployment: DeploymentFixture): Promise<R
 export async function main(argv: readonly string[] = process.argv.slice(2)): Promise<void> {
   const args = parseArgs(argv);
   try {
-    const result = await seedDemo(optionalArg(args, 'board') ?? DEFAULT_BOARD_PATH);
+    const result = await seedDemo(optionalArg(args, 'board') ?? DEFAULT_BOARD_PATH, {
+      release: !flag(args, 'draft'),
+    });
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   } catch (error) {
     process.stderr.write(`${(error as Error).message}\n`);

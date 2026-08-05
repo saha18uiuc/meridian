@@ -1,0 +1,162 @@
+{
+  "whiteboardId": "80ac344a-e179-5279-b7b2-7b1225372f55",
+  "title": "Inbound Import Receiving (first pass)",
+  "viewport": { "x": 0, "y": 0, "zoom": 0.9 },
+  "nodes": [
+    {
+      "nodeId": "392ca842-1121-5d86-bda8-a64992b9be40",
+      "primitiveType": "input",
+      "title": "Pre-alert email from the forwarder",
+      "data": {
+        "inputKind": "event",
+        "sourceSystem": "Gmail",
+        "required": true,
+        "fields": [
+          {
+            "name": "subject",
+            "type": "string",
+            "required": true,
+            "description": "Whatever the forwarder puts in the subject line."
+          },
+          { "name": "body", "type": "string", "required": true }
+        ],
+        "correlationKeys": []
+      },
+      "position": { "x": 0, "y": 160 }
+    },
+    {
+      "nodeId": "4892578f-d0db-5b31-ad23-0e76bdd65a53",
+      "primitiveType": "action",
+      "title": "Read the email and download what is attached",
+      "data": {
+        "actor": "agent",
+        "operation": "mail.read",
+        "instructions": "Open the email and save the attachments.",
+        "system": "Gmail",
+        "inputs": ["Pre-alert email"],
+        "outputs": ["Attachments"]
+      },
+      "position": { "x": 300, "y": 160 }
+    },
+    {
+      "nodeId": "573cfaab-4ede-573f-8f90-19d99f66db6f",
+      "primitiveType": "action",
+      "title": "Pull the details off the documents",
+      "data": {
+        "actor": "agent",
+        "operation": "document.extract",
+        "instructions": "Read the invoice and the certificate and note what is on them.",
+        "system": "",
+        "inputs": ["Attachments"],
+        "outputs": ["Document details"]
+      },
+      "position": { "x": 620, "y": 160 }
+    },
+    {
+      "nodeId": "5439fbec-1555-5d3a-8dff-d2e47121438c",
+      "primitiveType": "rule",
+      "title": "Is everything there?",
+      "data": {
+        "ruleKind": "decision",
+        "condition": "The receiving team decides whether the paperwork looks complete.",
+        "branches": [
+          { "label": "looks complete", "condition": "", "targetNodeId": null },
+          { "label": "something is missing", "condition": "", "targetNodeId": null }
+        ],
+        "fallbackNodeId": null
+      },
+      "position": { "x": 940, "y": 160 }
+    },
+    {
+      "nodeId": "198f9541-5aa4-5f1e-b555-4698c1634151",
+      "primitiveType": "action",
+      "title": "Ask the forwarder for what is missing",
+      "data": {
+        "actor": "agent",
+        "operation": "mail.send",
+        "instructions": "Reply to the forwarder asking for the missing paperwork.",
+        "system": "Gmail",
+        "inputs": ["Document details"],
+        "outputs": ["Query sent"]
+      },
+      "position": { "x": 1260, "y": 320 }
+    },
+    {
+      "nodeId": "2815e2e6-47bc-5857-95fd-82617c028d0b",
+      "primitiveType": "outcome",
+      "title": "Ready to receive",
+      "data": { "resultKind": "ready", "terminal": true },
+      "position": { "x": 1600, "y": 80 }
+    },
+    {
+      "nodeId": "37ffd4a8-21a1-5bea-9ab2-2f27202e6d75",
+      "primitiveType": "outcome",
+      "title": "Waiting on the forwarder",
+      "data": { "resultKind": "needs_information", "terminal": true },
+      "position": { "x": 1600, "y": 320 }
+    },
+    {
+      "nodeId": "dbbdf9c1-356d-5e94-8386-90885ca3fa81",
+      "primitiveType": "input",
+      "title": "Certificate of analysis",
+      "data": {
+        "inputKind": "document",
+        "sourceSystem": "Email attachment",
+        "required": true,
+        "fields": [],
+        "correlationKeys": []
+      },
+      "position": { "x": 300, "y": 460 }
+    }
+  ],
+  "edges": [
+    {
+      "edgeId": "ae9f2d58-e795-5f09-8d06-c71dfa6bca00",
+      "sourceNodeId": "392ca842-1121-5d86-bda8-a64992b9be40",
+      "targetNodeId": "4892578f-d0db-5b31-ad23-0e76bdd65a53",
+      "label": "email arrives",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "bf499844-9a18-5dc3-8fc7-f905a61e8eb5",
+      "sourceNodeId": "4892578f-d0db-5b31-ad23-0e76bdd65a53",
+      "targetNodeId": "573cfaab-4ede-573f-8f90-19d99f66db6f",
+      "label": "attachments downloaded",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "45eb5878-501a-5724-b82b-32690b646653",
+      "sourceNodeId": "573cfaab-4ede-573f-8f90-19d99f66db6f",
+      "targetNodeId": "5439fbec-1555-5d3a-8dff-d2e47121438c",
+      "label": "details extracted",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "a81d7ef2-d57b-5c17-bacf-bb6f3012e2ca",
+      "sourceNodeId": "5439fbec-1555-5d3a-8dff-d2e47121438c",
+      "targetNodeId": "2815e2e6-47bc-5857-95fd-82617c028d0b",
+      "label": "looks complete",
+      "condition": null,
+      "priority": 0
+    },
+    {
+      "edgeId": "8638244e-2670-5318-8031-def726b5cf09",
+      "sourceNodeId": "5439fbec-1555-5d3a-8dff-d2e47121438c",
+      "targetNodeId": "198f9541-5aa4-5f1e-b555-4698c1634151",
+      "label": "",
+      "condition": null,
+      "priority": 1
+    },
+    {
+      "edgeId": "f7878887-0149-53d2-949c-0e5a51aa69e9",
+      "sourceNodeId": "198f9541-5aa4-5f1e-b555-4698c1634151",
+      "targetNodeId": "37ffd4a8-21a1-5bea-9ab2-2f27202e6d75",
+      "label": "query sent",
+      "condition": null,
+      "priority": 0
+    }
+  ]
+}
