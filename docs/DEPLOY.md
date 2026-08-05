@@ -55,7 +55,28 @@ pnpm seed
 ```
 
 The seed creates the demo users, the whiteboard, its frozen spec, and the active agent versions. It
-is idempotent: running it twice does not duplicate a board.
+is idempotent: running it twice does not duplicate a board. It seeds one board per invocation, so
+the second example needs its own run:
+
+```bash
+pnpm seed --board=examples/vendor-coi-renewal/board.seed.json
+```
+
+Two things about that command surprise people the first time.
+
+It needs `NEXT_PUBLIC_SUPABASE_ANON_KEY` as well as the service-role key, because it signs in as the
+demo user to exercise the same RLS path a browser would. Omit it and the key silently falls back to
+whatever `.env` holds — the local stack's demo JWT — and the hosted project answers `Invalid API
+key`.
+
+It also runs each agent version's recorded validation command against the **committed** tree before
+it will finalise that version. An uncommitted fix does not count, and a lint error anywhere in the
+repository stops the seed. That is the release gate doing its job rather than a seeding bug.
+
+Use the **session pooler** connection string, not the direct one. Supabase publishes
+`db.<ref>.supabase.co` with an AAAA record and no A record, so the direct host is reachable only
+from a network with IPv6. The pooler (`aws-0-<region>.pooler.supabase.com:5432`, user
+`postgres.<ref>`) answers over IPv4 and works from anywhere.
 
 ### Row-level security and who can see anything
 
@@ -161,7 +182,8 @@ In order, because each step depends on the one before:
 ## Known limits
 
 - Eval runs stay CLI-driven (`pnpm evals`). The API only enqueues rows for the CLI to pick up, and
-  it reads eval cases from the working directory, so there is deliberately no button for it: on a
-  deployed link it would look like it worked and leave executions queued forever.
+  it requires the caller to name the cases rather than discovering them on disk, because the
+  deployed web service is not a checkout of the repository. There is deliberately no button for it:
+  on a deployed link it would look like it worked and leave executions queued forever.
 - A Supabase free project pauses after a week of inactivity. Open the dashboard before demoing.
 - On a host that sleeps, the first request after an idle period waits a few seconds for a cold start.
