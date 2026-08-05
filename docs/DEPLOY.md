@@ -75,6 +75,12 @@ Vercel reads, given that root — says what it says. JSON cannot carry comments,
   The output still lands in `apps/web/.next`, which is where Vercel already looks.
 - `installCommand` also steps up to the root, because the lockfile and the workspace definition live
   there and the worker, the web app, and the packages are installed as one graph.
+- `outputDirectory` is stated as `.next`, relative to the root directory, even though that is the
+  default. It is stated because a project imported while a root-level `vercel.json` named
+  `apps/web/.next` keeps that value as a saved project setting, and it is then applied _on top of_
+  the root directory: Vercel looks in `apps/web/apps/web/.next`, finds nothing, and reports a
+  missing output directory for a build that in fact succeeded. Naming it here overrides the stale
+  setting, because `vercel.json` takes precedence over the dashboard.
 - `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` is set for the build, or installing the web app's dev
   dependencies fetches a browser the build never opens.
 
