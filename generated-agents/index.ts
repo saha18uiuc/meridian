@@ -1,6 +1,7 @@
 import type { AgentDefinition, AgentRegistry } from '@meridian/agent-kit/contracts';
 import { resolveAgent as resolveFromRegistry } from '@meridian/agent-kit/contracts';
 import { agent as inboundImportReceivingV001 } from './inbound-import-receiving/v001/agent.js';
+import { agent as inboundImportReceivingV002 } from './inbound-import-receiving/v002/agent.js';
 import { agent as vendorCoiRenewalV001 } from './vendor-coi-renewal/v001/agent.js';
 
 /**
@@ -20,6 +21,7 @@ import { agent as vendorCoiRenewalV001 } from './vendor-coi-renewal/v001/agent.j
 export const AGENT_REGISTRY = {
   'inbound-import-receiving': {
     1: inboundImportReceivingV001,
+    2: inboundImportReceivingV002,
   },
   'vendor-coi-renewal': {
     1: vendorCoiRenewalV001,
