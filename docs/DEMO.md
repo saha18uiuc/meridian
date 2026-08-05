@@ -148,13 +148,13 @@ ordered for a camera. The walkthrough above is a verification checklist; this is
 Most of it is the browser. Two steps are not, and the reason is worth saying out loud while
 recording, because it is a design position rather than an omission.
 
-| Lifecycle step               | Where             | Why there                                                                                             |
-| ---------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------- |
-| Whiteboard, review, freeze   | Deployed app      | Authoring and review are the product                                                                  |
-| Reserve a version            | Deployed app      | The version row is reserved before any code exists, so generation has something to fill               |
-| Generate the agent           | Cursor + terminal | Generation writes files into the repository and commits them; a web request cannot                    |
-| Evals                        | Terminal          | A 17-case suite cannot be held open inside an HTTP request, so the route enqueues and the CLI runs it |
-| Trigger a run, read evidence | Deployed app      | This is what an operator does daily                                                                   |
+| Lifecycle step               | Where             | Why there                                                                                                    |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| Whiteboard, review, freeze   | Deployed app      | Authoring and review are the product                                                                         |
+| Reserve a version            | Deployed app      | The version row is reserved before any code exists, so generation has something to fill                      |
+| Generate the agent           | Cursor + terminal | Generation writes files into the repository and commits them; a web request cannot                           |
+| Evals                        | Terminal          | An eighteen-case suite cannot be held open inside an HTTP request, so the route enqueues and the CLI runs it |
+| Trigger a run, read evidence | Deployed app      | This is what an operator does daily                                                                          |
 
 The terminal steps talk to the **deployed** database, not a local one, so everything you do in a
 terminal shows up in the browser a moment later. Point them there by prefixing the command with the
@@ -169,6 +169,34 @@ pnpm evals --agent-version <id>
 The eval harness runs the generated agent in-process and writes execution rows straight to Supabase.
 It does not go through Temporal, so it needs no worker and works the same whichever database it is
 pointed at.
+
+### What someone with only the link can do
+
+Everything the running system does. No clone, no install, no keys:
+
+sign in; create and edit boards; run AI review rounds; reply, reject, record assumptions and apply
+patches; freeze a specification and download it; create an agent and reserve a version; approve a
+version and activate or roll back the release; trigger live runs against the deployed worker; answer
+a human handoff; and read every execution's steps, events, external actions and — for eval runs —
+the expected-against-actual diff.
+
+Two things need the repository, and both for the same reason: they produce or check **committed
+code**, which no web request can do.
+
+- **Generating a version's code.** The deliverable of generation is five source files in a Git
+  commit, whose SHA the version row records and `agent:verify-manifest` later re-reads out of the
+  object database. A hosted button could only fake that — by writing agent behaviour into database
+  rows and interpreting it at run time, which would abandon the immutability and lineage the rest of
+  the design rests on. The reserve panel says so rather than spinning: _"Run this in Cursor or Codex.
+  Meridian will not generate the code for you."_
+- **Running the eval suite.** Eighteen cases take longer than an HTTP request may live, so the route
+  enqueues and the CLI executes. There is deliberately no button, because a button that queued work
+  nothing would pick up is worse than no button.
+
+A visitor is not blocked by either. Both agents are already generated, and both suites have already
+run against the deployed database, so the artifacts of those two steps — the code paths, the commit
+SHAs, `case-18` failing on v001 and passing on v002 — are all readable in the browser. What a
+visitor cannot do is mint a _new_ generated version, which is an operator action by design.
 
 ## What is in the deployed environment
 
@@ -341,6 +369,11 @@ still fails `case-18`, which is the point of versioning it rather than editing i
 24. On **Agents**, **Approve** v002 and then **Activate** it. Two buttons because they are two
     decisions: approval says the version is fit to run, activation says it is what runs now. A
     version can sit approved indefinitely and nothing changes for a single shipment.
+
+    Check `<worker url>/healthz` lists `inbound-import-receiving` at version 2 before activating.
+    The worker bundles the registry at build time, so activating a version it was not built with
+    points live runs at code that host cannot load.
+
 25. Close on lineage: roll back to v001 from the same panel and note that the old execution
     rows still report the spec hash and commit _they_ ran under. Rolling back changes what runs next,
     never what a past run claims about itself.
