@@ -52,14 +52,29 @@ describe('buildSignalWithStartOptions', () => {
     expect(options.signalArgs).toEqual([signalArg]);
   });
 
-  it('defaults to the one shared task queue', () => {
-    const options = buildSignalWithStartOptions({
-      client: {} as Client,
-      workflowId: 'receiving:MSKU1234565',
-      input,
-      signalArg,
-    });
-    expect(options.taskQueue).toBe('meridian-receiving');
+  // The environment is set and restored rather than read, because this process may have loaded a
+  // developer's `.env` — which now names a local queue on purpose. A test that asserts the default
+  // while inheriting an override is testing whose machine it runs on.
+  it('takes the task queue from the environment, and defaults when it names none', () => {
+    const before = process.env['TEMPORAL_TASK_QUEUE'];
+    const build = (): string =>
+      buildSignalWithStartOptions({
+        client: {} as Client,
+        workflowId: 'receiving:MSKU1234565',
+        input,
+        signalArg,
+      }).taskQueue;
+
+    try {
+      delete process.env['TEMPORAL_TASK_QUEUE'];
+      expect(build()).toBe('meridian-receiving');
+
+      process.env['TEMPORAL_TASK_QUEUE'] = 'meridian-receiving-local';
+      expect(build()).toBe('meridian-receiving-local');
+    } finally {
+      if (before === undefined) delete process.env['TEMPORAL_TASK_QUEUE'];
+      else process.env['TEMPORAL_TASK_QUEUE'] = before;
+    }
   });
 });
 
