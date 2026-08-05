@@ -3,9 +3,10 @@ import { fileURLToPath } from 'node:url';
 import type { Database } from '@meridian/core/database';
 import type { WorkerEnv } from '@meridian/core';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { HumanHandoffTool, ToolRegistry } from '../contracts.js';
+import type { HumanHandoffTool, MailboxTool, ToolRegistry } from '../contracts.js';
 import { ToolUnavailableError } from '../errors.js';
 import { createArtifactStore } from '../storage.js';
+import { composeMailbox } from './mailbox.js';
 import { createMockBrowser } from './mock/browser.js';
 import { createMockDocumentTool } from './mock/documents.js';
 import { createMockMailbox } from './mock/mailbox.js';
@@ -33,7 +34,8 @@ export interface ToolFactoryOptions {
  *
  * Generated agents never learn which implementation they were handed, which is the property that
  * lets the identical agent code run in the eval suite and against a real inbox. `GMAIL_LIVE_MODE`
- * is the single switch; everything else follows from it.
+ * chooses the registry; `GMAIL_SEND_LIVE` splits the mailbox alone, so a run can read the fixtures
+ * it can be held to and still put a real email in a real inbox.
  */
 export function createTools(options: ToolFactoryOptions): ToolRegistry {
   const env = options.env;
@@ -41,21 +43,30 @@ export function createTools(options: ToolFactoryOptions): ToolRegistry {
 
   if (!env.GMAIL_LIVE_MODE) {
     const root = options.fixtureRoot ?? defaultFixtureRoot();
+    const fixtures = createMockMailbox({
+      emailDir: `${root}/emails`,
+      attachmentDir: `${root}/attachments`,
+    });
     return {
-      mailbox: createMockMailbox({
-        emailDir: `${root}/emails`,
-        attachmentDir: `${root}/attachments`,
-      }),
+      mailbox: env.GMAIL_SEND_LIVE
+        ? composeMailbox(fixtures, composioMailbox(requireSupabase(options)))
+        : fixtures,
       documents: createMockDocumentTool({ attachmentDir: `${root}/attachments` }),
       browser: createMockBrowser({ allowList: env.BROWSER_ALLOWED_DOMAINS }),
       humanHandoff,
     };
   }
 
+  return createLiveTools({ ...requireSupabase(options), humanHandoff });
+}
+
+function requireSupabase(
+  options: ToolFactoryOptions,
+): ToolFactoryOptions & { supabase: SupabaseClient<Database> } {
   if (options.supabase === undefined) {
     throw new ToolUnavailableError('tools', 'live mode requires a Supabase service client');
   }
-  return createLiveTools({ ...options, supabase: options.supabase, humanHandoff });
+  return { ...options, supabase: options.supabase };
 }
 
 /**
@@ -102,13 +113,30 @@ function createLiveTools(
     humanHandoff: HumanHandoffTool;
   },
 ): ToolRegistry {
+  return {
+    mailbox: composioMailbox(options),
+    documents: createLiveDocuments(options),
+    browser: createLiveBrowser(options),
+    humanHandoff: options.humanHandoff,
+  };
+}
+
+/**
+ * Gmail over Composio, behind a facade that builds the adapter on first use.
+ *
+ * The laziness is not an optimisation: importing this module must never pull a provider SDK into a
+ * bundle that only ever wanted the mock path, and the hybrid mailbox builds this eagerly for a run
+ * that may well never send anything.
+ */
+function composioMailbox(
+  options: ToolFactoryOptions & { supabase: SupabaseClient<Database> },
+): MailboxTool {
   const env = options.env;
-  const store = createArtifactStore(options.supabase);
 
   if (env.COMPOSIO_API_KEY === undefined || env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID === undefined) {
     throw new ToolUnavailableError(
       'mailbox',
-      'COMPOSIO_API_KEY and COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID are required in live mode',
+      'COMPOSIO_API_KEY and COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID are required to reach Gmail',
     );
   }
   if (env.COMPOSIO_GMAIL_TOOLKIT_VERSION === 'latest') {
@@ -120,10 +148,9 @@ function createLiveTools(
 
   const apiKey = env.COMPOSIO_API_KEY;
   const connectedAccountId = env.COMPOSIO_GMAIL_CONNECTED_ACCOUNT_ID;
+  const store = createArtifactStore(options.supabase);
 
-  // The adapters are constructed lazily so that importing this module never pulls a provider SDK
-  // into a bundle that merely needed the mock path.
-  const mailboxPromise = (async () => {
+  const adapter = (async () => {
     const { createComposioMailbox } = await import('./live/composio-mailbox.js');
     const composio = await loadComposio(apiKey, env.COMPOSIO_GMAIL_TOOLKIT_VERSION);
     return createComposioMailbox(composio as Parameters<typeof createComposioMailbox>[0], {
@@ -131,7 +158,8 @@ function createLiveTools(
       userId: env.COMPOSIO_USER_ID,
       connectedAccountId,
       toolkitVersion: env.COMPOSIO_GMAIL_TOOLKIT_VERSION,
-      liveMode: env.GMAIL_LIVE_MODE,
+      // Either switch authorises a send. Reading is what they disagree about.
+      liveMode: env.GMAIL_LIVE_MODE || env.GMAIL_SEND_LIVE,
       allowedRecipients: env.GMAIL_ALLOWED_RECIPIENTS,
       maxResults: env.GMAIL_MAX_RESULTS,
       store,
@@ -141,17 +169,12 @@ function createLiveTools(
   })();
 
   return {
-    mailbox: {
-      searchMessages: async (query, max) => (await mailboxPromise).searchMessages(query, max),
-      fetchThread: async (threadId) => (await mailboxPromise).fetchThread(threadId),
-      downloadAttachments: async (threadId) => (await mailboxPromise).downloadAttachments(threadId),
-      createDraft: async (payload) => (await mailboxPromise).createDraft(payload),
-      sendDraft: async (draftId) => (await mailboxPromise).sendDraft(draftId),
-      sendMessage: async (payload) => (await mailboxPromise).sendMessage(payload),
-    },
-    documents: createLiveDocuments(options),
-    browser: createLiveBrowser(options),
-    humanHandoff: options.humanHandoff,
+    searchMessages: async (query, max) => (await adapter).searchMessages(query, max),
+    fetchThread: async (threadId) => (await adapter).fetchThread(threadId),
+    downloadAttachments: async (threadId) => (await adapter).downloadAttachments(threadId),
+    createDraft: async (payload) => (await adapter).createDraft(payload),
+    sendDraft: async (draftId) => (await adapter).sendDraft(draftId),
+    sendMessage: async (payload) => (await adapter).sendMessage(payload),
   };
 }
 

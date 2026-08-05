@@ -155,7 +155,8 @@ run against the live Temporal Cloud namespace and needs roughly 200–300 MB at 
 | `WORKER_HEALTH_PORT`                                                 |     |   ✓    | Whatever the platform injects                               |
 | `OPENAI_API_KEY`, `AI_MODE`, `AI_REVIEW_MODEL`                       |  ✓  |   ✓    | `AI_MODE=live` for real AI review                           |
 | `COMPOSIO_*`                                                         |     |   ✓    | Tool calls happen in activities                             |
-| `GMAIL_LIVE_MODE=false`                                              |     |   ✓    | See "Mock mode"                                             |
+| `GMAIL_LIVE_MODE=false`, `GMAIL_SEND_LIVE=true`                      |     |   ✓    | Fixtures in, real Gmail out; see "Mock mode" below          |
+| `GMAIL_ALLOWED_RECIPIENTS`                                           |     |   ✓    | Required once sending is live; every send is checked        |
 | `STORAGE_BUCKET_*`, `OCR_*`, `WORKER_MAX_*`, `AGENT_MAX_CONCURRENCY` |     |   ✓    | Defaults are fine                                           |
 | `AI_REASONING_EFFORT`, `AI_REVIEW_TIMEOUT_MS`                        |  ✓  |        | See "How long a review takes" below                         |
 | `SUPABASE_DB_URL`, `DEMO_USER_*`, `EVAL_*`, `MERIDIAN_STATE_DIR`     |     |        | Local tooling only; not needed by either deployed service   |
@@ -212,13 +213,35 @@ docker ps --filter ancestor=meridian-worker   # a local image outliving its term
 A separate namespace per environment would be stronger still, and is what a paid tier should use;
 one queue per environment is the version of that available here.
 
-## Mock mode
+## Mock mode, and the half of it that is not mocked
 
 `GMAIL_LIVE_MODE=false` makes the mailbox tool read the `.eml` fixtures under `examples/` instead of
 a real inbox. This is deliberate for a demo: the same eleven messages produce the same outcomes for
 every reviewer, which a live mailbox cannot promise. The Composio code path is identical either way —
 only the tool's source of messages differs — and the fixtures are baked into the image, which is why
 `examples/` is excluded from `.dockerignore`'s exclusions.
+
+`GMAIL_SEND_LIVE=true` then splits the outbound half back off, and the deployed worker runs with
+both: fixtures in, real Gmail out. The reason to want that combination is that sending is the only
+thing a run does which is checkable from outside the system. Everything else — the steps, the
+extracted fields, the decision — is this repository reporting on itself, and a recorded email
+payload that never left the process is the weakest evidence in the execution viewer precisely
+because it is the easiest to fake.
+
+Two things follow from the split, both deliberate:
+
+- **The outbound thread id is dropped.** The agent replies onto the thread it read from, and that
+  thread is a file. Handing its id to Gmail as a reply target fails at the provider, so the message
+  is sent standalone; it keeps its subject and its `[meridian-ref: …]` footer, which is what
+  reconciliation searches for.
+- **`GMAIL_ALLOWED_RECIPIENTS` is doing real work now, not standing by.** It is checked before the
+  SDK is touched, and with fixture mail every run addresses the same operator mailbox, so a
+  misconfiguration is a local error rather than mail to a stranger.
+
+Turning `GMAIL_LIVE_MODE` on is a different proposition and not a superset: the reader would look
+for `thread-happy-path` in an inbox that has never contained it, and every run started from the
+trigger panel would fail. A genuinely live deployment needs real mail with real attachments and the
+inbox poller, not this switch.
 
 ## Verifying a deployment
 

@@ -7,7 +7,8 @@ import { withMarker } from '../mailbox.js';
  * Live Gmail over Composio.
  *
  * Two independent switches guard every outbound message, and both are checked **before** the SDK
- * is touched: `GMAIL_LIVE_MODE` must be on, and the recipient must appear in
+ * is touched: sending must be authorised (`liveMode`, which the factory derives from
+ * `GMAIL_LIVE_MODE` or `GMAIL_SEND_LIVE`), and the recipient must appear in
  * `GMAIL_ALLOWED_RECIPIENTS`. The ordering is the point — a misconfigured demo should fail with a
  * clear local error, not with a real email in a stranger's inbox.
  */
@@ -120,7 +121,10 @@ export function createComposioMailbox(
 
   function assertSendAllowed(recipient: string): void {
     if (!options.liveMode) {
-      throw new ToolUnavailableError('mailbox', 'GMAIL_LIVE_MODE is false; refusing to send.');
+      throw new ToolUnavailableError(
+        'mailbox',
+        'neither GMAIL_LIVE_MODE nor GMAIL_SEND_LIVE is set; refusing to send.',
+      );
     }
     const normalized = recipient.trim().toLowerCase();
     const allowed = options.allowedRecipients.some(
@@ -244,7 +248,10 @@ export function createComposioMailbox(
 
     async sendDraft(draftId) {
       if (!options.liveMode) {
-        throw new ToolUnavailableError('mailbox', 'GMAIL_LIVE_MODE is false; refusing to send.');
+        throw new ToolUnavailableError(
+          'mailbox',
+          'neither GMAIL_LIVE_MODE nor GMAIL_SEND_LIVE is set; refusing to send.',
+        );
       }
       const data = await execute(GMAIL_SLUGS.sendDraft, { draft_id: draftId, user_id: 'me' });
       return {

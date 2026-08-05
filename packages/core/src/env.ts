@@ -166,6 +166,20 @@ const toolEnv = {
   COMPOSIO_USER_ID: z.string().min(1).default('meridian-demo'),
   COMPOSIO_GMAIL_TOOLKIT_VERSION: z.string().min(1).default('latest'),
   GMAIL_LIVE_MODE: bool(false),
+  /**
+   * Send outbound mail for real while still reading the committed `.eml` fixtures.
+   *
+   * `GMAIL_LIVE_MODE` is all-or-nothing by design, and for a deployment that anyone can click it is
+   * the wrong grain. Turning it on points the reader at a real inbox, where the fixture threads and
+   * their attachments do not exist, so every demonstrable run fails; leaving it off means the one
+   * externally visible thing the agent does — writing to the forwarder — never actually happens, and
+   * the Composio integration is only assertable from a recorded payload.
+   *
+   * This splits the two. Reads stay reproducible, the reply genuinely arrives, and the recipient
+   * allow-list still gates it. The fixture thread id is dropped on the way out, because a reply
+   * cannot join a Gmail thread that was never in Gmail.
+   */
+  GMAIL_SEND_LIVE: bool(false),
   GMAIL_ALLOWED_RECIPIENTS: csv,
   GMAIL_SEARCH_QUERY: z.string().min(1).default('label:INBOX newer_than:7d'),
   GMAIL_MAX_RESULTS: int(25),

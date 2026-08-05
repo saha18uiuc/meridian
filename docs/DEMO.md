@@ -370,7 +370,13 @@ still fails `case-18`, which is the point of versioning it rather than editing i
 23. Open the execution: the agent, version, spec hash, Git commit and resolved toolkit version it ran
     under; steps grouped by `step_instance_key` with their retries; a paged event feed; and each
     external action moving `reserved → dispatched → succeeded` with its attempt count.
-24. On **Agents**, **Approve** v002 and then **Activate** it. Two buttons because they are two
+24. If the run reached `needs_information`, open the operator inbox: the email the agent composed is
+    actually there, sent through Composio, carrying the `[meridian-ref: …]` footer that the external
+    action recorded. Worth showing, because it is the only claim in the viewer a reader can check
+    from outside the system — the deployment reads fixture mail so runs stay reproducible, but it
+    sends for real. The reply arrives as its own message rather than on the thread, since the thread
+    it answers exists only in `examples/`.
+25. On **Agents**, **Approve** v002 and then **Activate** it. Two buttons because they are two
     decisions: approval says the version is fit to run, activation says it is what runs now. A
     version can sit approved indefinitely and nothing changes for a single shipment.
 
@@ -378,7 +384,7 @@ still fails `case-18`, which is the point of versioning it rather than editing i
     The worker bundles the registry at build time, so activating a version it was not built with
     points live runs at code that host cannot load.
 
-25. Close on lineage: roll back to v001 from the same panel and note that the old execution
+26. Close on lineage: roll back to v001 from the same panel and note that the old execution
     rows still report the spec hash and commit _they_ ran under. Rolling back changes what runs next,
     never what a past run claims about itself.
 

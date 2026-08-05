@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ToolUnavailableError } from '../src/errors.js';
 import { createComposioMailbox } from '../src/tools/live/composio-mailbox.js';
+import { composeMailbox } from '../src/tools/mailbox.js';
 import type { AttachmentRef } from '../src/contracts.js';
 import type { ArtifactStore } from '../src/storage.js';
 
@@ -50,8 +51,90 @@ async function downloadWith(
   return mailbox.downloadAttachments('t1');
 }
 
+/**
+ * Reading the fixtures while sending for real.
+ *
+ * The two halves are wired from different places, which is the whole point, so what has to be
+ * pinned is that each half goes where it was meant to and that the fixture thread id does not
+ * follow the message out.
+ */
+describe('a mailbox composed of fixture reads and live sends', () => {
+  function halves() {
+    const read = {
+      searchMessages: vi.fn(async () => []),
+      fetchThread: vi.fn(async () => []),
+      downloadAttachments: vi.fn(async () => []),
+      createDraft: vi.fn(async () => ({ draftId: 'read-should-never-draft' })),
+      sendDraft: vi.fn(async () => ({ providerMessageId: 'x', threadId: 'y' })),
+      sendMessage: vi.fn(async () => ({ providerMessageId: 'x', threadId: 'y' })),
+    };
+    const send = {
+      searchMessages: vi.fn(async () => []),
+      fetchThread: vi.fn(async () => []),
+      downloadAttachments: vi.fn(async () => []),
+      createDraft: vi.fn(async () => ({ draftId: 'd1' })),
+      sendDraft: vi.fn(async () => ({ providerMessageId: 'sent-1', threadId: 'thread-1' })),
+      sendMessage: vi.fn(async () => ({ providerMessageId: 'sent-1', threadId: 'thread-1' })),
+    };
+    return { read, send, mailbox: composeMailbox(read, send) };
+  }
+
+  it('reads from the fixtures and sends through the provider', async () => {
+    const { read, send, mailbox } = halves();
+
+    await mailbox.searchMessages('in:inbox');
+    await mailbox.fetchThread('thread-missing-coa');
+    await mailbox.downloadAttachments('thread-missing-coa');
+    await mailbox.sendMessage({ to: 'ops@importer.example', subject: 's', body: 'b' });
+
+    expect(read.searchMessages).toHaveBeenCalledOnce();
+    expect(read.fetchThread).toHaveBeenCalledOnce();
+    expect(read.downloadAttachments).toHaveBeenCalledOnce();
+    expect(read.sendMessage).not.toHaveBeenCalled();
+    expect(send.sendMessage).toHaveBeenCalledOnce();
+    expect(send.searchMessages).not.toHaveBeenCalled();
+  });
+
+  it('drops the thread id, which names a conversation the provider has never seen', async () => {
+    // The agent replies onto the thread it read from, and that thread is a file in `examples/`.
+    // Asking Gmail to append to it fails at the provider; sent standalone it keeps its subject.
+    const { send, mailbox } = halves();
+
+    await mailbox.sendMessage({
+      to: 'ops@importer.example',
+      subject: 'Information needed - container CMAU9988771',
+      body: 'b',
+      threadId: 'thread-missing-coa',
+      markerToken: 'abc123def456',
+    });
+
+    expect(send.sendMessage).toHaveBeenCalledWith({
+      to: 'ops@importer.example',
+      subject: 'Information needed - container CMAU9988771',
+      body: 'b',
+      markerToken: 'abc123def456',
+    });
+  });
+
+  it('sends drafts through the same half that created them', async () => {
+    const { read, send, mailbox } = halves();
+
+    const { draftId } = await mailbox.createDraft({
+      to: 'ops@importer.example',
+      subject: 's',
+      body: 'b',
+      threadId: 'thread-missing-coa',
+    });
+    await mailbox.sendDraft(draftId);
+
+    expect(draftId).toBe('d1');
+    expect(send.sendDraft).toHaveBeenCalledWith('d1');
+    expect(read.createDraft).not.toHaveBeenCalled();
+  });
+});
+
 describe('live Gmail safety switches', () => {
-  it('refuses to send when GMAIL_LIVE_MODE is false, before any SDK call', async () => {
+  it('refuses to send when neither switch authorises it, before any SDK call', async () => {
     const { mailbox, execute } = harness({ liveMode: false });
     await expect(
       mailbox.sendMessage({ to: 'allowed@importer.example', subject: 's', body: 'b' }),

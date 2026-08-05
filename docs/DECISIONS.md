@@ -237,6 +237,38 @@ transaction writes instead of the return value of a function nobody reads.
 
 ---
 
+## Reading is mocked; sending is not
+
+`GMAIL_LIVE_MODE` was one switch over the whole tool registry, and for a deployment strangers can
+click it had no setting that was right.
+
+Off, the mailbox reads the committed `.eml` fixtures, which is what makes a run mean the same thing
+twice and what the eval corpus is written against — but then the single externally observable thing
+an agent does, writing to the forwarder, never happens. The execution viewer shows a recipient, a
+subject, a body and a marker token for a message that stayed inside the process. That is the one
+piece of evidence in the whole system a reader has no way to check, and it is the piece that says
+the agent acts on the world rather than merely reporting about it.
+
+On, the reader points at a real inbox. The fixture threads are not there, their attachments are not
+there, and every run started from the trigger panel fails looking for `thread-happy-path`. It is not
+a superset of the mock; it is a different deployment, needing real mail and the inbox poller.
+
+So the mailbox is composed from both: fixtures for reading, Composio for sending, behind
+`GMAIL_SEND_LIVE`. The generated agent still cannot tell — it holds a `MailboxTool` and asks it to
+send, which is the property that lets the same code run in the eval suite and against Gmail.
+
+The outbound thread id is dropped on the way out, and that is a correction rather than a
+convenience. The agent replies onto the thread it read from; that thread is a file in `examples/`,
+so asking Gmail to append to it fails at the provider. Sent standalone the message keeps its subject
+and its `[meridian-ref: …]` footer, so reconciliation still recognises it and a retry still cannot
+duplicate it.
+
+What this costs is honest to state: a `needs_information` run now depends on Composio being
+reachable, where before it depended on nothing. That is the trade — the failure is loud, at the send
+step, with the provider's error attached, rather than a quiet success that proved nothing.
+
+---
+
 ## The reviewer is told what the operator already decided
 
 Half of the resolution rule above asks the model a question: a model finding closes only when the
